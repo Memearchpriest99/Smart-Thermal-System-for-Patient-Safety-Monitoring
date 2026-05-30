@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Dataset — never commit raw sensor data or patient-related recordings
+dataset/
+sessions/
+data/
+*.npz
+
+# Trained model checkpoints (large binary files)
+checkpoints/
+*.thalg
+*.pkl
+
+# Generated outputs (figures, calibration files)
+outputs/
+*.png
+*.jpg
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# pytest / coverage
+.pytest_cache/
+pytest-cache-files-*/
+.coverage
+htmlcov/
+
+# mypy / ruff caches
+.mypy_cache/
+.ruff_cache/
