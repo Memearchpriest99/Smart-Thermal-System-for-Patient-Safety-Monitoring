@@ -15,9 +15,21 @@ env/
 
 # Dataset — never commit raw sensor data or patient-related recordings
 dataset/
+dataset_raw/
+datasets/
 sessions/
 data/
 *.npz
+*.mp4
+*.xlsx
+
+# Archives / large bundles (exceed GitHub's 100 MB limit)
+*.zip
+
+# Standalone annotator build artifacts (build/ and dist/ already ignored above)
+release/
+*.exe
+*.pkg
 
 # Trained model checkpoints (large binary files)
 checkpoints/
@@ -47,3 +59,14 @@ htmlcov/
 # mypy / ruff caches
 .mypy_cache/
 .ruff_cache/
+
+# Local Claude Code config
+.claude/
+
+# LaTeX build artifacts / scratch reports
+*.aux
+*.toc
+*.out
+reports/*.log
+reports/_test*
+reports/_build.log

@@ -111,6 +111,7 @@ class HOGSVMDetector(HumanDetector):
         stride: tuple[int, int] = (1, 1),
         score_threshold: float = 0.5,
         nms_iou_threshold: float = 0.3,
+        pyramid_scales: tuple[float, ...] = (1.0,),
         # Negative sampling defaults (when caller doesn't provide negatives)
         n_negatives_per_frame: int = 5,
         random_state: int = 0,
@@ -131,6 +132,7 @@ class HOGSVMDetector(HumanDetector):
             stride=stride,
             score_threshold=score_threshold,
             nms_iou_threshold=nms_iou_threshold,
+            pyramid_scales=pyramid_scales,
             n_negatives_per_frame=n_negatives_per_frame,
             random_state=random_state,
         )
@@ -146,6 +148,9 @@ class HOGSVMDetector(HumanDetector):
         self._stride = (int(stride[0]), int(stride[1]))
         self._score_threshold = float(score_threshold)
         self._nms_iou = float(nms_iou_threshold)
+        if not pyramid_scales:
+            raise ValueError("pyramid_scales must contain at least one scale.")
+        self._pyramid_scales = [float(s) for s in pyramid_scales]
         self._n_negatives_per_frame = int(n_negatives_per_frame)
         self._rng = np.random.default_rng(int(random_state))
 
@@ -376,49 +381,77 @@ class HOGSVMDetector(HumanDetector):
         self._is_fitted = True
         return self
 
+    def _predict_at_scale(
+        self,
+        frame_data: np.ndarray,
+        scale: float,
+    ) -> tuple[list, list, list]:
+        """Slide the detection window over a single rescaled copy of the frame.
+
+        Returns (bboxes, scores, features) in original-frame coordinates.
+        """
+        if abs(scale - 1.0) < 1e-6:
+            scaled = frame_data
+        else:
+            H, W = frame_data.shape
+            new_h = max(self._window_size[0], int(round(H * scale)))
+            new_w = max(self._window_size[1], int(round(W * scale)))
+            interp = cv2.INTER_LINEAR if scale > 1.0 else cv2.INTER_AREA
+            scaled = cv2.resize(frame_data, (new_w, new_h), interpolation=interp)
+
+        wh, ww = self._window_size
+        sh, sw = self._stride
+        H_s, W_s = scaled.shape
+
+        bboxes: list[tuple[float, float, float, float]] = []
+        scores: list[float] = []
+        feats: list[dict] = []
+
+        for y0 in range(0, H_s - wh + 1, sh):
+            for x0 in range(0, W_s - ww + 1, sw):
+                patch = scaled[y0:y0 + wh, x0:x0 + ww]
+                features = self._hog_features(self._normalize_patch(patch))
+                margin = float(self._svm.decision_function(features.reshape(1, -1))[0])
+                if margin < self._score_threshold:
+                    continue
+                bboxes.append((x0 / scale, y0 / scale, ww / scale, wh / scale))
+                scores.append(margin)
+                feats.append({
+                    "svm_margin": margin,
+                    "pyramid_scale": scale,
+                    "max_temp": float(patch.max()),
+                    "mean_temp": float(patch.mean()),
+                    "std_temp": float(patch.std()),
+                })
+        return bboxes, scores, feats
+
     def predict(self, X: Frame) -> list[Detection]:
         if self._svm is None or not self._is_fitted:
             raise RuntimeError("HOGSVMDetector.predict() called before fit().")
         self._validate_shape(X.data)
 
-        wh, ww = self._window_size
-        sh, sw = self._stride
-        H, W = X.data.shape
+        all_bbox: list[tuple[float, float, float, float]] = []
+        all_score: list[float] = []
+        all_feats: list[dict] = []
 
-        candidates_bbox: list[tuple[float, float, float, float]] = []
-        candidates_score: list[float] = []
-        candidates_features: list[dict] = []
+        for scale in self._pyramid_scales:
+            bb, sc, ft = self._predict_at_scale(X.data, scale)
+            all_bbox.extend(bb)
+            all_score.extend(sc)
+            all_feats.extend(ft)
 
-        for y0 in range(0, H - wh + 1, sh):
-            for x0 in range(0, W - ww + 1, sw):
-                patch = X.data[y0:y0 + wh, x0:x0 + ww]
-                features = self._hog_features(self._normalize_patch(patch))
-                margin = float(self._svm.decision_function(features.reshape(1, -1))[0])
-                if margin < self._score_threshold:
-                    continue
-                candidates_bbox.append((float(x0), float(y0), float(ww), float(wh)))
-                candidates_score.append(margin)
-                candidates_features.append({
-                    "svm_margin": margin,
-                    "max_temp": float(patch.max()),
-                    "mean_temp": float(patch.mean()),
-                    "std_temp": float(patch.std()),
-                })
+        keep = _greedy_nms(all_bbox, all_score, self._nms_iou)
 
-        keep = _greedy_nms(candidates_bbox, candidates_score, self._nms_iou)
-
-        detections: list[Detection] = []
-        for i in keep:
-            detections.append(
-                Detection(
-                    bbox=candidates_bbox[i],
-                    score=float(_sigmoid(candidates_score[i])),
-                    class_id=1,
-                    camera_id=X.camera_id,
-                    thermal_features=candidates_features[i],
-                )
+        return [
+            Detection(
+                bbox=all_bbox[i],
+                score=float(_sigmoid(all_score[i])),
+                class_id=1,
+                camera_id=X.camera_id,
+                thermal_features=all_feats[i],
             )
-        return detections
+            for i in keep
+        ]
 
     # ---- Persistence -----------------------------------------------------
 

@@ -57,7 +57,71 @@ import numpy as np
 from thermal_algorithms.core.sensor_profile import SensorProfile
 from thermal_algorithms.core.types import FireAlert, FireLevel, Frame
 from thermal_algorithms.fire_detection.base import FireDetector
-from thermal_algorithms.fire_detection.otsu_utils import extract_blobs, otsu_segment
+
+
+# ---------------------------------------------------------------------------
+# Hot-pixel helpers (§4.4.4 step 1, absolute-threshold path)
+# ---------------------------------------------------------------------------
+
+def _despike(data: np.ndarray, hot_c: float = 100.0) -> np.ndarray:
+    """Replace isolated dead-pixel spikes with their 3×3 neighbourhood median.
+
+    MLX90640 sensors emit occasional single-pixel glitches reading 800–935 °C.
+    A pixel above ``hot_c`` whose neighbourhood median is below ``hot_c`` is an
+    isolated spike (real fire is spatially coherent) and is corrected. Returns
+    the input unchanged when no spike is present.
+    """
+    if not (data > hot_c).any():
+        return data
+    med = cv2.medianBlur(data.astype(np.float32), 3)
+    spike = (data > hot_c) & (med < hot_c)
+    if not spike.any():
+        return data
+    out = data.copy()
+    out[spike] = med[spike]
+    return out
+
+
+def _extract_hot_blobs(data: np.ndarray, t_ign: float) -> list[dict]:
+    """Segment by absolute temperature (``data ≥ t_ign``) and return blobs.
+
+    Unlike :func:`otsu_utils.extract_blobs`, this uses connected-component
+    *pixel counts* for area (so a single hot pixel has area 1, not 0) and does
+    **no** morphological erosion — at MLX90640's 32×24 resolution a genuine fire
+    is frequently a single pixel that erosion would delete. Blobs are sorted by
+    area descending. Each dict matches the schema used by the rule classifier
+    and the Trainer IoU evaluation (``area, max_temp, mean_temp, std_temp,
+    centroid_x, centroid_y, bbox``).
+    """
+    from scipy.stats import skew, kurtosis as kurt
+
+    mask = (data >= t_ign).astype(np.uint8)
+    n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
+
+    blobs: list[dict] = []
+    for lbl in range(1, n_labels):  # skip background label 0
+        area = float(stats[lbl, cv2.CC_STAT_AREA])
+        pixels = data[labels == lbl].astype(np.float64)
+        if pixels.size == 0:
+            continue
+        bx = float(stats[lbl, cv2.CC_STAT_LEFT])
+        by = float(stats[lbl, cv2.CC_STAT_TOP])
+        bw = float(stats[lbl, cv2.CC_STAT_WIDTH])
+        bh = float(stats[lbl, cv2.CC_STAT_HEIGHT])
+        cx, cy = float(centroids[lbl][0]), float(centroids[lbl][1])
+        blobs.append({
+            "area": area,
+            "max_temp": float(pixels.max()),
+            "mean_temp": float(pixels.mean()),
+            "std_temp": float(pixels.std()),
+            "centroid_x": cx,
+            "centroid_y": cy,
+            "skewness": float(skew(pixels)) if pixels.size > 2 and pixels.std() > 1e-6 else 0.0,
+            "kurtosis": float(kurt(pixels)) if pixels.size > 2 and pixels.std() > 1e-6 else 0.0,
+            "bbox": (bx, by, bw, bh),
+        })
+    blobs.sort(key=lambda b: b["area"], reverse=True)
+    return blobs
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +266,7 @@ class OtsuFireDetector(FireDetector):
         For predictable results in sequential processing, call predict() on
         consecutive frames in order. Call reset() when starting a new sequence.
         """
-        data = X.data.astype(np.float32)
+        data = _despike(X.data.astype(np.float32))
         n = self._frame_n
         self._frame_n += 1
 
@@ -219,12 +283,15 @@ class OtsuFireDetector(FireDetector):
                 confidence=1.0,
             )
 
-        # ---- Stage 1b-c: Otsu segmentation + morphological shaping --------
-        mask = otsu_segment(data, self._morph_kernel, self._n_bins)
-
-        # ---- Stage 2: Hierarchical Rule-Based Classifier ------------------
-        blobs = extract_blobs(data, mask)
-        hot_blobs = [b for b in blobs if b["max_temp"] >= self._t_ign]
+        # ---- Stage 1b-c: Absolute hot-pixel segmentation ------------------
+        # Segment directly on `data ≥ t_ign` (connected components, no erosion)
+        # rather than Otsu + morphology. At 32×24 a real fire is often a single
+        # hot pixel: Otsu's global threshold is anchored by warm bodies and the
+        # 1× erosion deletes the fire pixel entirely. The hierarchical
+        # classifier only ever acts on blobs with max_temp ≥ t_ign anyway, so
+        # thresholding at t_ign is both equivalent in intent and recovers the
+        # small/single-pixel fires the morphological path discarded.
+        hot_blobs = _extract_hot_blobs(data, self._t_ign)
 
         ignition_blobs = []
         potential_fire_blobs = []
@@ -261,7 +328,7 @@ class OtsuFireDetector(FireDetector):
         return FireAlert(
             level=FireLevel.SAFE,
             timestamp=X.timestamp,
-            blob_features={"n_blobs_total": float(len(blobs)), "delta_t_frame": delta_t_frame},
+            blob_features={"n_blobs_total": float(len(hot_blobs)), "delta_t_frame": delta_t_frame},
             confidence=1.0,
         )
 

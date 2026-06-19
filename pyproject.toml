@@ -38,6 +38,7 @@ dev = [
     "pytest-cov>=4.1",
     "ruff>=0.1",
     "mypy>=1.6",
+    "openpyxl>=3.1",   # reading labels.xlsx in scripts/check_label_agreement.py
 ]
 
 [tool.setuptools.packages.find]
