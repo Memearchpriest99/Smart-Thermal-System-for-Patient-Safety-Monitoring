@@ -8,37 +8,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Students: Guy Chen, Yaniv Blau, Roy Lieberman. Supervisor: Or Zilberberg. Advisor: Dr. Oshrit Hoffer (Afeka College of Engineering, Tel-Aviv).
 
-**Current phase:** Dataset annotation (YOLO format). Algorithms and training infrastructure are complete; awaiting labeled data to train ML models and run §5.3 benchmarks.
+**Current phase:** Active evaluation on the **Waveshare** dataset. A labeled dataset exists at `datasets/waveshare_work`; the `scripts/` directory holds the benchmark campaign — human / fire / contact detectors are trained and tuned, with results written to `reports/` (JSON + LaTeX/PDF). The contact pipeline is the most active area (versioned `eval_waveshare_contact_v3..v10`). The §5.3 report tables are now Waveshare-based, so **`WAVESHARE_26984` (80×62) is the primary working profile**; `MLX90640` (32×24) is retained as the original target hardware.
 
 ---
 
 ## Commands
 
 ```bash
-# Run the full working test suite (skimage / torch tests are gated separately)
-python -m pytest tests/test_types.py tests/test_sensor_profile.py tests/test_base.py \
-  tests/test_checkpoints.py tests/test_tateno_pipeline.py tests/test_otsu_pipeline.py \
-  tests/test_fire_svm.py tests/test_contact_multiview.py tests/test_contact_geometric.py \
-  tests/test_contact_mv_stgcn.py tests/test_contact_thermo_x3d.py tests/test_metrics.py \
-  tests/test_label_io_extended.py tests/test_fire_contact_datasets.py \
-  tests/test_trainer.py tests/test_pipeline.py
+# Install (editable, with dev tools: pytest, pytest-cov, ruff, mypy, openpyxl)
+pip install -e ".[dev]"
 
-# Run a single test file
+# Run the full test suite (skimage / torch tests auto-skip if those deps are missing)
+python -m pytest                         # 460 tests across 21 files
+
+# Run a single test file / single test
 python -m pytest tests/test_pipeline.py -v
-
-# Run a single test by name
 python -m pytest tests/test_pipeline.py::TestRestrictedAreaPath::test_human_detected_triggers_alert -v
 
-# Run demo scripts (require dataset at /sessions/magical-youthful-euler/mnt/dataset;
-# all fall back to synthetic data automatically when the path is missing)
+# Lint + typecheck (config in pyproject.toml: line-length 100, target py310)
+ruff check .
+mypy thermal_algorithms
+
+# Demo scripts — all fall back to synthetic data automatically when no dataset is present
+python examples/demo_pipeline.py
 python examples/demo_fire_detection.py
 python examples/demo_contact_geometric.py
-python examples/demo_pipeline.py
+
+# Re-run a benchmark (reads datasets/waveshare_work, writes reports/<name>_results.json)
+python scripts/eval_waveshare_human.py
+python scripts/eval_waveshare_fire.py
+python scripts/eval_waveshare_contact_v10.py
 ```
 
-**Tests that require optional deps (skip if not installed):**
+**Tests requiring optional deps (auto-skipped via `pytest.importorskip`):**
 - `tests/test_adaptive_threshold.py`, `tests/test_hog_svm.py` — require `scikit-image`
-- `tests/test_mobilenet_ssd.py`, `tests/test_contact_mv_stgcn.py`, `tests/test_contact_thermo_x3d.py` — require `torch` (auto-skipped via `pytest.importorskip`)
+- `tests/test_mobilenet_ssd.py`, `tests/test_contact_mv_stgcn.py`, `tests/test_contact_thermo_x3d.py` — require `torch`
 
 ---
 
@@ -59,8 +63,21 @@ thermal_algorithms/
 
 examples/               demo scripts (all fall back to synthetic data)
   utils.py              shared helpers: load_frames, find_session, make_synthetic_homographies
-tests/                  one file per module; 363 tests passing
+scripts/                applied-research workflow: dataset prep, benchmarks, plots (see below)
+image_annotator/        Tkinter YOLO annotation tool for the Waveshare dataset (own CLAUDE.md)
+reports/                benchmark outputs — *_results.json + *_report.{tex,pdf}
+tests/                  one file per module; 460 tests across 21 files
 ```
+
+### The `scripts/` workflow (where most current work happens)
+
+`scripts/` is the applied-research layer that consumes the `thermal_algorithms` package against the real dataset. Conventions:
+
+- **Dataset root** is `datasets/waveshare_work` (git-ignored, "layout B": one dir per *scene*, with `chN_frames/`, `chN_raw_data.npz`, YOLO `.txt`, and `contact_labels.csv`). Scripts add the repo root to `sys.path` and load via `DatasetIndex(root, sensor_profile=WAVESHARE_26984)`.
+- **`eval_waveshare_*`** scripts run a detector end-to-end on the dataset, print a readable table, and dump `reports/<name>_results.json`. The `*.tex`/`*.pdf` reports in `reports/` are the figures/tables for §5.3.
+- **Contact eval is versioned** (`eval_waveshare_contact`, then `_v3_variants` … `_v10`). Later versions **import earlier ones as modules** (e.g. `v10` imports `geo`, `vv`, `v8`) to reuse split logic and helpers — don't rename or break the public functions/constants in an earlier version without checking who imports it.
+- **`reorganize_*`, `consolidate_*`, `fix_*`, `reconcile_*`, `truncate_*`** are one-shot dataset-maintenance scripts. **`plot_*`** and **`visualize_*`** generate report figures.
+- **`empty_room` / `calibrate_room`** scenes are special: empty frames calibrate the per-channel Tateno background (and supply true negatives); `calibrate_room` drives homography self-calibration. Keep calibration and evaluation frames disjoint — scripts split sequentially (no temporal leakage).
 
 ### The universal base contract
 
@@ -100,8 +117,9 @@ Only annotated frames appear; missing frames are excluded from training.
 ### The training stack
 
 ```python
-# Typical evaluation flow matching §5.3 report tables
-index  = DatasetIndex("data/", sensor_profile=MLX90640)
+# Typical evaluation flow matching §5.3 report tables.
+# The real, worked-out versions of this live in scripts/eval_waveshare_*.py.
+index  = DatasetIndex("datasets/waveshare_work", sensor_profile=WAVESHARE_26984)
 
 # Human detection — FrameLevelDataset with class_filter=[PERSON_CLASS_ID]
 # Fire detection  — FireFrameDataset (wraps YOLO class 0, produces FireAlert)
@@ -168,7 +186,9 @@ checkpoints/<algorithm_name>/_default.thalg   # invariant algorithms
 
 ---
 
-## What requires data before it works
+## Detector training / calibration inputs
+
+(The Waveshare dataset now satisfies most of these; this is the reference for what each detector's `fit()`/calibration consumes.)
 
 - **FireSVMDetector.fit()** — needs `FireFrameDataset` with annotated fire frames
 - **HOGSVMDetector.fit()** — needs `FrameLevelDataset` with person bbox labels
@@ -182,5 +202,5 @@ checkpoints/<algorithm_name>/_default.thalg   # invariant algorithms
 ## Key open items
 
 1. **Threshold calibration** — `OtsuFireDetector` defaults: `t_ign=45°C`, `t_fire=60°C`, `a_limit≈3%` of frame. These were derived from initial EDA and will need validation against the full dataset.
-2. **Homography for contact detection** — synthetic homographies are used in all demos; real H matrices require the on-site Hot-Point Calibration procedure.
+2. **Homography for contact detection** — demos still use synthetic homographies. For real data there are now two routes: `multi_view/homography.calibrate_floor_homographies_from_tracks` (RANSAC+DLT self-calibration from the shared `calibrate_room` track — ε/δ end up in cam0 floor-pixel units, not metres) and the annotator's manual `🎯 Homography Calibration` dialog (writes `homography_calibration.npz` with `h1/h2/h3`). The on-site metric Hot-Point Calibration is still the gold standard.
 3. **Restricted area zones** — the pipeline supports `restricted=True/False` globally; per-camera restriction or floor-polygon containment checks are not yet implemented.

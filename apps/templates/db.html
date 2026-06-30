@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ward Watcher — Database</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/db.css') }}" />
+</head>
+<body>
+
+<header>
+  <a href="/" class="back-btn">← Dashboard</a>
+  <h1>Database Manager</h1>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="alerts">Alerts</button>
+    <button class="tab-btn" data-tab="dismiss-log">Dismiss Log</button>
+  </div>
+
+  <!-- Alerts tab -->
+  <div id="tab-alerts" class="tab-panel active">
+    <div class="toolbar">
+      <span class="toolbar-title">All Alert Records</span>
+      <button class="btn btn-primary" id="add-alert-btn">+ Add Alert</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Room</th>
+            <th>Timestamp</th>
+            <th>Status</th>
+            <th>Dismissed At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="alerts-body">
+          <tr class="empty-row"><td colspan="7">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Dismiss log tab -->
+  <div id="tab-dismiss-log" class="tab-panel">
+    <div class="toolbar">
+      <span class="toolbar-title">Dismiss Audit Log</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Log ID</th>
+            <th>Alert ID</th>
+            <th>Type</th>
+            <th>Room</th>
+            <th>Dismissed At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="log-body">
+          <tr class="empty-row"><td colspan="6">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Add / Edit modal -->
+<div class="modal-bg" id="alert-modal">
+  <div class="modal">
+    <h2 id="modal-title">Add Alert</h2>
+    <input type="hidden" id="modal-alert-id" />
+
+    <div class="form-group">
+      <label for="f-type">Alert Type</label>
+      <select id="f-type">
+        <option value="fire">Fire</option>
+        <option value="unauthorized_presence">Unauthorized Presence</option>
+        <option value="unauthorized_touch">Unauthorized Touch</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="f-room">Room ID</label>
+        <input type="number" id="f-room" value="1" min="1" />
+      </div>
+      <div class="form-group">
+        <label for="f-ts">Timestamp</label>
+        <input type="datetime-local" id="f-ts" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="f-status">Status</label>
+      <select id="f-status">
+        <option value="0">Active</option>
+        <option value="1">Dismissed</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="f-dismissed-wrap">
+      <label for="f-dismissed-at">Dismissed At</label>
+      <input type="datetime-local" id="f-dismissed-at" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/db.js') }}"></script>
+</body>
+</html>

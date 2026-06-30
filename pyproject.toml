@@ -40,6 +40,15 @@ dev = [
     "mypy>=1.6",
     "openpyxl>=3.1",   # reading labels.xlsx in scripts/check_label_agreement.py
 ]
+# Live operator app (apps/live_monitor). PyQt6 desktop UI + 3-D room view.
+# pysenxor-lite is the Raspberry Pi MI48/Waveshare camera driver (imported
+# lazily; only needed on-device for --source senxor).
+live = [
+    "PyQt6>=6.5",
+    "pyqtgraph>=0.13",
+    "PyOpenGL>=3.1",
+    "pysenxor-lite>=0.1",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
