@@ -1,0 +1,50 @@
+{
+  "A  Tateno SSD + residual blob": {
+    "params": {
+      "l_open": 3,
+      "l_close": 2
+    },
+    "test": {
+      "prec": 0.5833333333333334,
+      "rec": 0.5121951219512195,
+      "f1": 0.5454545454545454,
+      "far": 0.022935779816513763,
+      "tp": 21,
+      "tn": 639,
+      "fp": 15,
+      "fn": 20
+    }
+  },
+  "B  Tateno SSD + raw-temp blob": {
+    "params": {
+      "l_open": 0,
+      "l_close": 7
+    },
+    "test": {
+      "prec": 0.4,
+      "rec": 0.04878048780487805,
+      "f1": 0.08695652173913045,
+      "far": 0.0045871559633027525,
+      "tp": 2,
+      "tn": 651,
+      "fp": 3,
+      "fn": 39
+    }
+  },
+  "C  raw SSD + raw-temp blob": {
+    "params": {
+      "l_open": 2,
+      "l_close": 0
+    },
+    "test": {
+      "prec": 0.0,
+      "rec": 0.0,
+      "f1": 0.0,
+      "far": 0.0,
+      "tp": 0,
+      "tn": 654,
+      "fp": 0,
+      "fn": 41
+    }
+  }
+}

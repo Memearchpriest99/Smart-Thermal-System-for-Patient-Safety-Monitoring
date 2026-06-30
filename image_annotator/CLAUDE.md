@@ -9,7 +9,7 @@ A single-file Tkinter tool (`annotator.py`, one class `ImageAnnotator`) for
 drawing YOLO bounding boxes across the three thermal camera channels of the
 Smart Thermal System dataset. It is a rebuild of the original MLX90640-era
 annotator, kept visually identical, fitted to the reorganized Waveshare layout
-and with four additions (see below).
+and with five additions (see below).
 
 It expects the on-disk layout produced by
 `../scripts/reorganize_waveshare.py`:
@@ -107,6 +107,25 @@ space (`sx = orig_w/80`, `sy = orig_h/62`).
    `fire` from any class-0 box; `touch` replicated across the 3 channel rows.
 4. **Auto contact CSV** — `export_labels` also writes per-session
    `contact_labels.csv` (`frame_idx,contact`) read by the training stack.
+5. **Manual top-down homography calibration** (`🎯 Homography Calibration`
+   button → `HomographyCalibrationDialog`). The user never types a floor
+   coordinate. They click **matching points** (the same physical floor spot in
+   each camera): the 4 corners of a floor **rectangle** in order TL→TR→BR→BL,
+   plus any extra matching points. The rectangle's entered W×H (real cm/m →
+   metric plane; else a bare ratio → correct overhead geometry) gives the 4
+   corners canonical floor coords `TL=(0,0), TR=(w,0), BR=(w,h), BL=(0,h)`.
+   A chosen **reference camera** (must see all 4 corners) is rectified to that
+   plane via `solve_homography_from_markers`; every extra point the reference
+   also saw is `project_foot_point`-ed through `H_ref` to *compute* its floor
+   coord — not typed. Each camera is then fit to that one shared floor plane
+   (≥ 4 floor points each; otherwise skipped with identity fallback). Clicks are
+   stored in **thermal-pixel space** (the space the contact detector's
+   foot-points live in, per `multi_view/fusion.py`), not display space. Saves
+   `homography_calibration.npz` (`h1/h2/h3`, `world_positions`, `pairs_camN`,
+   `rect_wh`, `ref_camera`) into the session dir — `h1/h2/h3` match the format
+   of `examples/calibrate_homography.py`, so the contact stack loads it
+   unchanged:
+   `cal = np.load(...); HomographyMatrices(h1=cal['h1'], h2=cal['h2'], h3=cal['h3'])`.
 
 ### Recommender tuning
 

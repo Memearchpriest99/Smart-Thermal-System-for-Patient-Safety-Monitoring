@@ -63,6 +63,18 @@ except Exception as _exc:  # pragma: no cover
     print(f"[annotator] person recommender disabled (import failed): {_exc}")
     _HAVE_PIPELINE = False
 
+# Homography solver is pure NumPy (no cv2), so import it independently of the
+# person pipeline — manual calibration should work even if opencv is missing.
+try:
+    from thermal_algorithms.contact_detection.multi_view.homography import (
+        solve_homography_from_markers,
+        project_foot_point,
+    )
+    _HAVE_HOMOGRAPHY = True
+except Exception as _exc:  # pragma: no cover
+    print(f"[annotator] homography calibration disabled (import failed): {_exc}")
+    _HAVE_HOMOGRAPHY = False
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -429,6 +441,537 @@ class ClassSelectionDialog(tk.Toplevel):
 
 
 # ---------------------------------------------------------------------------
+# Homography Calibration Dialog
+# ---------------------------------------------------------------------------
+class HomographyCalibrationDialog(tk.Toplevel):
+    """Manual top-down (bird's-eye) homography calibration (§ 4.4.3.1, GUI).
+
+    The user never types a floor coordinate. Instead they click *matching
+    points* — the same physical floor location seen in each camera — and the
+    software computes the transform to a true overhead floor plane.
+
+    Workflow
+    --------
+    1. Enter the floor **rectangle**'s width × height (any unit; real cm/m makes
+       the plane metric, otherwise a bare ratio like ``2 × 1`` still yields
+       correct overhead geometry).
+    2. Click the rectangle's 4 corners — **TL → TR → BR → BL** — in each camera,
+       plus any number of extra matching points. These 4 corners define the
+       floor coordinate frame; the extras improve the fit.
+    3. *Solve & Save*:
+         • The 4 corners get canonical floor coords ``TL=(0,0)``, ``TR=(w,0)``,
+           ``BR=(w,h)``, ``BL=(0,h)`` → the **reference** camera's rectifying
+           homography ``H_ref`` (image → top-down floor).
+         • Every extra point the reference camera also saw is projected through
+           ``H_ref`` to obtain its floor coordinate — computed, not typed.
+         • Each camera is then fit (DLT+SVD, ``solve_homography_from_markers``)
+           to that same floor plane using whichever of those floor points it saw
+           (≥ 4 needed). All cameras share one overhead plane.
+       The result is written to ``homography_calibration.npz`` in the session
+       directory, in the same format as ``examples/calibrate_homography.py`` so
+       the contact-detection stack loads it unchanged.
+
+    Coordinate spaces
+    -----------------
+    Clicks are stored in **thermal pixel** coordinates (the native (H, W) °C
+    grid) — the space the contact detector's foot-points live in
+    (``fusion.project_foot_point(det.foot_point, H)``). The on-screen canvas is
+    a fixed integer upscale of that grid, so canvas→thermal is a plain divide.
+    """
+
+    DISP_SCALE = 5          # canvas px per thermal px
+    MARK_COLOR = "#00e5ff"
+    MARK_ACTIVE = "#ffea00"
+    CORNER_LABELS = ["TL", "TR", "BR", "BL"]   # click order; defines the frame
+    N_CORNERS = 4
+
+    def __init__(self, parent: "tk.Tk", app: "ImageAnnotator") -> None:
+        super().__init__(parent)
+        self.app = app
+        self.title("Homography Calibration — top-down floor")
+        self.configure(bg="#1e1e1e")
+        self.grab_set()
+
+        # Cameras that have both images and a thermal cube loaded.
+        self.slots: list[int] = [
+            v.slot for v in app.views if v.loaded and v.thermal is not None
+        ]
+        self.frame_idx: int = app._master_index() or 0
+
+        # Matching points: indices 0..3 are the rectangle corners (fixed),
+        # 4.. are extra points. ``clicks[slot][point_index] = (u, v)`` thermal px.
+        self.point_labels: list[str] = list(self.CORNER_LABELS)
+        self.clicks: dict[int, dict[int, tuple[float, float]]] = {
+            s: {} for s in self.slots
+        }
+        self.active_point: int | None = None
+
+        # Display options (mirrors the main window): optional Gaussian filter and
+        # a read-only overlay of the boxes already drawn for this frame.
+        self._use_gaussian = tk.BooleanVar(
+            value=app.display_mode_var.get() == "gaussian")
+        self._sigma_var = tk.StringVar(value=app.gaussian_sigma_var.get())
+        self._show_boxes = tk.BooleanVar(value=True)
+
+        self.canvases: dict[int, tk.Canvas] = {}
+        self.count_vars: dict[int, tk.StringVar] = {}
+        self._photo: dict[int, ImageTk.PhotoImage] = {}
+
+        self._build()
+        self._refresh_points_box(select=0)
+        self._render_all()
+
+        self.update_idletasks()
+        px, py = parent.winfo_x(), parent.winfo_y()
+        self.geometry(f"+{px + 40}+{py + 40}")
+
+    # ── construction ────────────────────────────────────────────────────────
+    def _build(self) -> None:
+        BG, FG = "#1e1e1e", "white"
+
+        tk.Label(
+            self,
+            text="Click the 4 floor-rectangle corners (TL→TR→BR→BL) in each "
+                 "camera, plus any extra matching points. The software computes "
+                 "the top-down floor transform — you only type the rectangle size.",
+            bg=BG, fg="#aaaaaa", font=("Segoe UI", 9), justify=tk.LEFT,
+            wraplength=900,
+        ).pack(anchor="w", padx=12, pady=(10, 6))
+
+        body = tk.Frame(self, bg=BG)
+        body.pack(fill=tk.BOTH, expand=True, padx=12)
+
+        # ── Left: rectangle, reference, matching-point list ──────────────────
+        left = tk.Frame(body, bg=BG)
+        left.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 12))
+
+        tk.Label(left, text="FLOOR RECTANGLE", font=("Segoe UI", 7),
+                 fg="#666", bg=BG).pack(anchor="w")
+        rect_row = tk.Frame(left, bg=BG)
+        rect_row.pack(fill=tk.X, pady=(2, 0))
+        tk.Label(rect_row, text="W", bg=BG, fg="#aaa",
+                 font=("Segoe UI", 9)).pack(side=tk.LEFT)
+        self._w_var = tk.StringVar(value="1")
+        tk.Entry(rect_row, textvariable=self._w_var, width=6, bg="#3c3c3c",
+                 fg="white", insertbackground="white", relief=tk.FLAT,
+                 justify=tk.CENTER).pack(side=tk.LEFT, padx=(2, 6))
+        tk.Label(rect_row, text="× H", bg=BG, fg="#aaa",
+                 font=("Segoe UI", 9)).pack(side=tk.LEFT)
+        self._h_var = tk.StringVar(value="1")
+        tk.Entry(rect_row, textvariable=self._h_var, width=6, bg="#3c3c3c",
+                 fg="white", insertbackground="white", relief=tk.FLAT,
+                 justify=tk.CENTER).pack(side=tk.LEFT, padx=(2, 0))
+        tk.Label(left, text="real cm/m → metric; else any ratio",
+                 bg=BG, fg="#666", font=("Segoe UI", 7)).pack(anchor="w")
+
+        tk.Label(left, text="REFERENCE CAMERA", font=("Segoe UI", 7),
+                 fg="#666", bg=BG).pack(anchor="w", pady=(8, 0))
+        self._ref_var = tk.StringVar(value=CHAN_NAMES[self.slots[0]])
+        ref_om = tk.OptionMenu(left, self._ref_var,
+                               *[CHAN_NAMES[s] for s in self.slots])
+        ref_om.config(bg="#3c3c3c", fg="white", activebackground="#555",
+                      relief=tk.FLAT, font=("Segoe UI", 9), anchor="w",
+                      highlightthickness=0)
+        ref_om["menu"].config(bg="#3c3c3c", fg="white",
+                              activebackground="#094771")
+        ref_om.pack(fill=tk.X, pady=(2, 0))
+        tk.Label(left, text="must see all 4 corners; defines the plane",
+                 bg=BG, fg="#666", font=("Segoe UI", 7)).pack(anchor="w")
+
+        tk.Label(left, text="MATCHING POINTS", font=("Segoe UI", 7),
+                 fg="#666", bg=BG).pack(anchor="w", pady=(8, 0))
+        self._points_box = tk.Listbox(
+            left, height=12, width=24, bg="#1e1e1e", fg="#cccccc",
+            font=("Consolas", 9), selectbackground="#094771",
+            activestyle="none", relief=tk.FLAT, exportselection=False,
+            highlightthickness=1, highlightbackground="#444",
+        )
+        self._points_box.pack(fill=tk.Y, expand=True, pady=(2, 4))
+        self._points_box.bind("<<ListboxSelect>>", self._on_point_select)
+
+        btn_row = tk.Frame(left, bg=BG)
+        btn_row.pack(fill=tk.X)
+        tk.Button(btn_row, text="+ Extra point", command=self._add_point,
+                  bg="#0e639c", fg="white", activebackground="#1177bb",
+                  relief=tk.FLAT, padx=6, pady=4).pack(
+                      side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+        tk.Button(btn_row, text="🗑 Remove", command=self._remove_point,
+                  bg="#8b1a1a", fg="white", activebackground="#aa2020",
+                  relief=tk.FLAT, padx=6, pady=4).pack(
+                      side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
+
+        # ── Right: camera canvases + frame nav ───────────────────────────────
+        right = tk.Frame(body, bg=BG)
+        right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        nav = tk.Frame(right, bg=BG)
+        nav.pack(fill=tk.X, pady=(0, 4))
+        tk.Button(nav, text="◀ Prev", command=lambda: self._step(-1),
+                  bg="#3c3c3c", fg="white", activebackground="#555",
+                  relief=tk.FLAT, padx=8, pady=2).pack(side=tk.LEFT)
+        tk.Button(nav, text="Next ▶", command=lambda: self._step(+1),
+                  bg="#3c3c3c", fg="white", activebackground="#555",
+                  relief=tk.FLAT, padx=8, pady=2).pack(side=tk.LEFT, padx=(4, 8))
+        self._frame_var = tk.StringVar()
+        tk.Label(nav, textvariable=self._frame_var, bg=BG, fg="#aaa",
+                 font=("Segoe UI", 8)).pack(side=tk.LEFT)
+
+        # Display options — Gaussian filter + read-only annotation overlay.
+        tk.Checkbutton(
+            nav, text="Gaussian σ", variable=self._use_gaussian,
+            command=self._render_all, bg=BG, fg="white",
+            activebackground=BG, activeforeground="white", selectcolor="#3c3c3c",
+            font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(12, 0))
+        sigma_entry = tk.Entry(nav, textvariable=self._sigma_var, width=4,
+                               bg="#3c3c3c", fg="white", insertbackground="white",
+                               relief=tk.FLAT, justify=tk.CENTER,
+                               font=("Segoe UI", 8))
+        sigma_entry.pack(side=tk.LEFT, padx=(4, 0))
+        sigma_entry.bind("<Return>", lambda _: self._render_all())
+        tk.Checkbutton(
+            nav, text="Show boxes", variable=self._show_boxes,
+            command=self._render_all, bg=BG, fg="white",
+            activebackground=BG, activeforeground="white", selectcolor="#3c3c3c",
+            font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(8, 0))
+
+        tk.Label(nav, text="left-click: place selected point • right-click: clear",
+                 bg=BG, fg="#666", font=("Segoe UI", 8)).pack(side=tk.RIGHT)
+
+        cams = tk.Frame(right, bg=BG)
+        cams.pack(fill=tk.BOTH, expand=True)
+        for slot in self.slots:
+            col = tk.Frame(cams, bg="#111")
+            col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=2)
+            tk.Label(col, text=CHAN_NAMES[slot], bg="#2a2a2a",
+                     fg=CAM_ACCENT[slot], font=("Segoe UI", 8, "bold"),
+                     anchor="w", padx=6).pack(fill=tk.X)
+            frame = self.app.views[slot].thermal[self.frame_idx]
+            th_h, th_w = frame.shape
+            canvas = tk.Canvas(
+                col, bg="#2d2d2d", cursor="crosshair", highlightthickness=1,
+                highlightbackground="#444",
+                width=th_w * self.DISP_SCALE, height=th_h * self.DISP_SCALE,
+            )
+            canvas.pack()
+            canvas.bind("<ButtonPress-1>",
+                        lambda e, s=slot: self._on_canvas_click(e, s))
+            canvas.bind("<ButtonPress-3>",
+                        lambda e, s=slot: self._on_canvas_clear(e, s))
+            self.canvases[slot] = canvas
+            cv = tk.StringVar(value="0 points")
+            self.count_vars[slot] = cv
+            tk.Label(col, textvariable=cv, bg="#111", fg="#888",
+                     font=("Segoe UI", 8)).pack(fill=tk.X)
+
+        # ── Bottom: solve / save + status ────────────────────────────────────
+        tk.Frame(self, height=1, bg="#444").pack(fill=tk.X, pady=(8, 0))
+        bottom = tk.Frame(self, bg="#2a2a2a")
+        bottom.pack(fill=tk.X)
+        self._status_var = tk.StringVar(
+            value="Click the 4 corners (≥ in the reference camera) + extras, "
+                  "then Solve & Save.")
+        tk.Label(bottom, textvariable=self._status_var, bg="#2a2a2a",
+                 fg="#aaaaaa", font=("Segoe UI", 8), justify=tk.LEFT,
+                 wraplength=560).pack(side=tk.LEFT, padx=12, pady=8)
+        tk.Button(bottom, text="Close", command=self.destroy,
+                  bg="#3c3c3c", fg="white", activebackground="#555",
+                  relief=tk.FLAT, padx=14, pady=8).pack(
+                      side=tk.RIGHT, padx=(4, 12), pady=8)
+        tk.Button(bottom, text="💾  Solve & Save", command=self._solve_and_save,
+                  bg="#2d7d2d", fg="white", activebackground="#3a9a3a",
+                  font=("Segoe UI", 9, "bold"), relief=tk.FLAT,
+                  padx=14, pady=8).pack(side=tk.RIGHT, pady=8)
+
+    # ── helpers ──────────────────────────────────────────────────────────────
+    def _ref_slot(self) -> int:
+        """The slot index of the camera currently chosen as reference."""
+        name = self._ref_var.get()
+        for s in self.slots:
+            if CHAN_NAMES[s] == name:
+                return s
+        return self.slots[0]
+
+    def _cam_count(self, pi: int) -> int:
+        """How many cameras have a click for matching point ``pi``."""
+        return sum(1 for s in self.slots if pi in self.clicks[s])
+
+    # ── matching-point list ───────────────────────────────────────────────────
+    def _add_point(self) -> None:
+        n_extra = len(self.point_labels) - self.N_CORNERS + 1
+        self.point_labels.append(f"E{n_extra}")
+        self._refresh_points_box(select=len(self.point_labels) - 1)
+
+    def _remove_point(self) -> None:
+        idx = self.active_point
+        if idx is None or idx < self.N_CORNERS:
+            self._status_var.set("Only extra points can be removed "
+                                 "(the 4 corners are fixed).")
+            return
+        self.point_labels.pop(idx)
+        # Drop this point's clicks and renumber higher indices down by one.
+        for slot in self.slots:
+            new: dict[int, tuple[float, float]] = {}
+            for pi, uv in self.clicks[slot].items():
+                if pi == idx:
+                    continue
+                new[pi - 1 if pi > idx else pi] = uv
+            self.clicks[slot] = new
+        # Re-label extras so they stay E1, E2, ... in order.
+        for j in range(self.N_CORNERS, len(self.point_labels)):
+            self.point_labels[j] = f"E{j - self.N_CORNERS + 1}"
+        self.active_point = None
+        self._refresh_points_box()
+        self._render_all()
+
+    def _refresh_points_box(self, *, select: int | None = None) -> None:
+        self._points_box.delete(0, tk.END)
+        for i, lbl in enumerate(self.point_labels):
+            kind = "corner" if i < self.N_CORNERS else "extra "
+            self._points_box.insert(
+                tk.END, f"{lbl:<3} {kind} · {self._cam_count(i)} cam")
+        if select is not None and 0 <= select < len(self.point_labels):
+            self._points_box.selection_clear(0, tk.END)
+            self._points_box.selection_set(select)
+            self.active_point = select
+        self._update_counts()
+
+    def _on_point_select(self, _: "tk.Event") -> None:
+        sel = self._points_box.curselection()
+        self.active_point = sel[0] if sel else None
+        self._render_all()
+
+    # ── frame navigation ─────────────────────────────────────────────────────
+    def _step(self, delta: int) -> None:
+        n = min(len(self.app.views[s].thermal) for s in self.slots)
+        self.frame_idx = (self.frame_idx + delta) % n
+        self._render_all()
+
+    # ── canvas clicks ────────────────────────────────────────────────────────
+    def _on_canvas_click(self, event: "tk.Event", slot: int) -> None:
+        if self.active_point is None:
+            self._status_var.set("Select a matching point first (left list).")
+            return
+        frame = self.app.views[slot].thermal[self.frame_idx]
+        th_h, th_w = frame.shape
+        u = max(0.0, min(event.x / self.DISP_SCALE, float(th_w)))
+        v = max(0.0, min(event.y / self.DISP_SCALE, float(th_h)))
+        self.clicks[slot][self.active_point] = (u, v)
+        self._render_view(slot)
+        self._refresh_points_box(select=self.active_point)
+
+    def _on_canvas_clear(self, event: "tk.Event", slot: int) -> None:
+        if self.active_point is None:
+            return
+        self.clicks[slot].pop(self.active_point, None)
+        self._render_view(slot)
+        self._refresh_points_box(select=self.active_point)
+
+    def _update_counts(self) -> None:
+        for slot in self.slots:
+            n = len(self.clicks[slot])
+            mark = "✓" if n >= 4 else " "
+            self.count_vars[slot].set(f"{mark} {n} point(s)")
+        self._frame_var.set(
+            f"frame {self.frame_idx + 1} / "
+            f"{min(len(self.app.views[s].thermal) for s in self.slots)}")
+
+    # ── rendering ────────────────────────────────────────────────────────────
+    def _render_all(self) -> None:
+        for slot in self.slots:
+            self._render_view(slot)
+        self._update_counts()
+
+    def _dlg_sigma(self) -> float:
+        try:
+            s = float(self._sigma_var.get())
+            return s if s > 0 else DEFAULT_GAUSSIAN_SIGMA
+        except (ValueError, tk.TclError):
+            return DEFAULT_GAUSSIAN_SIGMA
+
+    def _frame_boxes(self, slot: int) -> list[tuple]:
+        """Read-only boxes for this slot's current frame, as normalised
+        ``(cid, nx1, ny1, nx2, ny2)``.
+
+        Prefers the main window's in-memory annotations (reflects unsaved
+        edits); otherwise reads the YOLO ``.txt`` from disk.
+        """
+        view = self.app.views[slot]
+        if self.frame_idx >= len(view.image_paths):
+            return []
+        path = view.image_paths[self.frame_idx]
+        if path in view.annotations:
+            ow, oh = self.app._cur_res
+            return [
+                (cid, x1 / ow, y1 / oh, x2 / ow, y2 / oh)
+                for cid, x1, y1, x2, y2 in view.annotations[path]
+            ]
+        txt = os.path.splitext(path)[0] + ".txt"
+        boxes: list[tuple] = []
+        if os.path.isfile(txt):
+            try:
+                with open(txt, encoding="utf-8") as f:
+                    for line in f:
+                        parts = line.split()
+                        if len(parts) != 5:
+                            continue
+                        cid = int(parts[0])
+                        xc, yc, bw, bh = map(float, parts[1:])
+                        boxes.append((cid, xc - bw / 2, yc - bh / 2,
+                                      xc + bw / 2, yc + bh / 2))
+            except Exception:
+                pass
+        return boxes
+
+    def _render_view(self, slot: int) -> None:
+        canvas = self.canvases[slot]
+        frame = self.app.views[slot].thermal[self.frame_idx]
+        th_h, th_w = frame.shape
+        cw, ch = th_w * self.DISP_SCALE, th_h * self.DISP_SCALE
+        shown = (_gaussian_blur(frame, self._dlg_sigma())
+                 if self._use_gaussian.get() else frame)
+        disp = render_thermal_frame(shown, cw, ch)
+        self._photo[slot] = ImageTk.PhotoImage(disp)
+        canvas.delete("all")
+        canvas.create_image(0, 0, anchor=tk.NW, image=self._photo[slot])
+
+        # Read-only annotation overlay (boxes the user already drew).
+        if self._show_boxes.get():
+            for cid, nx1, ny1, nx2, ny2 in self._frame_boxes(slot):
+                color = CLASS_COLORS[cid % len(CLASS_COLORS)]
+                bx1, by1 = nx1 * cw, ny1 * ch
+                bx2, by2 = nx2 * cw, ny2 * ch
+                canvas.create_rectangle(bx1, by1, bx2, by2,
+                                        outline=color, width=2)
+                lbl = (self.app.class_names[cid]
+                       if 0 <= cid < len(self.app.class_names) else str(cid))
+                canvas.create_text(bx1 + 2, by1 + 6, anchor=tk.W, text=lbl,
+                                   fill=color, font=("Segoe UI", 7, "bold"))
+
+        for pi, (u, v) in self.clicks[slot].items():
+            cx, cy = u * self.DISP_SCALE, v * self.DISP_SCALE
+            active = pi == self.active_point
+            col = self.MARK_ACTIVE if active else self.MARK_COLOR
+            r = 6
+            canvas.create_line(cx - r, cy, cx + r, cy, fill=col, width=2)
+            canvas.create_line(cx, cy - r, cx, cy + r, fill=col, width=2)
+            lbl = (self.point_labels[pi] if pi < len(self.point_labels)
+                   else str(pi))
+            canvas.create_text(cx + r + 2, cy - r, anchor=tk.W,
+                               text=lbl, fill=col,
+                               font=("Segoe UI", 8, "bold"))
+
+    # ── solve + save ─────────────────────────────────────────────────────────
+    def _solve_and_save(self) -> None:
+        if not self.app.father_dir:
+            self._status_var.set("No dataset directory — cannot save.")
+            return
+
+        try:
+            w = float(self._w_var.get())
+            h = float(self._h_var.get())
+            if w <= 0 or h <= 0:
+                raise ValueError
+        except ValueError:
+            self._status_var.set("Enter a positive rectangle width and height.")
+            return
+
+        ref = self._ref_slot()
+        ref_clicks = self.clicks[ref]
+        if not all(i in ref_clicks for i in range(self.N_CORNERS)):
+            self._status_var.set(
+                f"Reference camera {CHAN_NAMES[ref]} must have all 4 corners "
+                "(TL, TR, BR, BL) clicked.")
+            return
+
+        # Canonical floor coordinates for the rectangle corners.
+        floor: dict[int, tuple[float, float]] = {
+            0: (0.0, 0.0), 1: (w, 0.0), 2: (w, h), 3: (0.0, h),
+        }
+
+        # Reference camera's rectifying homography (image -> top-down floor).
+        try:
+            ref_pairs = [(ref_clicks[i], floor[i]) for i in range(self.N_CORNERS)]
+            H_ref = solve_homography_from_markers([(ref, ref_pairs)])[ref]
+        except Exception as exc:
+            self._status_var.set(f"Reference solve failed: {exc} "
+                                 "(are the 4 corners non-collinear?)")
+            return
+
+        # Extra points seen by the reference camera get a computed floor coord.
+        for pi in range(self.N_CORNERS, len(self.point_labels)):
+            if pi in ref_clicks:
+                floor[pi] = project_foot_point(ref_clicks[pi], H_ref)
+
+        # Fit every camera to that shared floor plane.
+        correspondences: list[tuple[int, list]] = []
+        solved_slots: list[int] = []
+        for slot in self.slots:
+            pairs = [
+                (self.clicks[slot][pi], floor[pi])
+                for pi in sorted(self.clicks[slot])
+                if pi in floor
+            ]
+            if len(pairs) >= 4:
+                correspondences.append((slot, pairs))
+                solved_slots.append(slot)
+
+        try:
+            H = solve_homography_from_markers(correspondences)
+        except Exception as exc:
+            self._status_var.set(f"Solver failed: {exc}")
+            return
+
+        # Per-camera reprojection residual (in floor units).
+        residuals: dict[int, float] = {}
+        for slot, pairs in correspondences:
+            errs = [
+                ((px - xw) ** 2 + (py - yw) ** 2) ** 0.5
+                for (uv, (xw, yw)) in pairs
+                for (px, py) in [project_foot_point(uv, H[slot])]
+            ]
+            residuals[slot] = float(np.mean(errs)) if errs else 0.0
+
+        # Save — same NPZ schema as examples/calibrate_homography.py.
+        n_pts = len(self.point_labels)
+        world = np.full((n_pts, 2), np.nan, dtype=np.float64)
+        for pi, xy in floor.items():
+            world[pi] = xy
+        save_kwargs = {
+            "h1": H.h1, "h2": H.h2, "h3": H.h3,
+            "world_positions": world,
+            "rect_wh": np.array([w, h], dtype=np.float64),
+            "ref_camera": np.int64(ref),
+        }
+        for slot in (0, 1, 2):
+            cl = self.clicks.get(slot, {})
+            arr = np.array(
+                [[u, v, *floor[pi]] for pi, (u, v) in sorted(cl.items())
+                 if pi in floor],
+                dtype=np.float64,
+            ) if cl else np.empty((0, 4), dtype=np.float64)
+            save_kwargs[f"pairs_cam{slot}"] = arr if arr.size else \
+                np.empty((0, 4), dtype=np.float64)
+
+        out_path = os.path.join(self.app.father_dir, "homography_calibration.npz")
+        try:
+            np.savez(out_path, **save_kwargs)
+        except Exception as exc:
+            self._status_var.set(f"Save failed: {exc}")
+            return
+
+        skipped = [s for s in self.slots if s not in solved_slots]
+        res_txt = "  ".join(
+            f"{CHAN_NAMES[s]}:{residuals[s]:.2f}" for s in solved_slots)
+        msg = (f"Saved {os.path.basename(out_path)} (ref {CHAN_NAMES[ref]}) — "
+               f"solved {', '.join(CHAN_NAMES[s] for s in solved_slots)}.  "
+               f"Residual (floor units) {res_txt}.")
+        if skipped:
+            msg += (f"  Skipped (< 4 floor pts, identity): "
+                    f"{', '.join(CHAN_NAMES[s] for s in skipped)}.")
+        self._status_var.set(msg)
+
+
+# ---------------------------------------------------------------------------
 # Main application
 # ---------------------------------------------------------------------------
 class ImageAnnotator:
@@ -643,6 +1186,16 @@ class ImageAnnotator:
         tk.Button(sidebar, text="✓  Accept Suggestions", command=self.accept_suggestions,
                   bg="#3c3c3c", fg="white", activebackground="#555",
                   relief=tk.FLAT, padx=6, pady=5).pack(fill=tk.X, pady=(4, 0))
+
+        tk.Frame(sidebar, height=1, bg="#444").pack(fill=tk.X, pady=10)
+
+        # ── Calibration ─────────────────────────────────────────────────────
+        tk.Label(sidebar, text="CALIBRATION", font=("Segoe UI", 7),
+                 fg="#666", bg="#252526").pack(anchor="w")
+        tk.Button(sidebar, text="🎯  Homography Calibration",
+                  command=self.open_homography_calibration,
+                  bg="#3c3c3c", fg="white", activebackground="#555",
+                  relief=tk.FLAT, padx=6, pady=7).pack(fill=tk.X, pady=(2, 0))
 
         tk.Frame(sidebar, height=1, bg="#444").pack(fill=tk.X, pady=10)
 
@@ -1196,6 +1749,26 @@ class ImageAnnotator:
     def _toggle_suggest_key(self) -> None:
         self.suggest_var.set(not self.suggest_var.get())
         self._on_suggest_toggle()
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # HOMOGRAPHY CALIBRATION
+    # ═══════════════════════════════════════════════════════════════════════
+
+    def open_homography_calibration(self) -> None:
+        """Open the manual homography calibration dialog for the loaded views."""
+        if not _HAVE_HOMOGRAPHY:
+            messagebox.showerror(
+                "Calibration unavailable",
+                "The homography solver could not be imported "
+                "(thermal_algorithms not on the path).")
+            return
+        loaded = [v for v in self.views if v.loaded and v.thermal is not None]
+        if not loaded:
+            messagebox.showerror(
+                "No thermal data",
+                "Load a dataset with chN_raw_data.npz files before calibrating.")
+            return
+        HomographyCalibrationDialog(self.root, self)
 
     # ═══════════════════════════════════════════════════════════════════════
     # TOUCH (single per-frame label across all three views)

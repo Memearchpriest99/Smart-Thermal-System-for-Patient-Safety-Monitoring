@@ -1,0 +1,157 @@
+% ============================================================
+%  Physical-Contact (Touch) Detection — Methods Explored & Results
+%  Smart Thermal System for Patient Safety Monitoring
+%  Waveshare 26984 (80x62) Thermal Sensor Dataset
+%  Afeka College of Engineering, Tel-Aviv
+% ============================================================
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[a4paper, margin=2.4cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage[table]{xcolor}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{float}
+
+\providecommand{\arraybackslash}{\let\\\tabularnewline}
+\makeatletter
+\providecommand\do@row@strut{}
+\let\do@row@strut\relax
+\makeatother
+
+\definecolor{headerblue}{RGB}{31,73,125}
+\definecolor{rowhi}{RGB}{223,240,216}
+\hypersetup{colorlinks=true, linkcolor=headerblue, urlcolor=headerblue}
+
+\title{%
+    {\large Afeka College of Engineering, Tel-Aviv}\\[0.3em]
+    {\large Smart Thermal System for Patient Safety Monitoring}\\[0.7em]
+    {\LARGE\bfseries Physical-Contact (Touch) Detection}\\[0.2em]
+    {\large Methods Explored and Results}\\[0.3em]
+    {\normalsize Waveshare 26984 \quad 80$\times$62\,px \quad 3 synchronised views}
+}
+\author{Guy Chen \and Yaniv Blau \and Roy Lieberman\\[0.2em]
+    \small Supervisor: Or Zilberberg \qquad Advisor: Dr.\@ Oshrit Hoffer}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+% ------------------------------------------------------------
+\section*{1.\quad Objective and setup}
+The touch module must flag \emph{physical contact between patients} from three
+synchronised thermal cameras (80$\times$62\,px, 8\,Hz), with no optical imagery.
+Contact is annotated per frame in \texttt{contact\_labels.csv}:
+\textbf{188 positive frames across only four scenes} (\texttt{2ppl\_fight},
+\texttt{2ppl\_hug}, \texttt{3pp\_surprise}, \texttt{3pplhedroncolider}); all
+other scenes are contact-negative, including hard negatives where people are
+close but not touching (\texttt{2ppl\_walk}, \texttt{3ppl\_dance}). All methods
+are scored on a common per-session timeline split (test = 695 frames, 41
+positive). The primary metric is \textbf{F1}; recall is the safety priority,
+false-alarm rate guards against alert fatigue.
+
+% ------------------------------------------------------------
+\section*{2.\quad Approaches tried and results}
+
+We evaluated three detector families from the design (multi-view geometric,
+spatiotemporal graph network, volumetric appearance network), then developed a
+homography-free pipeline that progressively outperformed them. Table~1 gives the
+headline F1 on the common test split.
+
+\begin{table}[H]
+\centering
+\caption{Touch detectors on the common test split (single split; see §4 for the
+cross-validated picture).}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{l l c}
+\toprule
+\textbf{Family / method} & \textbf{Idea} & \textbf{F1} \\
+\midrule
+Geometric multi-view      & boxes $\to$ homography $\to$ floor distance & 26.8\% \\
+MV-STGCN                  & graph net on projected actor tracks         & 25.2\% \\
+Thermo-X3D                & 3-D CNN on raw thermal volume (no boxes)    & 41.7\% \\
+\midrule
+\multicolumn{3}{l}{\textit{Homography-free image-plane pipeline (developed here):}}\\
+\;Box-proximity voting    & per-camera box gap + 3-camera vote          & 28.6\% \\
+\;+ merge-aware / routing  & merged-blob counts; people-count routing    & 35.5\% \\
+\;+ blob-merge            & contact = two people in one warm blob       & 44.6\% \\
+\;+ temporal smoothing    & morphological open/close over time          & 53.8\% \\
+\;+ two-body merge        & require exactly-2-body merge in crowds       & 55.0\% \\
+\;\textbf{+ raw detector (final)} & \textbf{detector on raw, blobs on residual} & \textbf{60.8\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The final detector (``config-D'') chains: MobileNet-SSD person
+detection $\to$ warm-blob segmentation on the background-subtracted residual
+$\to$ flag a frame when exactly two people occupy one connected warm component
+$\to$ temporal smoothing. It uses \textbf{no homography} and needs no contact
+training labels (thresholds only). It surpasses the deep Thermo-X3D baseline.
+
+% ------------------------------------------------------------
+\section*{3.\quad Key findings}
+\begin{itemize}[leftmargin=1.4em, itemsep=2pt]
+\item \textbf{Homography is the wrong lever here.} With no surveyed floor
+      points, the homography was self-calibrated from a walking subject; it was
+      accurate enough to localise but too noisy to fuse cleanly, so the
+      geometric and graph methods underperformed (F1 $\approx$25--27\%).
+\item \textbf{The thermal ``merge'' signal is decisive.} Two people in contact
+      fuse into one connected warm region; testing for a \emph{two-body} merged
+      blob (rejecting three-body clusters) was the single biggest gain and is
+      simple and explainable.
+\item \textbf{Preprocessing should differ by task.} Background subtraction
+      (Tateno) is \emph{essential} for blob segmentation but \emph{hurts} the
+      person detector --- training/running the detector on \emph{raw} frames
+      while segmenting blobs on the \emph{residual} added $\approx$6 F1 points.
+\item \textbf{Temporal smoothing helps} (+9 points): contacts persist over time,
+      so removing one-frame false alarms and filling one-frame dropouts is
+      effective.
+\item \textbf{Added complexity did not help.} A learned feature-combiner,
+      motion/optical-flow features, and joint hyper-parameter tuning all matched
+      or \emph{underperformed} the simple rule --- consistent symptoms of too
+      few training examples.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section*{4.\quad Honest evaluation: the data limit}
+A single test split overstates performance. Under 4-fold cross-validation
+(every frame tested once, no detector leakage) the final detector scores
+\textbf{F1 $\approx$44\% (fold mean 37\%, std $\pm$24)}. A bootstrap gives a
+scene-level 95\% confidence interval of \textbf{[12\%, 66\%]} --- because
+positives come from only four scenes, the estimate spans almost the whole range.
+The 60.8\% above is a favourable split, not a reliable figure.
+
+\paragraph{Can more data fix it?} We quantified the requirement and tested a
+shortcut:
+\begin{itemize}[leftmargin=1.4em, itemsep=2pt]
+\item To measure F1 to $\pm$2.5\% (so 65\% is distinguishable from 60\%) needs
+      on the order of \textbf{$10\times$ more positive frames and $3$--$4\times$
+      more distinct contact scenes}.
+\item \textbf{Re-using the older MLX90640 touch data} (real contact, but
+      24$\times$32, upsampled) as pretraining \emph{reduced} F1 by 6 points ---
+      the low resolution and sensor gap hurt more than the extra events helped.
+      Synthetic compositing was judged unviable (multi-view consistency).
+\end{itemize}
+
+% ------------------------------------------------------------
+\section*{5.\quad Conclusion and recommendation}
+A practical, explainable, homography-free touch detector exists --- MobileNet-SSD
++ residual blob-merge + temporal smoothing (``config-D'') --- which on a matched
+test split reaches 60.8\% F1 and beats the deep baseline. However, the
+cross-validated estimate ($\approx$44\%, with a very wide confidence interval) shows
+the system is \textbf{limited by data, not by algorithm}: 188 positive frames in
+four scenes cannot reliably train richer models or measure performance.
+
+\textbf{Recommendation:} adopt config-D as the working method and prioritise
+\textbf{collecting more contact recordings across more distinct scenarios}
+(target: several times the current positive count and contact scenes). This is
+the single change expected to both raise and stabilise performance; further
+algorithmic tuning on the current data is within measurement noise.
+
+\end{document}

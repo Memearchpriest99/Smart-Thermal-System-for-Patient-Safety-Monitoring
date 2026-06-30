@@ -1,0 +1,628 @@
+{
+  "V6.1": {
+    "params": {
+      "tau": 2,
+      "tau2": 10,
+      "r": 0.4,
+      "theta": 0.9
+    },
+    "rows": [
+      {
+        "scene": "1_man_run",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 27
+      },
+      {
+        "scene": "1person",
+        "rec": 0.0,
+        "fp": 4,
+        "tp": 0,
+        "fn": 0,
+        "total": 9
+      },
+      {
+        "scene": "1person cig",
+        "rec": 0.0,
+        "fp": 3,
+        "tp": 0,
+        "fn": 0,
+        "total": 86
+      },
+      {
+        "scene": "1ppl_single_forever",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 55
+      },
+      {
+        "scene": "2ppl_fight",
+        "rec": 0.6842105263157895,
+        "fp": 1,
+        "tp": 13,
+        "fn": 6,
+        "total": 30
+      },
+      {
+        "scene": "2ppl_hug",
+        "rec": 0.0,
+        "fp": 2,
+        "tp": 0,
+        "fn": 0,
+        "total": 29
+      },
+      {
+        "scene": "2ppl_walk",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 36
+      },
+      {
+        "scene": "3pp_standing_still",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 17
+      },
+      {
+        "scene": "3pp_surprise",
+        "rec": 0.13333333333333333,
+        "fp": 2,
+        "tp": 2,
+        "fn": 13,
+        "total": 18
+      },
+      {
+        "scene": "3ppl_dance",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 34
+      },
+      {
+        "scene": "3pplhedroncolider",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 7,
+        "total": 60
+      },
+      {
+        "scene": "calibrate_room",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 37
+      },
+      {
+        "scene": "empty_room",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 32
+      },
+      {
+        "scene": "heater_in_middle",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 95
+      },
+      {
+        "scene": "man_light_cig",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 18
+      },
+      {
+        "scene": "man_light_cig_1",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 24
+      },
+      {
+        "scene": "the_more_the_merrier",
+        "rec": 0.0,
+        "fp": 3,
+        "tp": 0,
+        "fn": 0,
+        "total": 88
+      }
+    ],
+    "test": {
+      "acc": 0.9323741007194245,
+      "prec": 0.4166666666666667,
+      "rec": 0.36585365853658536,
+      "f1": 0.38961038961038963,
+      "far": 0.03211009174311927,
+      "tp": 15,
+      "tn": 633,
+      "fp": 21,
+      "fn": 26
+    }
+  },
+  "V6.2": {
+    "params": {
+      "t_hot": 40,
+      "tau": 4,
+      "tau2": 8,
+      "theta": 0.9
+    },
+    "rows": [
+      {
+        "scene": "1_man_run",
+        "rec": 0.0,
+        "fp": 3,
+        "tp": 0,
+        "fn": 0,
+        "total": 27
+      },
+      {
+        "scene": "1person",
+        "rec": 0.0,
+        "fp": 8,
+        "tp": 0,
+        "fn": 0,
+        "total": 9
+      },
+      {
+        "scene": "1person cig",
+        "rec": 0.0,
+        "fp": 13,
+        "tp": 0,
+        "fn": 0,
+        "total": 86
+      },
+      {
+        "scene": "1ppl_single_forever",
+        "rec": 0.0,
+        "fp": 6,
+        "tp": 0,
+        "fn": 0,
+        "total": 55
+      },
+      {
+        "scene": "2ppl_fight",
+        "rec": 0.8421052631578947,
+        "fp": 6,
+        "tp": 16,
+        "fn": 3,
+        "total": 30
+      },
+      {
+        "scene": "2ppl_hug",
+        "rec": 0.0,
+        "fp": 3,
+        "tp": 0,
+        "fn": 0,
+        "total": 29
+      },
+      {
+        "scene": "2ppl_walk",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 36
+      },
+      {
+        "scene": "3pp_standing_still",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 17
+      },
+      {
+        "scene": "3pp_surprise",
+        "rec": 0.7333333333333333,
+        "fp": 2,
+        "tp": 11,
+        "fn": 4,
+        "total": 18
+      },
+      {
+        "scene": "3ppl_dance",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 34
+      },
+      {
+        "scene": "3pplhedroncolider",
+        "rec": 0.0,
+        "fp": 16,
+        "tp": 0,
+        "fn": 7,
+        "total": 60
+      },
+      {
+        "scene": "calibrate_room",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 37
+      },
+      {
+        "scene": "empty_room",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 32
+      },
+      {
+        "scene": "heater_in_middle",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 95
+      },
+      {
+        "scene": "man_light_cig",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 18
+      },
+      {
+        "scene": "man_light_cig_1",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 24
+      },
+      {
+        "scene": "the_more_the_merrier",
+        "rec": 0.0,
+        "fp": 4,
+        "tp": 0,
+        "fn": 0,
+        "total": 88
+      }
+    ],
+    "test": {
+      "acc": 0.8892086330935252,
+      "prec": 0.3,
+      "rec": 0.6585365853658537,
+      "f1": 0.4122137404580153,
+      "far": 0.0963302752293578,
+      "tp": 27,
+      "tn": 591,
+      "fp": 63,
+      "fn": 14
+    }
+  },
+  "V6.3": {
+    "params": {
+      "k": 0.5,
+      "tau": 0,
+      "tau2": 8,
+      "theta": 0.9
+    },
+    "rows": [
+      {
+        "scene": "1_man_run",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 27
+      },
+      {
+        "scene": "1person",
+        "rec": 0.0,
+        "fp": 4,
+        "tp": 0,
+        "fn": 0,
+        "total": 9
+      },
+      {
+        "scene": "1person cig",
+        "rec": 0.0,
+        "fp": 4,
+        "tp": 0,
+        "fn": 0,
+        "total": 86
+      },
+      {
+        "scene": "1ppl_single_forever",
+        "rec": 0.0,
+        "fp": 6,
+        "tp": 0,
+        "fn": 0,
+        "total": 55
+      },
+      {
+        "scene": "2ppl_fight",
+        "rec": 0.7368421052631579,
+        "fp": 3,
+        "tp": 14,
+        "fn": 5,
+        "total": 30
+      },
+      {
+        "scene": "2ppl_hug",
+        "rec": 0.0,
+        "fp": 3,
+        "tp": 0,
+        "fn": 0,
+        "total": 29
+      },
+      {
+        "scene": "2ppl_walk",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 36
+      },
+      {
+        "scene": "3pp_standing_still",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 17
+      },
+      {
+        "scene": "3pp_surprise",
+        "rec": 0.7333333333333333,
+        "fp": 2,
+        "tp": 11,
+        "fn": 4,
+        "total": 18
+      },
+      {
+        "scene": "3ppl_dance",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 34
+      },
+      {
+        "scene": "3pplhedroncolider",
+        "rec": 0.0,
+        "fp": 16,
+        "tp": 0,
+        "fn": 7,
+        "total": 60
+      },
+      {
+        "scene": "calibrate_room",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 37
+      },
+      {
+        "scene": "empty_room",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 32
+      },
+      {
+        "scene": "heater_in_middle",
+        "rec": 0.0,
+        "fp": 3,
+        "tp": 0,
+        "fn": 0,
+        "total": 95
+      },
+      {
+        "scene": "man_light_cig",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 18
+      },
+      {
+        "scene": "man_light_cig_1",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 24
+      },
+      {
+        "scene": "the_more_the_merrier",
+        "rec": 0.0,
+        "fp": 2,
+        "tp": 0,
+        "fn": 0,
+        "total": 88
+      }
+    ],
+    "test": {
+      "acc": 0.9107913669064748,
+      "prec": 0.352112676056338,
+      "rec": 0.6097560975609756,
+      "f1": 0.4464285714285714,
+      "far": 0.07033639143730887,
+      "tp": 25,
+      "tn": 608,
+      "fp": 46,
+      "fn": 16
+    }
+  },
+  "V6.4": {
+    "params": {
+      "C": 3.0,
+      "thr": 0.7000000000000001
+    },
+    "rows": [
+      {
+        "scene": "1_man_run",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 27
+      },
+      {
+        "scene": "1person",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 9
+      },
+      {
+        "scene": "1person cig",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 86
+      },
+      {
+        "scene": "1ppl_single_forever",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 55
+      },
+      {
+        "scene": "2ppl_fight",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 19,
+        "total": 30
+      },
+      {
+        "scene": "2ppl_hug",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 29
+      },
+      {
+        "scene": "2ppl_walk",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 36
+      },
+      {
+        "scene": "3pp_standing_still",
+        "rec": 0.0,
+        "fp": 3,
+        "tp": 0,
+        "fn": 0,
+        "total": 17
+      },
+      {
+        "scene": "3pp_surprise",
+        "rec": 1.0,
+        "fp": 3,
+        "tp": 15,
+        "fn": 0,
+        "total": 18
+      },
+      {
+        "scene": "3ppl_dance",
+        "rec": 0.0,
+        "fp": 1,
+        "tp": 0,
+        "fn": 0,
+        "total": 34
+      },
+      {
+        "scene": "3pplhedroncolider",
+        "rec": 0.2857142857142857,
+        "fp": 30,
+        "tp": 2,
+        "fn": 5,
+        "total": 60
+      },
+      {
+        "scene": "calibrate_room",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 37
+      },
+      {
+        "scene": "empty_room",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 32
+      },
+      {
+        "scene": "heater_in_middle",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 95
+      },
+      {
+        "scene": "man_light_cig",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 18
+      },
+      {
+        "scene": "man_light_cig_1",
+        "rec": 0.0,
+        "fp": 0,
+        "tp": 0,
+        "fn": 0,
+        "total": 24
+      },
+      {
+        "scene": "the_more_the_merrier",
+        "rec": 0.0,
+        "fp": 2,
+        "tp": 0,
+        "fn": 0,
+        "total": 88
+      }
+    ],
+    "test": {
+      "acc": 0.9093525179856116,
+      "prec": 0.30357142857142855,
+      "rec": 0.4146341463414634,
+      "f1": 0.35051546391752575,
+      "far": 0.05963302752293578,
+      "tp": 17,
+      "tn": 615,
+      "fp": 39,
+      "fn": 24
+    }
+  }
+}

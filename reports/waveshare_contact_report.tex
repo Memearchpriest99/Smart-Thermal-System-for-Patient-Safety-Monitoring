@@ -1,0 +1,454 @@
+% ============================================================
+%  Contact (Touch) Detection — Algorithm Evaluation Report
+%  Smart Thermal System for Patient Safety Monitoring
+%  Waveshare 26984 (80x62) Thermal Sensor Dataset
+%  Afeka College of Engineering, Tel-Aviv
+%
+%  Compiled with: pdflatex (MiKTeX / TeX Live / Overleaf)
+% ============================================================
+\documentclass[11pt, a4paper]{article}
+
+% ---- Packages -----------------------------------------------
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[table]{xcolor}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{float}
+
+\providecommand{\arraybackslash}{\let\\\tabularnewline}
+\makeatletter
+\@ifundefined{do@row@strut}{\let\do@row@strut\relax}{}
+\makeatother
+
+% ---- Colours ------------------------------------------------
+\definecolor{tpgreen}{RGB}{0,128,0}
+\definecolor{tnblue}{RGB}{31,73,125}
+\definecolor{fpred}{RGB}{192,0,0}
+\definecolor{fnyellow}{RGB}{150,100,0}
+\definecolor{headerblue}{RGB}{31,73,125}
+\definecolor{cellgreenlight}{RGB}{198,239,206}
+\definecolor{cellbluelight}{RGB}{221,235,247}
+\definecolor{cellredlight}{RGB}{255,199,206}
+\definecolor{cellyellowlight}{RGB}{255,235,156}
+
+\hypersetup{colorlinks=true, linkcolor=headerblue, urlcolor=headerblue, citecolor=headerblue}
+
+% ---- Confusion matrix macro ---------------------------------
+% \confmat{posLabel}{negLabel}{TP}{FN}{FP}{TN}{posTot}{negTot}
+\newcommand{\confmat}[8]{%
+    \vspace{4pt}\begin{center}
+    \renewcommand{\arraystretch}{1.8}%
+    \begin{tabular}{lcc}
+        \hline\rule{0pt}{2.4ex}%
+        & \textbf{Pred:\ #1} & \textbf{Pred:\ #2} \\[2pt]\hline\rule{0pt}{2.6ex}%
+        \textbf{Truth:\ #1} (#7\ fr.)
+            & \cellcolor{cellgreenlight}\textcolor{tpgreen}{\textbf{TP}}\;$=$\;#3
+            & \cellcolor{cellyellowlight}\textcolor{fnyellow}{\textbf{FN}}\;$=$\;#4 \\[4pt]
+        \textbf{Truth:\ #2} (#8\ fr.)
+            & \cellcolor{cellredlight}\textcolor{fpred}{\textbf{FP}}\;$=$\;#5
+            & \cellcolor{cellbluelight}\textcolor{tnblue}{\textbf{TN}}\;$=$\;#6 \\[2pt]\hline
+    \end{tabular}\end{center}\vspace{4pt}
+}
+
+% ---- Title --------------------------------------------------
+\title{%
+    {\large Afeka College of Engineering, Tel-Aviv}\\[0.4em]
+    {\large Smart Thermal System for Patient Safety Monitoring}\\[0.8em]
+    {\LARGE\bfseries Contact (Touch) Detection — Algorithm Evaluation}\\[0.4em]
+    {\normalsize Waveshare 26984 Thermal Sensor \quad 80$\times$62 px \quad
+     3 Synchronised Views \quad Building on the Human-Detection Stage}
+}
+\author{%
+    Guy Chen \and Yaniv Blau \and Roy Lieberman\\[0.3em]
+    \small Supervisor: Or Zilberberg \qquad Advisor: Dr.\@ Oshrit Hoffer
+}
+\date{June 2026}
+
+% =============================================================
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% =============================================================
+\section{Overview}
+% =============================================================
+
+This report evaluates the \textbf{contact-detection} (``touch'') stage of the
+Smart Thermal System --- the module responsible for the \emph{physical contact
+between patients} and \emph{violent/sexual behaviour} scenarios --- on the
+Waveshare 26984 dataset (three synchronised 80$\times$62\,px sensors at 8\,Hz).
+It is a direct continuation of the \emph{Human \& Fire Detection} evaluation:
+two of the three contact detectors are built \textbf{on top of} the human
+detector characterised there, so we first recap that result (Part~I) and then
+show how contact detection builds on it (Part~II).
+
+Three contact detectors are compared, spanning the full design spectrum of
+\S4.4.3:
+
+\begin{description}[leftmargin=2em, style=nextline]
+    \item[Geometric multi-view (\S4.4.3.1):] person boxes from the human
+        detector are projected onto a common floor plane through a homography
+        and flagged as contact when two people come within a distance
+        threshold. Deterministic, explainable, no training.
+    \item[MV-STGCN (\S4.4.3.2):] the same detection+projection front-end feeds
+        a Multi-View Spatiotemporal Graph CNN that learns contact over a
+        16-frame window of actor graphs.
+    \item[Thermo-X3D (\S4.4.3.3):] a pixel-based (2+1)D convolutional network
+        over the raw thermal video volume. It uses \emph{no} bounding boxes and
+        \emph{no} homography --- the designed failsafe for when close contact
+        merges two bodies into a single thermal blob.
+\end{description}
+
+\textbf{Headline result.} The pixel-based Thermo-X3D is the clear winner ---
+best F1 \emph{and} the lowest false-alarm rate by a wide margin --- confirming
+the \S4.4.3.3 design hypothesis that a method independent of the detector and
+the homography is the robust one. The two front-end-dependent methods inherit
+the limitations of their inputs: a self-calibrated homography that is accurate
+enough to localise but too noisy to fuse cleanly, and the merging of two
+bodies into one detection at the moment of contact.
+
+\subsection{Common methodology}
+
+As in the human/fire evaluation, every frame is reduced to a binary verdict
+(contact present / absent) and scored with a confusion matrix and four derived
+metrics:
+\begin{align*}
+\text{Accuracy} &= \tfrac{TP+TN}{TP+TN+FP+FN}, &
+\text{Precision} &= \tfrac{TP}{TP+FP}, \\
+\text{Recall} &= \tfrac{TP}{TP+FN}, &
+\text{F1} &= \tfrac{2\,\text{P}\cdot\text{R}}{\text{P}+\text{R}}.
+\end{align*}
+\textbf{Recall} is the safety metric (a missed assault is a direct failure);
+\textbf{precision} and the false-alarm rate guard against alert fatigue, which
+in a psychiatric ward is itself a safety risk.
+
+% #############################################################
+\part*{Part I — The Human-Detection Foundation}
+\addcontentsline{toc}{section}{Part I — The Human-Detection Foundation}
+% #############################################################
+
+\section{Recap: which human detector feeds contact}
+
+The geometric and MV-STGCN contact detectors begin with per-camera person
+detection. From the human-detection evaluation, \textbf{MobileNet-SSD} is the
+production choice on the Waveshare sensor; Table~\ref{tab:human} reproduces its
+test-split result alongside the two classical baselines.
+
+\begin{table}[H]
+\centering
+\caption{Human detection --- aggregate test-split metrics under the strict
+localisation criterion (IoU\,$\ge$\,0.5), from the Human \& Fire evaluation.
+MobileNet-SSD is used as the person detector for the contact front-ends.}
+\label{tab:human}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Detector} & \textbf{Acc} & \textbf{Prec} & \textbf{Rec} & \textbf{F1}
+    & \textbf{Mean IoU} & \textbf{False-alarm} \\
+\midrule
+AdaptiveThreshold & 76.6\% & 93.4\% & 80.7\% & 86.6\% & 56.5\% & 83.0\% \\
+HOG+SVM           & 79.8\% & 92.7\% & 85.1\% & 88.7\% & 58.5\% & 98.1\% \\
+\textbf{MobileNet-SSD} & \textbf{95.8\%} & \textbf{99.1\%} & \textbf{96.4\%}
+    & \textbf{97.7\%} & \textbf{67.3\%} & \textbf{13.2\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two properties of MobileNet-SSD matter for contact detection:
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{It rarely misses people.} 96.4\,\% recall, rising to a perfect
+        100\,\% F1 on the crowded scenes (\texttt{3ppl\_dance},
+        \texttt{3pp\_surprise}, \texttt{3pplhedroncolider},
+        \texttt{2ppl\_fight}). On the contact-relevant frames specifically, it
+        finds at least two separate people in \textbf{96\,\% of true-contact
+        frames} --- so a failure to flag contact is almost never a failure to
+        \emph{see} the people.
+    \item \textbf{Its boxes are well-localised.} 67.3\,\% mean IoU at
+        80$\times$62 yields a foot-point stable enough to project --- the
+        prerequisite for the geometric and MV-STGCN front-ends, which the
+        32$\times$24 MLX90640 could not provide.
+\end{itemize}
+
+The central finding of Part~II is therefore that \textbf{good human detection
+is necessary but not sufficient for contact detection}: the residual difficulty
+lies downstream, in the multi-view geometry and in the physics of two bodies
+touching.
+
+% #############################################################
+\part*{Part II — Contact Detection}
+\addcontentsline{toc}{section}{Part II — Contact Detection}
+% #############################################################
+
+\section{Setup (Contact Detection)}
+
+\subsection{Labels and the data-scarcity reality}
+Contact is annotated as a per-frame binary label in \texttt{contact\_labels.csv}
+(\texttt{session, frame\_idx, contact}). Across the dataset only
+\textbf{188 frames are labelled contact-positive}, concentrated in four scenes:
+\texttt{3pp\_surprise} (66), \texttt{3pplhedroncolider} (53),
+\texttt{2ppl\_fight} (50) and \texttt{2ppl\_hug} (19). Every other scene ---
+single-person, walking, cigarette, heater, empty --- supplies
+\textbf{contact-negative} frames, including the crucial \emph{hard negatives}
+\texttt{2ppl\_walk} and \texttt{the\_more\_the\_merrier}, in which several
+people are present and near one another but not in contact.
+
+\begin{table}[H]
+\centering
+\caption{Contact label balance. Positives are rare ($\approx$7\,\% of labelled
+frames) and confined to four scenes --- a severe constraint on the learned
+detectors, addressed below with class-weighted training.}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcc}
+\toprule
+ & \textbf{Frames} & \textbf{Share} \\
+\midrule
+Contact-positive & 188   & 6.8\,\% \\
+Contact-negative & 2{,}565 & 93.2\,\% \\
+\textbf{Total labelled} & \textbf{2{,}753} & 100\,\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Self-calibrated homography (no floor coordinates)}
+\label{sec:homography}
+The geometric and MV-STGCN detectors need a homography $H_k$ mapping each
+camera's image plane to a common floor plane. Classical hot-point calibration
+requires heated targets at \emph{known} floor coordinates, which were not
+recorded for this dataset. We instead \textbf{self-calibrate from the
+calibration walk}: in \texttt{calibrate\_room} a single person is visible to all
+three cameras simultaneously, so that person's foot-point in each view is an
+image of \emph{one common floor point}. Across the 146-frame track this yields,
+for each camera pair, a set of image-to-image correspondences induced purely by
+the floor plane. Taking camera~0 as the reference plane ($H_0=I$), we solve
+$H_{1\to0}$ and $H_{2\to0}$ by DLT inside a RANSAC loop.
+
+\begin{table}[H]
+\centering
+\caption{Self-calibration quality. RANSAC consensus is modest --- only
+$\approx$25--30\,\% of frames are inliers --- because a standing person's
+bounding-box foot-point is not a perfectly stable floor point across viewing
+angles. The fitted inliers are tight ($\le$1.7\,px), but the low inlier ratio
+foreshadows the fusion difficulty in \S\ref{sec:analysis}.}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Camera} & \textbf{Role} & \textbf{Corr. frames} & \textbf{RANSAC inliers}
+    & \textbf{Median residual} \\
+\midrule
+0 & reference ($H_0=I$) & ---  & ---     & --- \\
+1 & $\to$ cam-0 plane   & 123  & 36      & 1.38\,px \\
+2 & $\to$ cam-0 plane   & 146  & 30      & 1.66\,px \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Consequence (important).} Because the reference plane is camera~0's
+\emph{image}, distances are measured in camera-0 floor-pixels, not metres, and
+are perspective-distorted. The clustering radius $\varepsilon$ and contact
+threshold $\delta$ are therefore tuned empirically rather than set to physical
+values; the operating point used below is $\varepsilon=15$\,px, $\delta=18$\,px.
+
+\subsection{Detectors and decision rule}
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{Geometric} --- foot-point projection $\to$ cross-camera
+          clustering/validation (single-source clusters discarded) $\to$ contact
+          if any actor pair is within $\delta$. No training.
+    \item \textbf{MV-STGCN} --- MobileNet-SSD detections $\to$ Kalman tracking
+          (I\textsuperscript{2}C phase-shift correction) $\to$ homographic fusion
+          to actor nodes $\to$ adaptive-adjacency ST-GCN over a $T=16$ window
+          $\to$ 2-class softmax. Trained (class-weighted cross-entropy).
+    \item \textbf{Thermo-X3D} --- per-camera (2+1)D X3D encoder over the raw
+          16-frame thermal volume with CBAM thermal attention, late-fused across
+          the three views $\to$ 2-class softmax. No detections, no homography.
+          Trained (class-weighted cross-entropy).
+\end{enumerate}
+For the learned detectors the raw per-frame contact probability is captured and
+the decision threshold is swept on a validation split (maximising F1) before
+being applied to the test split.
+
+\subsection{Evaluation protocol}
+\label{sec:protocol}
+The temporal models (MV-STGCN, Thermo-X3D) carry a 16-frame rolling buffer and
+therefore require \emph{contiguous} frames. Each session's timeline is split
+without shuffling: first 60\,\% $\to$ train, next 15\,\% $\to$ validation,
+final 25\,\% $\to$ test; at evaluation the detector is reset per session and the
+whole session is replayed in order so the buffer is warm before the scored
+frames. \textbf{All three detectors are scored on this single common test set
+of 695 frames (41 contact-positive, 654 negative)} --- the rule-based Geometric
+detector, which needs no training, is evaluated on the same test segments
+(its train portion is simply ignored), so the comparison below is
+frame-for-frame identical across the three methods.
+
+\section{Results (Contact Detection)}
+
+\subsection{Aggregate}
+
+\begin{table}[H]
+\centering
+\caption{Contact detection --- aggregate metrics on the common 695-frame test
+set (41 contact-positive, 654 negative); all three detectors scored
+frame-for-frame under the identical timeline protocol (\S\ref{sec:protocol}).
+\textbf{Thermo-X3D leads on F1 and on false-alarm rate simultaneously.}}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Detector} & \textbf{Front-end} & \textbf{Acc} & \textbf{Prec}
+    & \textbf{Rec} & \textbf{F1} & \textbf{False-alarm} \\
+\midrule
+Geometric           & SSD + homography      & 91.4\% & 26.8\% & 26.8\% & 26.8\% & 4.6\% \\
+MV-STGCN            & SSD + homography + GCN & 70.9\% & 14.8\% & \textbf{82.9\%} & 25.2\% & 29.8\% \\
+\textbf{Thermo-X3D} & raw pixels            & \textbf{94.0\%} & \textbf{48.4\%} & 36.6\% & \textbf{41.7\%} & \textbf{2.4\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Geometric confusion (test, 41 contact / 654 no-contact).}
+\confmat{Contact}{None}{11}{30}{30}{624}{41}{654}
+
+\paragraph{MV-STGCN confusion (test, 41 contact / 654 no-contact).}
+\confmat{Contact}{None}{34}{7}{195}{459}{41}{654}
+
+\paragraph{Thermo-X3D confusion (test, 41 contact / 654 no-contact).}
+\confmat{Contact}{None}{15}{26}{16}{638}{41}{654}
+
+\subsection{Per-scene breakdown}
+
+The three detectors fail in characteristically different ways, which the
+per-scene view makes explicit (Table~\ref{tab:perscene}). The first three rows
+are the contact-bearing test scenes (recall is what matters); the remainder are
+pure hard negatives where every prediction is a false alarm. Reading down the
+false-alarm columns is the clearest summary: Thermo-X3D raises \emph{zero} false
+alarms on every single-person or walking scene, the Geometric detector
+scatters a few, and MV-STGCN fires on essentially all of them.
+
+\begin{table}[H]
+\centering
+\caption{Per-scene test results for all three detectors (common 695-frame test
+set). ``Pos'' is the number of contact-positive frames in that scene's test
+segment; ``R'' is recall on those, ``FP'' the false-alarm count. Totals:
+Geometric 30 FP, Thermo-X3D 16 FP, MV-STGCN 195 FP.}
+\label{tab:perscene}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lc cc cc cc}
+\toprule
+& & \multicolumn{2}{c}{\textbf{Geometric}} & \multicolumn{2}{c}{\textbf{Thermo-X3D}}
+    & \multicolumn{2}{c}{\textbf{MV-STGCN}} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+\textbf{Scene} & \textbf{Pos} & \textbf{R} & \textbf{FP}
+    & \textbf{R} & \textbf{FP} & \textbf{R} & \textbf{FP} \\
+\midrule
+\texttt{2ppl\_fight}        & 19 & 0\%   & 1  & 0\%   & 0  & \textbf{100\%} & 11 \\
+\texttt{3pp\_surprise}      & 15 & 67\%  & 2  & \textbf{100\%} & 3  & \textbf{100\%} & 3 \\
+\texttt{3pplhedroncolider}  &  7 & 14\%  & 3  & 0\%   & 13 & 0\%   & 0 \\
+\midrule
+\texttt{3ppl\_dance}        &  0 & ---   & 11 & ---   & 0  & ---   & 34 \\
+\texttt{the\_more\_the\_merrier} & 0 & --- & 4 & ---  & 0  & ---   & 24 \\
+\texttt{2ppl\_walk}         &  0 & ---   & 1  & ---   & 0  & ---   & 30 \\
+\texttt{3pp\_standing\_still} & 0 & ---   & 6  & ---   & 0  & ---   & 0  \\
+\texttt{2ppl\_hug}          &  0 & ---   & 1  & ---   & 0  & ---   & 14 \\
+\texttt{1person cig}        &  0 & ---   & 0  & ---   & 0  & ---   & 64 \\
+\texttt{1ppl\_single\_forever}   & 0 & --- & 0 & ---  & 0  & ---   & 10 \\
+\texttt{1person}            &  0 & ---   & 0  & ---   & 0  & ---   & 5  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Analysis}
+\label{sec:analysis}
+
+\subsection{Two failure modes, and why Thermo-X3D escapes both}
+
+The contact problem has two distinct failure modes; the front-end-dependent
+detectors hit one or both, while the pixel-based detector is structurally immune
+to each.
+
+\begin{description}[leftmargin=2em, style=nextline]
+    \item[Failure mode \#1 — homography noise.] The self-calibrated homography
+        (\S\ref{sec:homography}) localises well but fuses poorly. A diagnostic on
+        the true-contact frames is decisive: with the strict cross-camera rule
+        (an actor must be confirmed by $\ge$2 cameras agreeing within
+        $\varepsilon$), the mean number of surviving actors per contact frame is
+        \textbf{0.16} --- the cameras almost never agree, so the geometric
+        detector has nobody to measure. Relaxing the rule recovers actors but
+        the \emph{same} person now projects to several different places and
+        registers as several phantom actors. This is exactly what makes MV-STGCN
+        fire on non-contact crowds: in \texttt{1person cig} (one person, 64 false
+        alarms), \texttt{2ppl\_walk} (30) and \texttt{3ppl\_dance} (34) the
+        mis-projected duplicates fall within $\delta$ of one another and look
+        like contact. Hence its 82.9\,\% recall is bought at a 29.8\,\%
+        false-alarm rate. The Geometric detector suffers the same effect but
+        more mildly: its strict two-camera validation and conservative $\delta$
+        leave only scattered false alarms (11 on \texttt{3ppl\_dance}, 6 on
+        \texttt{3pp\_standing\_still}) for a 4.6\,\% rate --- but at the price of
+        very low recall (26.8\,\%), since the same conservatism that suppresses
+        phantom pairs also suppresses real ones.
+    \item[Failure mode \#2 — blob merge at contact.] When two people genuinely
+        touch (a hug, a grapple) their warm bodies merge into a \emph{single}
+        thermal blob, so the detector returns one box and there is no pair to
+        measure. This is intrinsic to any box-based method and is the explicit
+        motivation for Thermo-X3D in \S4.4.3.3.
+\end{description}
+
+\textbf{Thermo-X3D uses neither boxes nor homography}, so neither failure mode
+applies. The payoff is visible in Table~\ref{tab:perscene}: its false alarms are
+near zero on every negative scene (FAR 2.4\,\%, versus 4.6\,\% Geometric and
+29.8\,\% MV-STGCN), and it still recovers the contact it was given enough data
+to learn (\texttt{3pp\_surprise}, 100\,\% recall). Moreover its residual false
+alarms are confined to genuine multi-person interaction scenes
+(\texttt{3pp\_surprise}, \texttt{3pplhedroncolider}) and never fire on a lone
+individual or a walking pair --- a qualitatively far safer error profile than
+MV-STGCN flagging a single smoker (\texttt{1person cig}, 64 false alarms) as an
+assault. It is the only detector that is both sensitive \emph{and} quiet.
+
+\subsection{Recall is data-limited, not method-limited}
+The honest qualifier mirrors the recall ceiling found for fire detection, where
+recall was bounded by physics rather than the algorithm. Here it is bounded by
+\textbf{data}: the entire dataset contains only 188 positive frames, of which
+$\approx$90 windows reach training. Thermo-X3D learned \texttt{3pp\_surprise}
+perfectly but missed \texttt{2ppl\_fight} in test --- not because the model
+cannot represent a fight, but because too few fight frames were available to fit
+it. The per-session timeline split also lets train and test share scenes, so the
+48.4\,\% precision, while the best of the three, should be read as a feasibility
+signal rather than a deployment number.
+
+This makes the single highest-leverage next step clear: \textbf{more annotated
+contact recordings}, ideally with entire scenes held out of training, would
+directly lift Thermo-X3D's recall without any change to the method.
+
+\section{Conclusions}
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{Thermo-X3D is the contact detector to deploy.} It achieves the
+        best F1 (41.7\,\%) and by far the lowest false-alarm rate (2.4\,\%),
+        because being pixel-based it sidesteps both the homography-noise and
+        blob-merge failure modes that limit the geometric and graph-based
+        detectors.
+    \item \textbf{Human detection is necessary but not sufficient.} MobileNet-SSD
+        finds the people (it sees $\ge$2 separate subjects in 96\,\% of contact
+        frames); the contact difficulty is entirely downstream, in multi-view
+        geometry and in the physics of touching bodies. This is why the
+        detector-independent method wins.
+    \item \textbf{MV-STGCN is recall-strong but precision-poor} on this data: it
+        recovers 82.9\,\% of contacts but raises false alarms on essentially
+        every multi-person non-contact scene, a direct consequence of the
+        self-calibrated homography. A metric homography from proper on-site
+        hot-point calibration is the prerequisite for making the geometric and
+        graph-based detectors viable.
+    \item \textbf{The limiting resource is labelled contact data.} With only 188
+        positive frames the learned models are data-starved; expanding the
+        contact corpus is expected to raise Thermo-X3D recall directly, and is a
+        higher priority than further algorithmic tuning.
+\end{itemize}
+
+\end{document}
