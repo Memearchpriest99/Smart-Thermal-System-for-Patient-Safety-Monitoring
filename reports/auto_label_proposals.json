@@ -1,0 +1,5528 @@
+{
+ "3pp_surprise": [
+  {
+   "fi": 0,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 1,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 2,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 3,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 4,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 5,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 6,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 7,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 8,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 9,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 10,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 11,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 12,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 13,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 14,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 15,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.012479981407523155,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 16,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.001076401793397963,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 17,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.043052446097135544,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 18,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.07054336369037628,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 19,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.006470330525189638,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 20,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0018797662341967225,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 21,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.005603948142379522,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 22,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.09469598531723022,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 23,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.11728710681200027,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 24,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1346018761396408,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 25,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.10411453992128372,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 26,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.06958950310945511,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 27,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1561030149459839,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 28,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1593305766582489,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 29,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.11349862813949585,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 30,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.2362235188484192,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 31,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.17195983231067657,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 32,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.25832533836364746,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 33,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.19178691506385803,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 34,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.17676392197608948,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 35,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.32197827100753784,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 36,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.16899500787258148,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 37,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.22470563650131226,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 38,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.21165534853935242,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 39,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.1884063482284546,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 40,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.25742223858833313,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 41,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.4000142216682434,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 42,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.29687437415122986,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 43,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.456552654504776,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 44,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.16089817881584167,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 45,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.05614452064037323,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 46,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.16599366068840027,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 47,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.10355693101882935,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 48,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.18872833251953125,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 49,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.1846584975719452,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 50,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.1267681121826172,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 51,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.15210923552513123,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 52,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.05508498102426529,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 53,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.05813504382967949,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 54,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.03916988521814346,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 55,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.07206512242555618,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 56,
+   "old_label": 1,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.09956479072570801,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 57,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1081804409623146,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 58,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.09298209846019745,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 59,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0953436866402626,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 60,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.09847025573253632,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 61,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.09356077760457993,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 62,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.06435243040323257,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 63,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.035686247050762177,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 64,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.056714776903390884,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 65,
+   "old_label": 1,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.020316297188401222,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 66,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.006194146815687418,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 67,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.014912582002580166,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 68,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.009409397840499878,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  }
+ ],
+ "3ppl_dance": [
+  {
+   "fi": 0,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 1,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 2,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 3,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 4,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 5,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 6,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 7,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 8,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 9,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 10,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 11,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 12,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 13,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 14,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 15,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 9.503625664208926e-10,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 16,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 8.160383799804549e-07,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 17,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 1.548729500200352e-08,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 18,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 3.544035820368663e-08,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 19,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 1.1198739713336181e-08,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 20,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 4.705553724448919e-09,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 21,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 7.646375754788437e-10,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 22,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 2.908695861947308e-08,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 23,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 3.304835161088704e-08,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 24,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 1.5017321830512742e-09,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 25,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 7.421581926791987e-08,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 26,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 1.6623260989945265e-06,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 27,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 7.066906846375787e-07,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 28,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 6.348772876663134e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 29,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0006112989503890276,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 30,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0009615957969799638,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 31,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00020069449965376407,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 32,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 5.9962676459690556e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 33,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 7.899788215581793e-06,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 34,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 7.830426329746842e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 35,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0006451571825891733,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 36,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03104579634964466,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 37,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.2684161961078644,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 38,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.00025510104023851454,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 39,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 4.645029184757732e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 40,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.001120158121921122,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 41,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0023466763086616993,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 42,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.003158427542075515,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 43,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.018179433420300484,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 44,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.01904970593750477,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 45,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.004922116175293922,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 46,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.022767415270209312,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 47,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.05519845336675644,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 48,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.004666887689381838,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 49,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.003897028276696801,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 50,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0021691087167710066,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 51,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0018619037000462413,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 52,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 5.03309502164484e-06,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 53,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 2.9756932917734957e-07,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 54,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 4.554471615847433e-06,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 55,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 2.645610766194295e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 56,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1208648607134819,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 57,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.29404446482658386,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 58,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.4044223725795746,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 59,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.28411179780960083,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 60,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.21516437828540802,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 61,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.11231567710638046,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 62,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03042563423514366,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 63,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.025240937247872353,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 64,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.009352699853479862,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 65,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.02821805700659752,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 66,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.010142598301172256,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 67,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.25234919786453247,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 68,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.051415372639894485,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 69,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3732178807258606,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 70,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3028433620929718,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 71,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.061580441892147064,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 72,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.051647335290908813,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 73,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.09669904410839081,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 74,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0808175802230835,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 75,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.14949512481689453,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 76,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1832481324672699,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 77,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.2820366621017456,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 78,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.005527849309146404,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 79,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.018630102276802063,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 80,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.05573800206184387,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 81,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00580294756218791,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 82,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0008940277039073408,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 83,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 1.7596260448726753e-08,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 84,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 1.3323166181411494e-10,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 85,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 1.4499747749141534e-06,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 86,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.002377075143158436,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 87,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.050861671566963196,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 88,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.06529156863689423,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 89,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.027066195383667946,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 90,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.08792578428983688,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 91,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.3072793483734131,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 92,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.3318940997123718,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 93,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.16270464658737183,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 94,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.24621698260307312,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 95,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0026566614396870136,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 96,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.004975697956979275,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 97,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0006645004614256322,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 98,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.01872125081717968,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 99,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.032060690224170685,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 100,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.029049258679151535,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 101,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0010095926700159907,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 102,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 2.727325863816077e-06,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 103,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0011148083722218871,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 104,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 4.9438109272159636e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 105,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.025886207818984985,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 106,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.047544147819280624,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 107,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03740963712334633,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 108,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.06878294795751572,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 109,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.13936346769332886,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 110,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1015540212392807,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 111,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.11374133080244064,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 112,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.42868682742118835,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 113,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.07766818255186081,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 114,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1860450655221939,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 115,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.3736989498138428,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 116,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.428536593914032,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 117,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.38725537061691284,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 118,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.4596633017063141,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 119,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.555194616317749,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 120,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.6645551323890686,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 121,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.6648480296134949,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 122,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.4634395241737366,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 123,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.7459140419960022,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 124,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.6698343753814697,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 125,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.6597316861152649,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 126,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.6518402695655823,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 127,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.4778817594051361,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 128,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.21735580265522003,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 129,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.47258278727531433,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 130,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.4064178168773651,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 131,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.5394618511199951,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 132,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.09212984144687653,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  }
+ ],
+ "the_more_the_merrier": [
+  {
+   "fi": 0,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 1,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 2,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 3,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 4,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 5,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 6,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 7,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 8,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 9,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 10,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 11,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 12,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 13,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 14,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0,
+   "x3d_warmup": true,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 15,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0032473448663949966,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 16,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.004739903844892979,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 17,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.009599138982594013,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 18,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.024251917377114296,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 19,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.013505428098142147,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 20,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.018540017306804657,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 21,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.019699933007359505,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 22,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.018136799335479736,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 23,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.015400470234453678,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 24,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.016135385259985924,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 25,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.016301622614264488,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 26,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00838983803987503,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 27,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0013823219342157245,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 28,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0007871516863815486,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 29,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0009554842254146934,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 30,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0022914751898497343,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 31,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.006273266859352589,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 32,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.013426815159618855,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 33,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0505288802087307,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 34,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.06522370874881744,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 35,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.08700209110975266,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 36,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0036741129588335752,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 37,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.007961980067193508,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 38,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.023378971964120865,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 39,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.013138305395841599,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 40,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03361854329705238,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 41,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.016534728929400444,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 42,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.02142263762652874,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 43,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04255835711956024,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 44,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.16528356075286865,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 45,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.21521256864070892,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 46,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.22791673243045807,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 47,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.2621849775314331,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 48,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.30080488324165344,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 49,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.2880800664424896,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 50,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.26717084646224976,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 51,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.4192400276660919,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 52,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1532135009765625,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 53,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.08100657910108566,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 54,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.033889081329107285,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 55,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.003256338182836771,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 56,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0009531938121654093,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 57,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.003612551372498274,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 58,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.013430485501885414,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 59,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0061651840806007385,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 60,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0007264051237143576,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 61,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00031841880991123617,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 62,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00010178142110817134,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 63,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 4.607916343957186e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 64,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 8.15106977825053e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 65,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0002996668918058276,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 66,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 8.713197166798636e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 67,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00011125900346087292,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 68,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00013839798339176923,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 69,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 3.312992339488119e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 70,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 1.4546390048053581e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 71,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.000640836195088923,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 72,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.000543647154700011,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 73,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0004082735104020685,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 74,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0015866555040702224,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 75,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0013726510806009173,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 76,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0009454613900743425,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 77,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.002591442782431841,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 78,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00559014780446887,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 79,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.010611381381750107,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 80,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0717850849032402,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 81,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.15979871153831482,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 82,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.09522154182195663,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 83,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.12904523313045502,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 84,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.45321938395500183,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 85,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.05846423655748367,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 86,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.08567743003368378,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 87,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.003571184352040291,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 88,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.003045982215553522,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 89,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.015160102397203445,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 90,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0119255306199193,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 91,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03348596766591072,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 92,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03656166419386864,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 93,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0743497684597969,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 94,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.048400718718767166,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 95,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.02792632207274437,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 96,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0891067162156105,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 97,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.06374645978212357,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 98,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.06825710833072662,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 99,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.07445234060287476,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 100,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.05507281795144081,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 101,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.20089125633239746,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 102,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.27776551246643066,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 103,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.2644132375717163,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 104,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.30378085374832153,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 105,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.2972278594970703,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 106,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.237682044506073,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 107,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.13051746785640717,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 108,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.021272920072078705,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 109,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.10801480710506439,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 110,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.15340977907180786,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 111,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.24225720763206482,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 112,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.3398795425891876,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 113,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.49087703227996826,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 114,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.27237144112586975,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 115,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.3419269025325775,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 116,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.18876862525939941,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 117,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.17655980587005615,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 118,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.10089553892612457,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 119,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.09356612712144852,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 120,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.07935342192649841,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 121,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.09766659140586853,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 122,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.07845363765954971,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 123,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.09390289336442947,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 124,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.07369720935821533,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 125,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.1217297613620758,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 126,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.02493414096534252,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 127,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.05965552479028702,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 128,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.09278815984725952,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 129,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0432249940931797,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 130,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.22150109708309174,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 131,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.22980520129203796,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 132,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.32274410128593445,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 133,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.30453094840049744,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 134,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.390042781829834,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 135,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.7654746770858765,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 136,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.6447710990905762,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 137,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.6715266704559326,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 138,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.4429936707019806,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 139,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.4238533675670624,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 140,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.5514335632324219,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 141,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.45918282866477966,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 142,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3452560305595398,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 143,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3636493384838104,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 144,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3383851945400238,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 145,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.35034143924713135,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 146,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.453375905752182,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 147,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.5536620020866394,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 148,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.4987572133541107,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 149,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.5412595272064209,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 150,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.39755600690841675,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 151,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.47484642267227173,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 152,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.4169716238975525,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 153,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.6008426547050476,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 154,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.5585547685623169,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 155,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.6164417862892151,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 156,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.42818331718444824,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 157,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.28517648577690125,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 158,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.30896759033203125,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 159,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3066646456718445,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 160,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.2859477996826172,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 161,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.21643772721290588,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 162,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.26697027683258057,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 163,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.23732060194015503,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 164,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.33766892552375793,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 165,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.21441856026649475,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 166,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.3207584321498871,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 167,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.34637215733528137,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 168,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.40353161096572876,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 169,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.45757871866226196,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 170,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.4822818636894226,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 171,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.5589959025382996,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 172,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3534812927246094,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 173,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.26704609394073486,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 174,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.21979181468486786,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 175,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.19250473380088806,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 176,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.1568300426006317,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 177,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.2005826085805893,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 178,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.04036656394600868,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 179,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.010856029577553272,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 180,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0042796568013727665,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 181,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0010969425784423947,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 182,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.003796617267653346,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 183,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.005529679358005524,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 184,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.02921907790005207,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 185,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.02718127705156803,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 186,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.018924284726381302,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 187,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.017589304596185684,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 188,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0011117010144516826,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 189,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0006756116636097431,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 190,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0034896600991487503,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 191,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.000759598973672837,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 192,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0007603351841680706,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 193,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0054765138775110245,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 194,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.005428307689726353,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 195,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.007174510974436998,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 196,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.002236634260043502,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 197,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0016412282129749656,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 198,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.010089239105582237,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 199,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03265036642551422,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 200,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.011440412141382694,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 201,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.03150778263807297,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 202,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.058866970241069794,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 203,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0152104701846838,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 204,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0028310862835496664,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 205,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0003161420172546059,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 206,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0029843749944120646,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 207,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0014769159024581313,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 208,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0008584211464039981,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 209,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.002237962558865547,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 210,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.002119450829923153,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 211,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.002030539559200406,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 212,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0021901025902479887,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 213,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0038771748077124357,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 214,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0028202757239341736,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 215,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.000593620992731303,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 216,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.013038480654358864,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 217,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.01028365083038807,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 218,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00420437753200531,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 219,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.008324733935296535,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 220,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.005339678842574358,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 221,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.014126763679087162,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 222,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.012087180279195309,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 223,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.20078448951244354,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 224,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.2546027600765228,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 225,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.15096046030521393,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 226,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.26442161202430725,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 227,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3466356694698334,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 228,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.34722843766212463,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 229,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.2990158200263977,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 230,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.38113051652908325,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 231,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.34578919410705566,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 232,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.41795095801353455,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 233,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.382107675075531,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 234,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.29815036058425903,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 235,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3925265967845917,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 236,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.36182427406311035,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 237,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.31166401505470276,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 238,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.3218808174133301,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 239,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.11492574214935303,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 240,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.2411632388830185,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 241,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 1,
+   "x3d_conf": 0.10628629475831985,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 1
+  },
+  {
+   "fi": 242,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.06162120774388313,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 243,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.06167299672961235,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 244,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.03201620280742645,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 245,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0037248360458761454,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 246,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.00042492771171964705,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 247,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.009499764069914818,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 248,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.0127473846077919,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 249,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.017263703048229218,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 250,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.02012510597705841,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 251,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0014847239945083857,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 252,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0031368262134492397,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 253,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.009665025398135185,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 254,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0010129420552402735,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 255,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0017055730568245053,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 256,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.004953936208039522,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 257,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.00042242853669449687,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 258,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0021064667962491512,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 259,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0008219503215514123,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 260,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.011141634546220303,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 261,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.010741726495325565,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 262,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.007054703310132027,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 263,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04249625280499458,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 264,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03132621571421623,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 265,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04747078940272331,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 266,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.015944339334964752,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 267,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0566447377204895,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 268,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.010333431884646416,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 269,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04307879880070686,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 270,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.13195988535881042,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 271,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.033902592957019806,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 272,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1584397703409195,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 273,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04870685935020447,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 274,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.07222773134708405,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 275,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.02524864487349987,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 276,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.05440288037061691,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 277,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.024072399362921715,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 278,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.07384701073169708,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 279,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.043128665536642075,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 280,
+   "old_label": 0,
+   "configD": 1,
+   "x3d": 0,
+   "x3d_conf": 0.02930288389325142,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 281,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.018100179731845856,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 282,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.034464068710803986,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 283,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.026988770812749863,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 284,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.053491994738578796,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 285,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.050426386296749115,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 286,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.06077900528907776,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 287,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04409465938806534,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 288,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.08062538504600525,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 289,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04117767512798309,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 290,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0447981022298336,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 291,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.11670007556676865,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 292,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.05167978256940842,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 293,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1189023107290268,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 294,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.15959666669368744,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 295,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.25654375553131104,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 296,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.307441771030426,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 297,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.19630704820156097,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 298,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03201708942651749,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 299,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.007169153541326523,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 300,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.006190284620970488,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 301,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.01723458617925644,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 302,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04733016714453697,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 303,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.011826281435787678,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 304,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04044128209352493,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 305,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03258698061108589,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 306,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03093649260699749,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 307,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03175998106598854,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 308,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0170549638569355,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 309,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0245322547852993,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 310,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.03117852844297886,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 311,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.013159608468413353,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 312,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.020822206512093544,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 313,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.04442866891622543,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 314,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.16586154699325562,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 315,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.14924494922161102,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 316,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.05615776404738426,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 317,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.08998742699623108,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 318,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.12467723339796066,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 319,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.054726697504520416,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 320,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.13340972363948822,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 321,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.16281861066818237,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 322,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.2540854215621948,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 323,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.1672339290380478,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 324,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.22092890739440918,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 325,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.06366302073001862,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 326,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.09961125999689102,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 327,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 1,
+   "x3d_conf": 0.11715869605541229,
+   "x3d_warmup": false,
+   "agree": false,
+   "proposed": null
+  },
+  {
+   "fi": 328,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.01824289932847023,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 329,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.01871516928076744,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 330,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.01830413192510605,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 331,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0782168060541153,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 332,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.022042933851480484,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 333,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.007630577776581049,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 334,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.006097608711570501,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 335,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.012099489569664001,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 336,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.007034707348793745,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 337,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.006784836761653423,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 338,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.005529089365154505,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 339,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0034131549764424562,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 340,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.003286637831479311,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 341,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0035245255567133427,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 342,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0006289230659604073,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 343,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0010542143136262894,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 344,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0008849697187542915,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 345,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.002897868864238262,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 346,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0002876905200537294,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 347,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0015865580644458532,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 348,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 0.0004541358503047377,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  },
+  {
+   "fi": 349,
+   "old_label": 0,
+   "configD": 0,
+   "x3d": 0,
+   "x3d_conf": 2.51387737080222e-05,
+   "x3d_warmup": false,
+   "agree": true,
+   "proposed": 0
+  }
+ ]
+}
