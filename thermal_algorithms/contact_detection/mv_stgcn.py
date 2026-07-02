@@ -500,7 +500,11 @@ class MVSTGCNDetector(ContactDetector):
     def _state_dict(self) -> dict:
         if self._model is None:
             return {}
-        return {"model_state": self._model.state_dict()}
+        # Homography lives on ContactDetector (outside _params), so it must be
+        # persisted here explicitly — without it the fusion front-end reloads
+        # dead (zero actors → constant confidence).
+        return {"model_state": self._model.state_dict(),
+                "homography": self._homography}
 
     def _load_state_dict(self, state: dict) -> None:
         if not state:
@@ -510,4 +514,6 @@ class MVSTGCNDetector(ContactDetector):
         sd = {k: v.to(device) if hasattr(v, "to") else v
               for k, v in state["model_state"].items()}
         model.load_state_dict(sd)
+        if state.get("homography") is not None:
+            self._homography = state["homography"]
         self._is_fitted = True

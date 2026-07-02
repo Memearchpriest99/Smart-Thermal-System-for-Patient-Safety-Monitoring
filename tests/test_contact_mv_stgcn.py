@@ -197,3 +197,22 @@ class TestMVSTGCNPersistence:
             e1 = det.predict(_make_frames(), detections=([], [], []))
             e2 = loaded.predict(_make_frames(), detections=([], [], []))
         assert e1.confidence == pytest.approx(e2.confidence, abs=1e-5)
+
+    def test_homography_survives_save_load(self, tmp_path):
+        """Regression: homography lives on ContactDetector outside _params, so
+        _state_dict must persist it explicitly. Without it the reloaded fusion
+        front-end sees no homography → zero actors → constant confidence."""
+        import numpy as np
+        from thermal_algorithms.core.types import HomographyMatrices
+
+        H = HomographyMatrices(h1=np.eye(3), h2=np.eye(3), h3=np.eye(3))
+        det = MVSTGCNDetector(T=4, n_epochs=1, hidden_dim=8, n_gcn_layers=1,
+                              homography=H)
+        frames, events = _make_training_set(n=8, T=4)
+        det.fit(frames, events)
+
+        path = tmp_path / "mv_stgcn.thalg"
+        det.save(path)
+        loaded = MVSTGCNDetector.load(path)
+        assert loaded.homography is not None
+        np.testing.assert_allclose(loaded.homography.h1, H.h1)
