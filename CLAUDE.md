@@ -21,7 +21,7 @@ python -m pytest tests/test_types.py tests/test_sensor_profile.py tests/test_bas
   tests/test_fire_svm.py tests/test_contact_multiview.py tests/test_contact_geometric.py \
   tests/test_contact_mv_stgcn.py tests/test_contact_thermo_x3d.py tests/test_metrics.py \
   tests/test_label_io_extended.py tests/test_fire_contact_datasets.py \
-  tests/test_trainer.py tests/test_pipeline.py
+  tests/test_trainer.py tests/test_pipeline.py tests/test_acquisition.py
 
 # Run a single test file
 python -m pytest tests/test_pipeline.py -v
@@ -49,6 +49,8 @@ python examples/demo_pipeline.py
 ```
 thermal_algorithms/
 ├── core/               base ABC, frozen dataclasses, sensor profiles, checkpoints, CSV I/O
+├── acquisition/        live capture from the Waveshare MI48 module — wiki SPI/I2C pipeline
+│                       via pysenxor; hardware imports are lazy (testable off-Pi)
 ├── preprocessing/      TatenoPipeline (Gaussian smooth → background subtract → L1 residual)
 ├── human_detection/    3 alternatives: AdaptiveThreshold / HOG-SVM / MobileNet-SSD
 ├── fire_detection/     2 alternatives: OtsuFireDetector / FireSVMDetector
