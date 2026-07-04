@@ -6,8 +6,9 @@ onnxruntime>=1.17
 scikit-learn>=1.6,<2      # FireSVM checkpoint is a sklearn pickle
 pillow>=10
 
-# --- live acquisition only (3x Waveshare Thermal Camera Module) ---------
-# pip install gpiozero smbus2 spidev crcmod
+# --- live acquisition (3x Waveshare module over USB-C, deployed wiring) --
+pyserial>=3.5
+crcmod>=1.7
 # plus the vendor pysenxor package from the Waveshare wiki:
 #   wget https://files.waveshare.com/wiki/Thermal_Camera_Module/Thermal_Camera_Hat.zip
 #   unzip Thermal_Camera_Hat.zip && pip install -e pysenxor-master/
