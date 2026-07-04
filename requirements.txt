@@ -1,0 +1,13 @@
+# Smart Thermal System demo — runtime dependencies (Raspberry Pi / Linux)
+# Python >= 3.9. tkinter comes from the OS: sudo apt install python3-tk
+numpy>=1.24
+opencv-python>=4.8
+onnxruntime>=1.17
+scikit-learn>=1.6,<2      # FireSVM checkpoint is a sklearn pickle
+pillow>=10
+
+# --- live acquisition only (3x Waveshare Thermal Camera Module) ---------
+# pip install gpiozero smbus2 spidev crcmod
+# plus the vendor pysenxor package from the Waveshare wiki:
+#   wget https://files.waveshare.com/wiki/Thermal_Camera_Module/Thermal_Camera_Hat.zip
+#   unzip Thermal_Camera_Hat.zip && pip install -e pysenxor-master/

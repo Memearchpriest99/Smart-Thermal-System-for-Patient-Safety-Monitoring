@@ -1,93 +1,66 @@
-# Smart Thermal System for Patient Safety Monitoring
+# Smart Thermal System — Demo (Linux / Raspberry Pi)
 
-A privacy-preserving edge system for closed psychiatric wards, developed in collaboration with the **Center for Mental Health in Be'er Sheva**.
+Privacy-preserving patient-safety monitoring on thermal video only —
+**no optical cameras**. This branch is the self-contained live demo:
+three 80×62 thermal feeds with real-time person and fire detection
+overlays, and contact (touch) detection on a strip at the bottom.
 
-The system uses low-resolution thermal sensors — no optical cameras — to detect four safety-critical scenarios in real time, without capturing personally identifiable visual information.
+**Model weights are included** (`checkpoints/`, ~2 MB) — clone and run.
 
-| Scenario | Detection method |
-|---|---|
-| 🔥 Fire ignition (lighters, cigarettes) | Per-camera fire detection |
-| ⚡ Violent acts / inappropriate contact | 3-view contact detection |
-| 🚫 Restricted-area breach | Human detection |
-| 👁 General presence monitoring | Human detection |
+| Task | Model | Runtime |
+|---|---|---|
+| Person detection | MobileNet-SSD | onnxruntime |
+| Fire detection | FireSVM (Otsu features + RBF SVM) | scikit-learn |
+| Contact detection | Thermo-X3D T5v2, denormal-flushed ONNX | onnxruntime |
 
-**Hardware:** Raspberry Pi 5 · 3× MLX90640 32×24 thermal sensors (or Waveshare 80×62) · TCA9548A I2C multiplexer  
-**Target cost:** ~$250/unit  
-**Authors:** Guy Chen · Yaniv Blau · Roy Lieberman  
-**Supervisor:** Or Zilberberg · **Advisor:** Dr. Oshrit Hoffer  
-**Institution:** Afeka Academic College of Engineering in Tel-Aviv
+Each camera has its own worker thread (background model + person + fire);
+contact runs on a fourth thread over the 3-view residual window. Queues
+drop stale frames, so the UI always shows the present.
 
----
-
-## Quick start
+## Quick start (replay — no hardware needed)
 
 ```bash
-pip install -e ".[dev]"
-
-# Run the end-to-end pipeline demo (falls back to synthetic data if no dataset)
-python examples/demo_pipeline.py
-
-# Reproduce the fire detection evaluation table (§ 5.3.4)
-# python scripts/eval_fire_detection.py   ← available once dataset is labeled
-
-# Run tests
-python -m pytest tests/test_pipeline.py tests/test_otsu_pipeline.py -v
+sudo apt install python3-venv python3-tk
+python3 -m venv env && source env/bin/activate
+pip install -r requirements.txt
+python -m demo.app --replay demo/sample_session
 ```
+
+`demo/sample_session` is a bundled 44 s three-camera recording that
+triggers person boxes and a contact alarm — it is also the on-stage
+fallback if a camera misbehaves.
+
+## Live mode (3× Waveshare Thermal Camera Module on a Raspberry Pi 5)
+
+One-time Pi setup:
+
+```bash
+sudo raspi-config        # Interface Options → enable SPI and I2C
+# /boot/firmware/config.txt: add `dtoverlay=spi0-0cs` below `dtparam=spi=on`
+pip install gpiozero smbus2 spidev crcmod
+wget https://files.waveshare.com/wiki/Thermal_Camera_Module/Thermal_Camera_Hat.zip
+unzip Thermal_Camera_Hat.zip && pip install -e pysenxor-master/
+```
+
+Match `demo/cams_pi.json` to your wiring (camera 0 is the wiki-default
+HAT wiring; I2C address is selected by the on-board 0R resistor), then:
+
+```bash
+python -m demo.app --live --config demo/cams_pi.json
+```
+
+## Self-test without a display
+
+```bash
+python -m demo.capture demo/sample_session --wait-alarm --after 90 --out demo_check.png
+```
+
+Expected output: `alarmed True` with contact confidence ≈ 1.0, and a PNG
+of the full UI.
+
+See `demo/README.md` for details and known behaviors (2 s background
+warm-up, 8 Hz requirement, alarm threshold).
 
 ---
-
-## Repository structure
-
-```
-thermal_algorithms/     Python package — all algorithms and training infrastructure
-  core/                 Base classes, data types, sensor profiles, checkpoints
-  preprocessing/        Tateno preprocessing pipeline
-  human_detection/      3 detector alternatives (§ 4.4.2)
-  fire_detection/       2 detector alternatives (§ 4.4.4)
-  contact_detection/    3 detector alternatives + multi-view utilities (§ 4.4.3)
-  training/             Datasets, metrics, evaluation harness
-  pipeline.py           Runtime integration — ThermalPipeline
-
-examples/               Runnable demo scripts (all work with synthetic data)
-tests/                  363+ unit and integration tests
-outputs/                Generated figures and calibration files (git-ignored)
-```
-
-See [`CLAUDE.md`](CLAUDE.md) for developer-facing architecture notes, test commands, and open items.
-
----
-
-## System flow
-
-```
-Thermal sensors (3 cameras)
-        │
-        ▼
-  ThermalPipeline.process(frame0, frame1, frame2)
-        │
-  restricted=True ──► Human detection only ──► RESTRICTED_AREA alert
-        │
-  restricted=False
-        ├──► Preprocessing (Tateno) ──► Human detection
-        ├──► Fire detection (per camera)  ──► FIRE alert
-        └──► Contact detection (3-view)   ──► CONTACT alert
-```
-
----
-
-## Dataset annotation convention
-
-YOLO-format bounding boxes, one `.txt` per frame, alongside `.npz` raw sensor data:
-
-```
-class 0 = fire / ignition source
-class 1 = person
-```
-
-Contact labels (no bounding box representation at 32×24) are stored in per-session `contact_labels.csv` files. See [`thermal_algorithms/training/README.md`](thermal_algorithms/training/README.md).
-
----
-
-## License
-
-Proprietary — Afeka Academic College of Engineering. All rights reserved.
+Afeka College of Engineering — Guy Chen, Yaniv Blau, Roy Lieberman.
+Supervisor: Or Zilberberg · Advisor: Dr. Oshrit Hoffer.

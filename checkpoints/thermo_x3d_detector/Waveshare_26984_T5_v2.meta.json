@@ -1,0 +1,8 @@
+{
+  "T": 5,
+  "global_mean": 0.8677623271942139,
+  "global_std": 0.7863402233848572,
+  "conf_threshold": 0.35,
+  "persistence_frames": 1,
+  "onnx": "Waveshare_26984_T5_v2.ftz.onnx"
+}

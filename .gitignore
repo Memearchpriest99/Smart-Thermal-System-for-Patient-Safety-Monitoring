@@ -19,7 +19,6 @@ dataset_raw/
 datasets/
 sessions/
 data/
-*.npz
 *.mp4
 *.xlsx
 
@@ -32,9 +31,6 @@ release/
 *.pkg
 
 # Trained model checkpoints (large binary files)
-checkpoints/
-*.thalg
-*.pkl
 
 # Generated outputs (figures, calibration files)
 outputs/

@@ -1,0 +1,12 @@
+{
+  "input_hw": [
+    62,
+    80
+  ],
+  "score_threshold": 0.5,
+  "nms_iou_threshold": 0.3,
+  "bbox_variance_xy": 0.1,
+  "bbox_variance_wh": 0.2,
+  "person_class_id": 1,
+  "normalize": "per-frame z-score: (x - mean) / (std + 1e-6)"
+}
