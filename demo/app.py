@@ -6,7 +6,9 @@ detection on a strip at the bottom. All inference runs on worker threads
 
     python -m demo.app --replay datasets/waveshare_work/2ppl_fight
     python -m demo.app --replay <dir1> <dir2> ...      # cycles sessions
-    python -m demo.app --live --config demo/cams_pi.json
+    python -m demo.app --live                          # 3x USB cameras (auto)
+    python -m demo.app --live --ports /dev/ttyACM0 /dev/ttyACM1 /dev/ttyACM2
+    python -m demo.app --live --spi-config demo/cams_pi.json   # HAT wiring
 """
 
 from __future__ import annotations
@@ -168,9 +170,13 @@ def main() -> None:
     mode.add_argument("--replay", nargs="+", metavar="SESSION_DIR",
                       help="loop recorded session folder(s)")
     mode.add_argument("--live", action="store_true",
-                      help="acquire from 3 MI48 cameras")
-    ap.add_argument("--config", type=Path, default=None,
-                    help="JSON list of MI48CameraConfig overrides (live mode)")
+                      help="acquire from 3 MI48 cameras (USB by default)")
+    ap.add_argument("--ports", nargs=3, metavar="PORT", default=None,
+                    help="explicit serial ports for cameras 0/1/2 "
+                         "(default: auto-detect, USB-socket order)")
+    ap.add_argument("--spi-config", type=Path, default=None,
+                    help="JSON list of MI48CameraConfig overrides for the "
+                         "SPI/I2C HAT wiring instead of USB")
     ap.add_argument("--fps", type=float, default=8.0)
     ap.add_argument("--checkpoints", type=Path, default=_ROOT / "checkpoints")
     ap.add_argument("--screenshot-after", type=float, default=0.0)
@@ -180,15 +186,27 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.live:
-        from thermal_algorithms.acquisition import MI48CameraConfig
+        if args.spi_config:
+            from thermal_algorithms.acquisition import MI48Camera, MI48CameraConfig
 
-        if args.config:
-            overrides = json.loads(args.config.read_text())
-            configs = [MI48CameraConfig(**{"fps": args.fps, **o})
+            overrides = json.loads(args.spi_config.read_text())
+            cameras = [MI48Camera(MI48CameraConfig(**{"fps": args.fps, **o}))
                        for o in overrides]
         else:
-            raise SystemExit("--live requires --config with 3 camera configs")
-        source = LiveMI48Source(configs, fps=args.fps)
+            from thermal_algorithms.acquisition import (
+                MI48USBCamera,
+                MI48USBCameraConfig,
+                list_mi48_ports,
+            )
+
+            ports = args.ports or list_mi48_ports()
+            if len(ports) < 3:
+                raise SystemExit(
+                    f"found {len(ports)} MI48 USB camera(s) ({ports}); "
+                    "need 3 — check cables or pass --ports explicitly")
+            cameras = [MI48USBCamera(MI48USBCameraConfig(
+                camera_id=i, port=ports[i], fps=args.fps)) for i in range(3)]
+        source = LiveMI48Source(cameras, fps=args.fps)
     else:
         source = ReplaySource(args.replay, fps=args.fps)
 

@@ -13,12 +13,20 @@ from thermal_algorithms.acquisition.mi48_camera import (
     MI48CameraConfig,
     mi48_data_to_array,
 )
+from thermal_algorithms.acquisition.mi48_usb import (
+    MI48USBCamera,
+    MI48USBCameraConfig,
+    list_mi48_ports,
+)
 from thermal_algorithms.acquisition.recorder import SessionRecorder
 
 __all__ = [
     "AcquisitionError",
     "MI48Camera",
     "MI48CameraConfig",
+    "MI48USBCamera",
+    "MI48USBCameraConfig",
+    "list_mi48_ports",
     "mi48_data_to_array",
     "SessionRecorder",
 ]

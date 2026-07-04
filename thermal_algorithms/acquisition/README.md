@@ -1,8 +1,17 @@
 # acquisition — live capture from the Waveshare Thermal Camera Module
 
-Implements the acquisition pipeline from the
-[Waveshare wiki](https://www.waveshare.com/wiki/Thermal-Camera-Module),
-replacing the DataRecorder path (§ 5.1.2):
+Two transports, one `Frame` contract (float32 °C, 62×80):
+
+**USB-C (`MI48USBCamera`, the deployed wiring)** — each module's USB-C port
+to a Pi USB-A socket; enumerates as a CDC serial device (VID 0x0416).
+Control and frame data share the serial link (pysenxor `stream_usb.py`
+pattern). Multi-camera identity is resolved by USB *topology* order
+(`list_mi48_ports()`), so `camera_id` = physical socket, stable across
+reboots. Needs only `pyserial` + `crcmod` + the vendor `senxor` package,
+plus membership in the `dialout` group. No GPIO, no raspi-config.
+
+**SPI/I2C HAT (`MI48Camera`)** — the wiki's 40-pin pipeline, kept as an
+alternative:
 
 | Bus  | Role | Wiring (HAT default) |
 |------|------|----------------------|

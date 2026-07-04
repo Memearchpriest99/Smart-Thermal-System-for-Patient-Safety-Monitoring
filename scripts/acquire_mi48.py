@@ -64,6 +64,12 @@ def parse_args() -> argparse.Namespace:
                    help="MI48 frame rate (default: 8, project standard)")
     p.add_argument("--config", type=Path, default=None,
                    help="JSON list of per-camera MI48CameraConfig overrides")
+    p.add_argument("--usb", action="store_true",
+                   help="cameras connected over USB-C (auto-detected serial "
+                        "ports in USB-socket order) instead of the SPI/I2C HAT")
+    p.add_argument("--n-cameras", type=int, default=None,
+                   help="with --usb: how many cameras to record "
+                        "(default: all detected)")
     p.add_argument("--hflip", action="store_true",
                    help="Horizontally flip frames (forward-looking mount)")
     p.add_argument("--no-png", dest="png", action="store_false",
@@ -71,28 +77,43 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def build_configs(args: argparse.Namespace) -> list[MI48CameraConfig]:
+def build_cameras(args: argparse.Namespace):
+    if args.usb:
+        from thermal_algorithms.acquisition import (
+            MI48USBCamera,
+            MI48USBCameraConfig,
+            list_mi48_ports,
+        )
+
+        ports = list_mi48_ports()
+        n = args.n_cameras or len(ports)
+        if n == 0 or n > len(ports):
+            raise SystemExit(f"found {len(ports)} MI48 USB camera(s): {ports}")
+        return [MI48USBCamera(MI48USBCameraConfig(
+            camera_id=i, port=ports[i], fps=args.fps, hflip=args.hflip))
+            for i in range(n)]
     if args.config is None:
-        return [MI48CameraConfig(fps=args.fps, hflip=args.hflip)]
+        return [MI48Camera(MI48CameraConfig(fps=args.fps, hflip=args.hflip))]
     overrides = json.loads(args.config.read_text())
     return [
-        MI48CameraConfig(**{"fps": args.fps, "hflip": args.hflip, **o})
+        MI48Camera(MI48CameraConfig(**{"fps": args.fps, "hflip": args.hflip, **o}))
         for o in overrides
     ]
 
 
 def main() -> None:
     args = parse_args()
-    configs = build_configs(args)
 
     with contextlib.ExitStack() as stack:
         cameras = []
-        for cfg in configs:
-            cam = stack.enter_context(MI48Camera(cfg))
+        for cam in build_cameras(args):
+            stack.enter_context(cam)
             cam.start()
             cameras.append(cam)
-            print(f"camera {cfg.camera_id}: streaming at {cfg.fps} fps "
-                  f"(I2C 0x{cfg.i2c_address:02X}, SPI {cfg.spi_bus}.{cfg.spi_device})")
+            cfg = cam.config
+            where = (f"port {cfg.port or 'auto'}" if args.usb else
+                     f"I2C 0x{cfg.i2c_address:02X}, SPI {cfg.spi_bus}.{cfg.spi_device}")
+            print(f"camera {cfg.camera_id}: streaming at {cfg.fps} fps ({where})")
 
         recorder = SessionRecorder(
             cameras, root=args.root, scene=args.scene, write_pngs=args.png

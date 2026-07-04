@@ -155,6 +155,57 @@ class TestMI48Camera:
 
 
 # ---------------------------------------------------------------------------
+# MI48USBCamera (USB-C connected modules)
+# ---------------------------------------------------------------------------
+
+class TestMI48USBCamera:
+    def _make(self, camera_id: int = 0, fail_at: int | None = None):
+        from thermal_algorithms.acquisition import MI48USBCamera, MI48USBCameraConfig
+
+        rng = np.random.default_rng(camera_id)
+        frames = [
+            (20 + 10 * rng.random((FPA_SHAPE[1], FPA_SHAPE[0]))).astype(np.float32)
+            for _ in range(4)
+        ]
+        cam = MI48USBCamera(
+            MI48USBCameraConfig(camera_id=camera_id, port="/dev/ttyFAKE0"),
+            _mi48=FakeMI48(frames, fail_at=fail_at),
+        )
+        return cam, frames
+
+    def test_read_frame_returns_frame(self):
+        cam, frames = self._make(camera_id=2)
+        cam.start()
+        frame = cam.read_frame()
+        assert isinstance(frame, Frame)
+        assert frame.data.shape == (62, 80)
+        assert frame.camera_id == 2
+        np.testing.assert_allclose(frame.data, frames[0], atol=0.05)
+
+    def test_none_data_raises(self):
+        from thermal_algorithms.acquisition import AcquisitionError
+
+        cam, _ = self._make(fail_at=0)
+        cam.start()
+        with pytest.raises(AcquisitionError):
+            cam.read_frame()
+
+    def test_works_with_session_recorder(self, tmp_path):
+        from thermal_algorithms.acquisition import SessionRecorder
+
+        cams = []
+        for ch in range(3):
+            cam, _ = self._make(camera_id=ch)
+            cam.start()
+            cams.append(cam)
+        rec = SessionRecorder(cams, root=tmp_path, scene="usb_test",
+                              write_pngs=False)
+        out = rec.record(n_frames=3)
+        for ch in range(3):
+            assert np.load(out / f"ch{ch}_thermal.npz")["frames"].shape == (3, 62, 80)
+
+
+# ---------------------------------------------------------------------------
 # SessionRecorder
 # ---------------------------------------------------------------------------
 
