@@ -24,28 +24,39 @@ python -m demo.app --replay <session_dir> [<dir2> ...] # cycles sessions
 A session folder needs `ch0/1/2_raw_data.npz` or `ch0/1/2_thermal.npz`
 (key `frames`, shape `(N, 62, 80)` float32 °C).
 
-## Run — live on the Raspberry Pi (3× Waveshare Thermal Camera Module)
+## Run — live on the Raspberry Pi (3× Waveshare module over USB-C)
 
-One-time setup (see also `thermal_algorithms/acquisition/README.md`):
+The deployed wiring: each camera's USB-C port to a Pi USB-A socket. The
+modules enumerate as serial devices (VID 0x0416) — no GPIO, no
+raspi-config, no SPI/I2C setup.
+
+One-time setup:
 
 ```bash
-sudo raspi-config                 # Interface Options → enable SPI and I2C
-# /boot/firmware/config.txt: add `dtoverlay=spi0-0cs` below `dtparam=spi=on`
 sudo apt install python3-venv python3-tk
 python3 -m venv ~/demo-env && source ~/demo-env/bin/activate
-pip install -r requirements.txt
-pip install gpiozero smbus2 spidev crcmod          # acquisition extras
+pip install -r requirements.txt pyserial crcmod
 wget https://files.waveshare.com/wiki/Thermal_Camera_Module/Thermal_Camera_Hat.zip
 unzip Thermal_Camera_Hat.zip && pip install -e pysenxor-master/
+sudo usermod -aG dialout $USER && newgrp dialout   # serial-port permission
 ```
 
-Adjust the wiring in `demo/cams_pi.json` (I2C address / SPI device /
-CS / DATA_READY / RESET pins per camera — camera 0 matches the wiki
-default), then:
+Then simply:
 
 ```bash
-python -m demo.app --live --config demo/cams_pi.json
+python -m demo.app --live                 # auto-detects the 3 cameras
 ```
+
+Camera IDs follow **physical USB-socket order** (stable across reboots).
+Verify once at rehearsal which socket is camera 0/1/2 — wave a hand in
+front of each; to reorder, swap cables or pass explicit ports:
+
+```bash
+python -m demo.app --live --ports /dev/ttyACM0 /dev/ttyACM2 /dev/ttyACM1
+```
+
+(Alternative SPI/I2C HAT wiring is still supported via
+`--spi-config demo/cams_pi.json` — see `thermal_algorithms/acquisition/README.md`.)
 
 **Crowd-demo insurance:** if a camera acts up mid-demo, switch to
 `--replay demo/sample_session` — same UI, recorded data.

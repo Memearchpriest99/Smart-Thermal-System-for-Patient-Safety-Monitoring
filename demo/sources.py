@@ -78,23 +78,23 @@ class ReplaySource:
 
 
 class LiveMI48Source:
-    """Three Waveshare MI48 cameras (wiki SPI/I2C pipeline), one thread each.
+    """Three Waveshare MI48 cameras, one blocking-read thread each.
 
-    Each camera thread blocks on its DATA_READY pin at the configured FPS and
-    stores its latest frame; a ticker thread assembles synchronized triplets.
+    Accepts any camera objects exposing open()/start()/read_frame()/close()
+    — `MI48USBCamera` (USB-C modules, the deployed wiring) or `MI48Camera`
+    (SPI/I2C HAT). Each camera thread blocks on its next frame and stores
+    it; a ticker thread assembles synchronized triplets at the demo rate.
     The small inter-camera phase offset is inherent to the hardware and is
     tolerated by all downstream detectors.
     """
 
     name = "LIVE"
 
-    def __init__(self, configs, fps: float = 8.0) -> None:
-        from thermal_algorithms.acquisition import MI48Camera
-
+    def __init__(self, cameras, fps: float = 8.0) -> None:
         self.fps = fps
-        self._cams = [MI48Camera(cfg) for cfg in configs]
+        self._cams = list(cameras)
         if len(self._cams) != 3:
-            raise ValueError("Live demo needs exactly 3 camera configs.")
+            raise ValueError("Live demo needs exactly 3 cameras.")
         self._latest: list[Optional[np.ndarray]] = [None, None, None]
         self._lock = threading.Lock()
         self._stop = threading.Event()
