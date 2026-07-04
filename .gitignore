@@ -70,3 +70,6 @@ htmlcov/
 reports/*.log
 reports/_test*
 reports/_build.log
+
+# X3D backend eval cache (regenerable, ~1.8GB)
+scripts/_x3d_backend_cache/

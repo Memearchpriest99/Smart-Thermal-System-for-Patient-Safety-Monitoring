@@ -1,0 +1,66 @@
+{
+  "full_predict_ms": 8.772825333289802,
+  "n_frames": 300,
+  "n_support_vectors": [
+    427,
+    447
+  ],
+  "mean_contours_per_frame": 13310.0,
+  "stages": {
+    "astype": {
+      "mean_ms": 0.0036453362554311752,
+      "p95_ms": 0.005400041118264198,
+      "total_share": 0.00040616311046699804
+    },
+    "otsu:hist+threshold": {
+      "mean_ms": 0.18396432783144215,
+      "p95_ms": 0.25525496457703417,
+      "total_share": 0.020497292532524178
+    },
+    "otsu:morphology": {
+      "mean_ms": 0.03310800103160242,
+      "p95_ms": 0.059025100199505694,
+      "total_share": 0.0036888911579295884
+    },
+    "blobs:findContours": {
+      "mean_ms": 0.05365167084770898,
+      "p95_ms": 0.07840501493774354,
+      "total_share": 0.005977865411123652
+    },
+    "blobs:mask+moments loop": {
+      "mean_ms": 0.3703483357094228,
+      "p95_ms": 0.5441500747110695,
+      "total_share": 0.041264185646496164
+    },
+    "blobs:numpy/scipy stats": {
+      "mean_ms": 7.937085993665581,
+      "p95_ms": 11.442409601295367,
+      "total_share": 0.8843495659496976
+    },
+    "blobs:n_contours": {
+      "mean_ms": 13.31,
+      "p95_ms": 19.0,
+      "total_share": null
+    },
+    "feature-vector assembly": {
+      "mean_ms": 0.005686669222389658,
+      "p95_ms": 0.009609956759959461,
+      "total_share": 0.0006336082867860244
+    },
+    "sklearn:scaler.transform": {
+      "mean_ms": 0.12548866293703517,
+      "p95_ms": 0.20002500968985268,
+      "total_share": 0.013981938042317095
+    },
+    "sklearn:svm.predict": {
+      "mean_ms": 0.1442340004723519,
+      "p95_ms": 0.1901050447486341,
+      "total_share": 0.016070542238639022
+    },
+    "sklearn:svm.predict_proba": {
+      "mean_ms": 0.11784200207330287,
+      "p95_ms": 0.1579449221026153,
+      "total_share": 0.013129947624019615
+    }
+  }
+}

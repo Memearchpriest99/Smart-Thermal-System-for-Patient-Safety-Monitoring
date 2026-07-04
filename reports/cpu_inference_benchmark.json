@@ -1,0 +1,51 @@
+{
+  "cpu": "Intel64 Family 6 Model 167 Stepping 1, GenuineIntel",
+  "torch_threads": 8,
+  "budget_ms": 125.0,
+  "scene": "1person cig",
+  "results": {
+    "TatenoPipeline (preprocessing)": {
+      "n": 117,
+      "mean_ms": 0.02104871802859836,
+      "p50_ms": 0.019200029782950878,
+      "p95_ms": 0.03066000062972307
+    },
+    "OtsuFireDetector (fire)": {
+      "n": 117,
+      "mean_ms": 0.06235128121339103,
+      "p50_ms": 0.05689996760338545,
+      "p95_ms": 0.10253998916596173
+    },
+    "FireSVMDetector (fire)": {
+      "n": 117,
+      "mean_ms": 7.948091456618829,
+      "p50_ms": 7.749099982902408,
+      "p95_ms": 10.516799986362455
+    },
+    "AdaptiveThreshold (person)": {
+      "n": 117,
+      "mean_ms": 0.5372051292887101,
+      "p50_ms": 0.5167999770492315,
+      "p95_ms": 0.7213599979877472
+    },
+    "MobileNet-SSD (person)": {
+      "n": 117,
+      "mean_ms": 2.632111967660678,
+      "p50_ms": 2.637999947182834,
+      "p95_ms": 3.3830999163910747
+    },
+    "HOG-SVM (person)": {
+      "n": 4,
+      "mean_ms": 2863.7346750183497,
+      "p50_ms": 2866.727949993219,
+      "p95_ms": 2872.678749996703
+    },
+    "Thermo-X3D T5v2 (contact, 3-view)": {
+      "n": 40,
+      "mean_ms": 81.79871750471648,
+      "p50_ms": 81.94095001090318,
+      "p95_ms": 86.2413500144612
+    }
+  },
+  "full_tick_estimate_ms": 113.15984989050776
+}
