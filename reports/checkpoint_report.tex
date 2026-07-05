@@ -13,12 +13,29 @@
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf}
 \usepackage{float}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{multirow}
 \usepackage{enumitem}
 \setlist{nosep}
 
 \definecolor{accent}{HTML}{1a7f6e}
 \definecolor{panel}{HTML}{f3f5f7}
+\definecolor{good}{HTML}{d9ead3}
+\definecolor{bad}{HTML}{f9d9d3}
 \newcommand{\code}[1]{\texttt{\small #1}}
+
+% Confusion matrix: #1 title, #2 TP, #3 FN, #4 FP, #5 TN
+\newcommand{\cmcell}[2]{\cellcolor{#1}\makebox[11mm]{#2}}
+\newcommand{\confmat}[5]{%
+\setlength{\tabcolsep}{4pt}%
+\begin{tabular}{cccc}
+\multicolumn{4}{c}{\small\textbf{#1}}\\[2pt]
+ & & \scriptsize pred.\ contact & \scriptsize pred.\ no-contact\\[1pt]
+\multirow{2}{*}{\rotatebox{90}{\scriptsize actual}}
+ & \scriptsize contact    & \cmcell{good}{#2} & \cmcell{bad}{#3}\\[1pt]
+ & \scriptsize no-contact & \cmcell{bad}{#4} & \cmcell{good}{#5}\\
+\end{tabular}}
 
 % ---- FireSVM benchmark numbers (filled from reports/waveshare_fire_results.json)
 \newcommand{\fireacc}{96.4\%}
@@ -699,11 +716,71 @@ morphological opening (2) and closing (7). This ablation also produced the
 raw/residual preprocessing split now used system-wide.
 
 On clean labels config-D and Thermo-X3D are nearly tied in-domain
-(F$_1{\pm}2$: 76.9\% vs.\ 78.5\%), but on the held-out room the network won
-decisively (73.1\% vs.\ 45.3\% for the earlier T5 checkpoint) --- the rule's
-blob-area constants are room-tuned, which conflicts with the no-calibration
-constraint. Config-D therefore remains a validation baseline; the deployed
-detector is the network.
+(F$_1{\pm}2$: 76.9\% vs.\ 78.5\%). The rule's blob-area constants are
+somewhat room-tuned, which conflicts with the no-calibration constraint,
+so we treat the network as the deployed detector and config-D as a
+baseline --- but see the matched head-to-head below, which is more nuanced
+than a single winner.
+
+\subsection{Head-to-head: rule vs.\ network (matched)}
+\label{sec:contact-headtohead}
+
+The two detectors are scored on \emph{identical} frames with identical
+preprocessing (raw frames to the shared MobileNet-SSD, p25-background
+Tateno residuals to both the blob rule and the network; threshold 0.35;
+frame-exact). We report two test sets because they tell different stories,
+and honesty requires both.
+
+\begin{table}[H]\centering\small
+\begin{tabular}{llccccrr}
+\toprule
+Test set & Detector & Acc & Prec & Rec & F$_1$ & PC ms & Pi ms (est.)\\
+\midrule
+\multirow{2}{*}{\shortstack[l]{Held-out\\\code{2men\_clash}\\(gold labels)}}
+ & config-D (rule)        & \textbf{76.9\%} & 44.4\% & 43.2\% & \textbf{43.8\%} & $\sim$15 & 50--65\\
+ & Thermo-X3D (ONNX)      & 49.0\% & 23.1\% & \textbf{62.2\%} & 33.7\% & \textbf{12.9} & \textbf{45--60}\\
+\midrule
+\multirow{2}{*}{\shortstack[l]{In-domain\\test split\\(7{,}592 fr)}}
+ & config-D (rule)        & 67.7\% & 63.9\% & 14.3\% & 23.3\% & $\sim$20 & 65--80\\
+ & Thermo-X3D (ONNX)      & \textbf{91.3\%} & \textbf{85.6\%} & \textbf{90.1\%} & \textbf{87.8\%} & \textbf{12.9} & \textbf{45--60}\\
+\bottomrule
+\end{tabular}
+\caption{Contact detection, matched comparison. \textbf{The held-out scene
+is the fair test} --- human gold labels, frame-exact, and neither detector
+tuned to it. There config-D leads on accuracy, F$_1$ and false-alarm rate,
+while the network trades precision for recall. The in-domain split
+\emph{flatters the network}: it was trained on 60\% of those scenes, and a
+large share of the positives are the 06-30 archive's episode-level interval
+labels that the frame-exact rule was never designed to match (hence its
+14\% recall there). PC = Intel i7-11700K class; Pi = Cortex-A76 estimate,
+$3$--$3.5\times$ the thread-matched PC time. config-D's cost is
+$3\times$ raw-SSD $+$ the blob rule; the SSD is already computed for person
+detection, so its \emph{marginal} cost is only the blob/rule stage
+($\sim$5\,ms).}
+\end{table}
+
+\begin{figure}[H]\centering
+\confmat{config-D --- held-out}{32}{42}{40}{241}
+\hspace{14mm}
+\confmat{Thermo-X3D (ONNX) --- held-out}{46}{28}{153}{128}
+\caption{Confusion matrices on the held-out \code{2men\_clash} scene (355
+frames, 74 contact). Green $=$ correct, red $=$ error. config-D makes far
+fewer false positives (40 vs.\ 153); the network catches more true
+contacts (46 vs.\ 32) but over-fires. The network's over-firing is the
+frame-vs-episode label artifact of \S4.3: T5v2 was trained on continuous
+episode labels, so frame-exact it predicts contact too liberally.}
+\end{figure}
+
+\noindent \textbf{Reading this for deployment.} At the \emph{episode} level
+(does an alarm fire during a real contact event?) both detectors succeed;
+the network's liberal firing is acceptable with the pipeline's cooldown,
+and its recall is the safety-relevant metric for a ward. The rule's lower
+false-alarm rate is attractive but its room-tuned constants do not
+generalize by design. The practical conclusion is unchanged --- deploy the
+network --- but the honest frame-exact numbers show the two are closer than
+the in-domain split suggests, and that \textbf{recalibrating T5v2 to
+frame-exact labels (or scoring at the episode level) is the highest-value
+next step}.
 
 \section{Runtime}
 
