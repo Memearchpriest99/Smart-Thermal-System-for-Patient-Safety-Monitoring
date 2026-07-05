@@ -67,7 +67,9 @@ def main() -> None:
     if not scene_files:
         raise SystemExit("no cache; run eval_x3d_backends.py build first")
 
-    yt_all, yp_cfg, yp_x3d = [], [], []
+    # groups: 'home' (original scenes) vs 'arch' (06-30 interval-labeled)
+    groups = {"home": {"yt": [], "cfg": [], "x3d": []},
+              "arch": {"yt": [], "cfg": [], "x3d": []}}
     cfg_frame_times = []
     n_scenes = 0
 
@@ -75,6 +77,7 @@ def main() -> None:
         scene = f.stem
         if scene == HELD_OUT:
             continue
+        grp = "arch" if scene.startswith("arch0630") else "home"
         conf_file = CACHE / f"confs_onnx_fp32_{scene}.npy"
         if not conf_file.exists():
             print(f"skip {scene}: no X3D confs")
@@ -119,37 +122,44 @@ def main() -> None:
         cfg_pred = {k: morphed[i] for i, k in enumerate(order)}
 
         for k in test_range:
-            yt_all.append(int(labs[k]))
-            yp_cfg.append(int(cfg_pred[k]))
-            yp_x3d.append(1 if confs[k] > THRESHOLD else 0)
+            groups[grp]["yt"].append(int(labs[k]))
+            groups[grp]["cfg"].append(int(cfg_pred[k]))
+            groups[grp]["x3d"].append(1 if confs[k] > THRESHOLD else 0)
 
         geo._FRAMES_CACHE.clear()
         n_scenes += 1
-        print(f"  {scene}: {len(test_range)} test frames", flush=True)
+        print(f"  {scene} [{grp}]: {len(test_range)} test frames", flush=True)
+
+    all_yt = groups["home"]["yt"] + groups["arch"]["yt"]
+    all_cfg = groups["home"]["cfg"] + groups["arch"]["cfg"]
+    all_x3d = groups["home"]["x3d"] + groups["arch"]["x3d"]
 
     res = {
-        "test_frames": len(yt_all),
-        "test_positive": int(sum(yt_all)),
-        "n_scenes": n_scenes,
         "threshold": THRESHOLD,
-        "config_D": cm(yt_all, yp_cfg),
-        "thermo_x3d_onnx": cm(yt_all, yp_x3d),
+        "n_scenes": n_scenes,
         "config_D_pc_ms_per_frame": float(np.median(cfg_frame_times)),
+        "in_domain_all": {"config_D": cm(all_yt, all_cfg),
+                          "thermo_x3d_onnx": cm(all_yt, all_x3d)},
+        "in_domain_home": {"config_D": cm(groups["home"]["yt"], groups["home"]["cfg"]),
+                           "thermo_x3d_onnx": cm(groups["home"]["yt"], groups["home"]["x3d"])},
+        "in_domain_arch0630": {"config_D": cm(groups["arch"]["yt"], groups["arch"]["cfg"]),
+                               "thermo_x3d_onnx": cm(groups["arch"]["yt"], groups["arch"]["x3d"])},
     }
     OUT.write_text(json.dumps(res, indent=2))
 
-    print("\n" + "=" * 68)
-    print(f"Matched in-domain test set: {res['test_frames']} frames, "
-          f"{res['test_positive']} positive, {n_scenes} scenes")
-    print(f"{'algo':<16} {'acc':>6} {'prec':>6} {'rec':>6} {'f1':>6} {'FAR':>6} "
-          f"| {'TP':>5} {'FP':>5} {'FN':>5} {'TN':>5}")
-    for name in ("config_D", "thermo_x3d_onnx"):
-        m = res[name]
-        print(f"{name:<16} {m['acc']:>6.3f} {m['prec']:>6.3f} {m['rec']:>6.3f} "
-              f"{m['f1']:>6.3f} {m['far']:>6.3f} | {m['tp']:>5} {m['fp']:>5} "
-              f"{m['fn']:>5} {m['tn']:>5}")
-    print(f"\nconfig-D PC runtime: {res['config_D_pc_ms_per_frame']:.1f} ms/frame "
-          f"(3x raw-SSD + blob rule)")
+    for grp in ("in_domain_home", "in_domain_arch0630", "in_domain_all"):
+        g = res[grp]
+        n = g["config_D"]["n"]; pos = g["config_D"]["tp"] + g["config_D"]["fn"]
+        print("\n" + "=" * 68)
+        print(f"{grp}: {n} frames, {pos} positive")
+        print(f"{'algo':<16} {'acc':>6} {'prec':>6} {'rec':>6} {'f1':>6} {'FAR':>6} "
+              f"| {'TP':>5} {'FP':>5} {'FN':>5} {'TN':>5}")
+        for name in ("config_D", "thermo_x3d_onnx"):
+            m = g[name]
+            print(f"{name:<16} {m['acc']:>6.3f} {m['prec']:>6.3f} {m['rec']:>6.3f} "
+                  f"{m['f1']:>6.3f} {m['far']:>6.3f} | {m['tp']:>5} {m['fp']:>5} "
+                  f"{m['fn']:>5} {m['tn']:>5}")
+    print(f"\nconfig-D PC runtime: {res['config_D_pc_ms_per_frame']:.1f} ms/frame")
     print(f"wrote {OUT.relative_to(_ROOT)}")
 
 

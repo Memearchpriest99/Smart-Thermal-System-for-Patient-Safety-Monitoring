@@ -693,7 +693,11 @@ multi-minute episodes), teaching episode semantics that frame-exact
 scoring penalizes. At the \emph{episode} level the model detects
 5/5 contact episodes in the held-out scene with 12.8\,s of total
 false-positive time. Frame-exact tightening is the main open item for
-the next retrain (interval-core training or threshold recalibration).}
+the next retrain (interval-core training or threshold recalibration).
+\textbf{Important:} the head-to-head split in \S\ref{sec:contact-headtohead}
+shows this 87.8\% is almost entirely the \code{arch0630} archive (91\% of
+the positives, trained on 60\%); on home contact the same checkpoint scores
+only 4.3\% --- read the two together.}
 \end{table}
 
 \paragraph{ONNX backend verification.} The deployed ONNX checkpoint was
@@ -728,35 +732,43 @@ than a single winner.
 The two detectors are scored on \emph{identical} frames with identical
 preprocessing (raw frames to the shared MobileNet-SSD, p25-background
 Tateno residuals to both the blob rule and the network; threshold 0.35;
-frame-exact). We report two test sets because they tell different stories,
-and honesty requires both.
+frame-exact). Crucially, we split the in-domain test frames into
+\emph{home scenes} and the \emph{06-30 archive} (\code{arch0630\_*}), because
+the aggregate hides which data drives each score.
 
 \begin{table}[H]\centering\small
 \begin{tabular}{llccccrr}
 \toprule
 Test set & Detector & Acc & Prec & Rec & F$_1$ & PC ms & Pi ms (est.)\\
 \midrule
-\multirow{2}{*}{\shortstack[l]{Held-out\\\code{2men\_clash}\\(gold labels)}}
- & config-D (rule)        & \textbf{76.9\%} & 44.4\% & 43.2\% & \textbf{43.8\%} & $\sim$15 & 50--65\\
- & Thermo-X3D (ONNX)      & 49.0\% & 23.1\% & \textbf{62.2\%} & 33.7\% & \textbf{12.9} & \textbf{45--60}\\
+\multirow{2}{*}{\shortstack[l]{Held-out \code{2men\_clash}\\cross-room, gold labels}}
+ & config-D (rule)   & \textbf{76.9\%} & 44.4\% & 43.2\% & \textbf{43.8\%} & $\sim$15 & 50--65\\
+ & Thermo-X3D (ONNX) & 49.0\% & 23.1\% & \textbf{62.2\%} & 33.7\% & \textbf{12.9} & \textbf{45--60}\\
 \midrule
-\multirow{2}{*}{\shortstack[l]{In-domain\\test split\\(7{,}592 fr)}}
- & config-D (rule)        & 67.7\% & 63.9\% & 14.3\% & 23.3\% & $\sim$20 & 65--80\\
- & Thermo-X3D (ONNX)      & \textbf{91.3\%} & \textbf{85.6\%} & \textbf{90.1\%} & \textbf{87.8\%} & \textbf{12.9} & \textbf{45--60}\\
+\multirow{2}{*}{\shortstack[l]{In-domain, home scenes\\(695 fr, 36 contact)}}
+ & config-D (rule)   & \textbf{95.5\%} & \textbf{58.1\%} & \textbf{50.0\%} & \textbf{53.7\%} & $\sim$20 & 65--80\\
+ & Thermo-X3D (ONNX) & 93.7\% & 10.0\% & 2.8\% & 4.3\% & \textbf{12.9} & \textbf{45--60}\\
+\midrule
+\multirow{2}{*}{\shortstack[l]{In-domain, \code{arch0630}\\(6{,}897 fr; net trained on 60\%)}}
+ & config-D (rule)   & 64.9\% & 64.2\% & 13.8\% & 22.7\% & $\sim$20 & 65--80\\
+ & Thermo-X3D (ONNX) & \textbf{91.1\%} & \textbf{85.8\%} & \textbf{91.3\%} & \textbf{88.5\%} & \textbf{12.9} & \textbf{45--60}\\
 \bottomrule
 \end{tabular}
-\caption{Contact detection, matched comparison. \textbf{The held-out scene
-is the fair test} --- human gold labels, frame-exact, and neither detector
-tuned to it. There config-D leads on accuracy, F$_1$ and false-alarm rate,
-while the network trades precision for recall. The in-domain split
-\emph{flatters the network}: it was trained on 60\% of those scenes, and a
-large share of the positives are the 06-30 archive's episode-level interval
-labels that the frame-exact rule was never designed to match (hence its
-14\% recall there). PC = Intel i7-11700K class; Pi = Cortex-A76 estimate,
-$3$--$3.5\times$ the thread-matched PC time. config-D's cost is
-$3\times$ raw-SSD $+$ the blob rule; the SSD is already computed for person
-detection, so its \emph{marginal} cost is only the blob/rule stage
-($\sim$5\,ms).}
+\caption{Contact detection, matched comparison across three test sets.
+\textbf{The single ``87.8\% in-domain'' headline for the network is almost
+entirely the \code{arch0630} row} --- that archive supplies 91\% of the
+in-domain contact frames, and the network trained on 60\% of the very same
+episodes (interval labels). On the two settings that actually matter for
+deployment --- previously-unseen home contact and a genuinely new room ---
+\emph{config-D is the more reliable detector}: it holds 44--54\% F$_1$ while
+the network collapses to 4\% recall on sparse home contact and over-fires
+cross-room (FAR 54\%). PC = Intel i7-11700K class; Pi = Cortex-A76 estimate
+($3$--$3.5\times$ the thread-matched PC time). config-D's cost is
+$3\times$ raw-SSD $+$ the blob rule, but the SSD is already computed for
+person detection, so its \emph{marginal} cost is only the blob/rule stage
+($\sim$5\,ms). \emph{Caveat:} the home test split has only 36 contact
+frames, so those numbers are high-variance; the direction, not the decimal,
+is the point.}
 \end{table}
 
 \begin{figure}[H]\centering
@@ -766,21 +778,26 @@ detection, so its \emph{marginal} cost is only the blob/rule stage
 \caption{Confusion matrices on the held-out \code{2men\_clash} scene (355
 frames, 74 contact). Green $=$ correct, red $=$ error. config-D makes far
 fewer false positives (40 vs.\ 153); the network catches more true
-contacts (46 vs.\ 32) but over-fires. The network's over-firing is the
+contacts (46 vs.\ 32) but over-fires badly. The over-firing is the
 frame-vs-episode label artifact of \S4.3: T5v2 was trained on continuous
 episode labels, so frame-exact it predicts contact too liberally.}
 \end{figure}
 
-\noindent \textbf{Reading this for deployment.} At the \emph{episode} level
-(does an alarm fire during a real contact event?) both detectors succeed;
-the network's liberal firing is acceptable with the pipeline's cooldown,
-and its recall is the safety-relevant metric for a ward. The rule's lower
-false-alarm rate is attractive but its room-tuned constants do not
-generalize by design. The practical conclusion is unchanged --- deploy the
-network --- but the honest frame-exact numbers show the two are closer than
-the in-domain split suggests, and that \textbf{recalibrating T5v2 to
-frame-exact labels (or scoring at the episode level) is the highest-value
-next step}.
+\noindent \textbf{Reading this for deployment --- revised.} The earlier
+recommendation (``deploy the network'') rested on the 87.8\% in-domain
+number, which this split shows to be an \code{arch0630} training-overlap
+artifact. The honest picture is that \emph{neither detector is clearly
+better, and the deployed T5v2 has a real weakness}: it barely fires on
+subtle home contact (2.8\% recall) because it over-fit the archive's
+episode distribution, and it over-fires in new rooms. config-D is steadier
+where it counts but its blob constants are mildly room-tuned. The
+safety-relevant metric is recall, and neither is satisfactory home-side
+frame-exact. \textbf{The highest-value next step is retraining Thermo-X3D on
+frame-exact, home-balanced labels} (or re-evaluating whether the earlier
+\code{x3d\_T5} checkpoint --- which scored F$_1$ 68\% on the held-out scene
+before the interval-label retrain --- is the better one to ship). Until
+then, running config-D and the network in parallel (alarm if either fires)
+is the safest interim posture.
 
 \section{Runtime}
 
