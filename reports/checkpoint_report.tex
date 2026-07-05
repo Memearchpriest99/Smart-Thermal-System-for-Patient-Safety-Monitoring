@@ -4,6 +4,7 @@
 \usepackage{lmodern}
 \usepackage{booktabs}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{tikz}
@@ -61,12 +62,7 @@ $62\times80$ frames in $^\circ$C. Two preprocessing views feed the models
 \begin{itemize}
 \item \textbf{Raw frames} go to the per-camera detectors (FireSVM,
       MobileNet-SSD). Raw input transfers across rooms without recalibration.
-\item \textbf{Tateno residuals} (Gaussian smooth $\rightarrow$ background
-      subtract $\rightarrow$ rectified $L_1$ residual) against a
-      \emph{session-local rolling 25th-percentile background} go to
-      Thermo-X3D. The p25 background is computed from the last $\sim$30\,s
-      of frames and refreshed continuously --- no per-room calibration,
-      $\sim$2\,s warm-up.
+\item \textbf{Tateno residuals} go to Thermo-X3D (contact).
 \end{itemize}
 
 \begin{table}[H]\centering\small
@@ -84,33 +80,184 @@ branch; total $\approx$2\,MB. The two neural networks run via
 \code{onnxruntime} --- the deployment is torch-free.}
 \end{table}
 
+\subsection{Preprocessing: the Tateno pipeline, and raw vs.\ residual}
+\label{sec:tateno}
+
+\paragraph{How it works.}
+The Tateno pipeline (Engineering Report \S4.4.1) turns a raw thermal frame
+into a \emph{motion/novelty residual} in three stages:
+\begin{enumerate}
+\item \textbf{Gaussian smoothing.} Convolve the frame with a Gaussian
+      kernel to suppress the per-pixel sensor noise (the Waveshare module
+      has a $\sim$0.7$^\circ$C noise floor). The kernel width is set in
+      \emph{physical} units --- a 5\,cm smoothing scale converted to pixels
+      via the sensor's angular resolution at the working distance --- so the
+      same setting behaves consistently as geometry changes.
+\item \textbf{Background subtraction.} Subtract a per-pixel background image
+      $B(x,y)$: $\;d = \text{smooth}(I) - B$. $B$ is the temperature each
+      pixel shows when the scene is ``empty/static''. A pixel that matches
+      the background cancels to zero; a warm body that was not there stands
+      out.
+\item \textbf{Rectified $L_1$ residual.} Take the absolute value,
+      $r = |d|$. Both hotter-than-background (a person) and
+      colder-than-background (a door opened to a cool corridor) become
+      positive novelty; the output is a non-negative ``how different from
+      normal is this pixel'' map.
+\end{enumerate}
+
+\paragraph{Where the background comes from.}
+The background is not a fixed calibration image (that would violate the
+no-per-room-calibration constraint). At deployment it is the
+\emph{session-local rolling 25th-percentile} of the last $\sim$30\,s of
+frames, refreshed continuously ($\sim$2\,s warm-up). The p25 (rather than
+the mean or median) is deliberate: over a short window a person who stands
+still would leak into a mean/median background and then cancel themselves
+out; the 25th percentile tracks the ``cool, empty'' end of each pixel's
+recent history, so stationary people still register. Empirically p25
+matched an ideal empty-room background at home \emph{and} transferred to a
+new room where mean/median failed.
+
+\paragraph{When we use which.} This choice was settled by a preprocessing
+ablation (\S\ref{sec:x3d-configd}) and is not uniform across models:
+\begin{itemize}
+\item \textbf{Raw frames} $\rightarrow$ FireSVM and MobileNet-SSD. Fire is
+      an \emph{absolute}-temperature phenomenon (a flame is hot regardless
+      of the background), and the SSD trained on raw frames both scored
+      higher and transferred across rooms; background subtraction actively
+      hurt it.
+\item \textbf{Tateno residual} $\rightarrow$ Thermo-X3D. Contact is about
+      \emph{relative} body positions and motion. On raw frames warm bodies
+      barely exceed a warm room and blob structure collapses; the residual
+      makes the two interacting bodies the dominant signal. The contact
+      model is also trained on residuals, so it sees at inference exactly
+      what it saw in training.
+\end{itemize}
+The one-line rule: \emph{raw for the detectors that ask ``how hot / who is
+here'', residual for the detector that asks ``how are the bodies moving
+relative to normal''.}
+
 \section{FireSVM --- fire detection}
 
 \subsection{What is an SVM?}
 
-A support vector machine is a binary classifier that finds the separating
-hyperplane $w^\top\phi(x)+b=0$ with the \emph{maximum margin} --- the largest
-distance to the nearest training points of either class. Only those nearest
-points (the \emph{support vectors}) determine the boundary, which makes the
-model compact and robust. Two extensions make SVMs practical:
+Our classifier sees each frame as one point $x\in\mathbb{R}^6$ (the six
+statistics of the hottest blob, $z$-scored) with label $y{=}{+}1$ for fire
+frames and $y{=}{-}1$ for everything else. A linear SVM seeks a hyperplane
+$w^\top x+b=0$ separating the two classes with \emph{maximum margin}: among
+all separating hyperplanes, pick the one with the widest empty corridor
+between the boundary and the closest point of either class. Requiring
+$y_i(w^\top x_i+b)\geq 1$ for all training points makes the corridor
+half-width $1/\|w\|$, so maximizing the margin is minimizing $\|w\|^2$.
+Wide margins generalize: the boundary is fixed by the hardest points ---
+the \emph{support vectors} --- and ignores everything comfortably far away.
 
-\begin{itemize}
-\item \textbf{Soft margin ($C$).} Real classes overlap, so slack variables
-      allow some points inside the margin; $C$ trades margin width against
-      training violations ($C{=}1$ here).
-\item \textbf{Kernel trick.} Instead of computing $\phi(x)$ explicitly, a
-      kernel $k(x,x')=\langle\phi(x),\phi(x')\rangle$ evaluates inner
-      products in a high-dimensional space. We use the radial basis
-      function kernel
-      $k(x,x') = \exp(-\gamma\|x-x'\|^2)$ with
-      $\gamma=\text{scale}=1/(d\cdot\mathrm{Var}(X))$, which yields a
-      smooth non-linear decision boundary.
-\end{itemize}
+\paragraph{Soft margin and the meaning of $C$.}
+The hard-margin problem assumes a perfect corridor exists. For our data it
+does not: the fire and non-fire clouds \emph{overlap in feature space} ---
+a cigarette ember at 3\,m is a 2-pixel $\sim$50$^\circ$C blob whose six
+statistics nearly coincide with a hot corner of the heater (labeled SAFE),
+and a few frames are mislabeled outright. With overlapping classes the
+constraints $y_i(w^\top x_i+b)\geq1\;\forall i$ are \emph{infeasible} ---
+the hard-margin SVM has no solution. The fix is to let points violate the
+corridor but charge for it, via slack variables $\xi_i\geq0$ measuring how
+badly each point violates:
+\[
+\min_{w,b,\xi}\ \tfrac12\|w\|^2 + C\sum_i \xi_i
+\qquad\text{s.t.}\quad y_i(w^\top x_i+b)\ \geq\ 1-\xi_i .
+\]
+$\xi_i{=}0$: outside the corridor, correct side (free). $0{<}\xi_i{<}1$:
+correct side but inside the corridor. $\xi_i{>}1$: misclassified.
+\textbf{$C$ is the price per unit of violation}, arbitrating margin width
+against training errors: $C\to\infty$ recovers the hard margin (the
+boundary contorts around every noisy point --- overfitting); $C\to0$ makes
+violations free (the optimizer ignores the data --- underfitting).
 
-Prediction is $\hat y=\mathrm{sign}\!\left(\sum_i \alpha_i y_i\,
-k(x_i,x)+b\right)$ over the support vectors $x_i$. A logistic fit on the
-decision values (\emph{Platt scaling}) turns the raw margin into the
-confidence probability we report.
+\paragraph{Why $C$ is a regularizer.}
+Rewriting the same optimization in loss-plus-penalty form makes this
+explicit:
+\[
+\min_{w,b}\ \sum_i \max\bigl(0,\,1-y_i(w^\top x_i+b)\bigr)
+\;+\; \tfrac{1}{2C}\|w\|^2 ,
+\]
+i.e.\ \emph{hinge loss plus $L_2$ weight decay, with $C$ the inverse of
+the weight-decay strength} --- exactly the capacity-control role weight
+decay plays in a neural network. Our $C{=}1$ (a moderate default) leaves
+874 of 6{,}497 training points as support vectors ($\sim$13\% on or inside
+the corridor), which quantifies the genuine class overlap.
+
+\paragraph{The dual and the kernel trick.}
+A single hyperplane over the six raw features cannot express interactions
+such as ``fire $=$ very hot \emph{and} small, or moderately hot \emph{and}
+heavy-tailed''. The classical remedy is a feature map $\phi(x)$ that
+appends products and powers, then separates linearly in the bigger space
+--- but a rich enough $\phi$ is enormous (for the kernel below, infinite-%
+dimensional), so computing it explicitly is intractable. The escape is the
+Lagrangian \emph{dual} of the soft-margin problem:
+\[
+\max_{\alpha}\ \sum_i\alpha_i-\tfrac12\sum_{i,j}
+\alpha_i\alpha_j y_i y_j\,\langle x_i,x_j\rangle
+\qquad\text{s.t.}\quad 0\leq\alpha_i\leq C,\ \ \textstyle\sum_i\alpha_i y_i=0 .
+\]
+The data enters \emph{only through inner products} $\langle x_i,x_j\rangle$
+--- at training and at prediction. Therefore we never need $\phi(x)$
+itself, only $\langle\phi(x),\phi(x')\rangle$, which we compute directly
+with a \textbf{kernel} $k(x,x')=\langle\phi(x),\phi(x')\rangle$. Mercer's
+theorem guarantees that every symmetric positive semi-definite $k$ is the
+inner product of \emph{some} feature map, so in practice one chooses $k$
+and never constructs $\phi$. (Note where $C$ reappears: as the box
+constraint $\alpha_i\leq C$, capping the influence any single training
+point may exert --- the dual view of the same regularization.)
+
+\paragraph{The RBF kernel.}
+RBF = radial basis function --- ``radial'' because it depends only on the
+distance between the two points:
+\[
+k(x,x')=\exp\bigl(-\gamma\|x-x'\|^2\bigr).
+\]
+Three complementary readings: (i)~a \emph{similarity score} that is 1 for
+identical blob statistics and decays smoothly with distance, with $\gamma$
+setting the length scale --- \code{scale} gives
+$\gamma=1/(d\cdot\mathrm{Var}(X))\approx1/6$ on our $z$-scored features,
+so differences of about one standard deviation per feature are what count;
+(ii)~an implicit $\phi$: Taylor-expanding the exponential shows the RBF
+feature space contains \emph{all polynomial degrees at once}
+(infinite-dimensional), making the RBF-SVM a universal approximator, with
+$\gamma$ controlling capacity ($\gamma\to\infty$ memorizes each point,
+$\gamma\to0$ degenerates toward linear); (iii)~the prediction rule below.
+
+\paragraph{Prediction and Platt scaling.}
+The trained classifier is
+\[
+\hat y=\operatorname{sign}\Bigl(\textstyle\sum_{i\in\mathrm{SV}}
+\alpha_i\,y_i\,k(x_i,x)+b\Bigr),
+\]
+a \emph{distance-weighted vote of memorized prototypes}: the 874 support
+vectors stored in the checkpoint \emph{are} the model. A new blob computes
+its similarity to each prototype; fire prototypes pull the score up in
+their neighborhood, SAFE prototypes pull it down, each with learned
+strength $\alpha_i$ (bounded by $C$). The decision surface is a smooth
+landscape of Gaussian bumps centered on the support vectors. The raw score
+$f(x)$ measures distance to the boundary --- useful for ranking but not
+calibrated. \emph{Platt scaling} fits a one-dimensional logistic
+regression $P(\text{fire}\mid x)=\sigma\bigl(a\,f(x)+c\bigr)$ on
+cross-validated decision values (two parameters, fitted after the SVM);
+this is the confidence reported in every \code{FireAlert}.
+
+\paragraph{Terminology: SVM, SVC, SMO.}
+\emph{SVM} is the family of max-margin kernel methods; \emph{SVC}
+(``support vector \emph{classification}'') is scikit-learn's implementation
+of the soft-margin kernel SVM classifier --- ``RBF-SVC'' simply means SVC
+configured with the RBF kernel, exactly the model above. \emph{SMO}
+(sequential minimal optimization) is the algorithm that solves the dual:
+the dual is a quadratic program over $\alpha$ with one equality constraint,
+and SMO exploits the fact that the smallest feasible update is a
+\emph{pair} of coordinates ($\alpha_i,\alpha_j$) --- chosen by which points
+currently violate the optimality conditions --- for which the constrained
+optimum has a closed form. Iterating over such pairs solves the QP without
+any generic solver; convergence to the global optimum is guaranteed
+because the dual is convex. This is why FireSVM has no optimizer, learning
+rate, or epoch schedule to report: training is a convex problem solved
+exactly, and the only capacity knobs are $C$ and $\gamma$.
 
 \subsection{What is special about our FireSVM}
 
@@ -137,6 +284,28 @@ makes the model \emph{resolution-invariant} (the same checkpoint works on
       support vectors) outputs SAFE or ACTIVE\_COM\-BUS\-TION with a
       Platt confidence.
 \end{enumerate}
+
+\paragraph{Skewness and kurtosis.}
+Four of the six features (max, mean, std, area) are intuitive. The last two
+describe the \emph{shape} of the blob's pixel-temperature distribution ---
+its third and fourth standardized moments. For blob pixels
+$\{t_i\}$ with mean $\mu$ and std $\sigma$:
+\[
+\text{skewness}=\frac{1}{n}\sum_i\!\Big(\frac{t_i-\mu}{\sigma}\Big)^{\!3},
+\qquad
+\text{kurtosis}=\frac{1}{n}\sum_i\!\Big(\frac{t_i-\mu}{\sigma}\Big)^{\!4}-3 .
+\]
+\emph{Skewness} measures asymmetry: 0 for a symmetric distribution,
+positive when a long tail points toward high temperatures. A flame has a
+few very hot pixels trailing off from a cooler edge --- strongly positive
+skew --- whereas a person's torso is roughly symmetric around body
+temperature. \emph{Kurtosis} (excess, hence the $-3$ so a Gaussian scores
+0) measures ``tailedness''/peakedness: high when the distribution has a
+sharp peak and heavy tails --- extreme outliers relative to the spread.
+Fire, which flickers, produces exactly such heavy-tailed pixel
+distributions; a uniform warm body does not. These two moments are what let
+six scalars separate ``small hot flickering thing'' from ``large steady
+warm thing'' without ever looking at the pixels' spatial layout.
 
 \paragraph{Input/output.} In: one raw $62\times80$ float32 frame
 ($^\circ$C). Out: a \code{FireAlert} --- level, Platt confidence, and the
@@ -178,10 +347,22 @@ low-contrast ignition frames (small cigarette embers at distance).}
 A single-stage anchor-based detector (SSD) on a MobileNet-style backbone,
 sized for our tiny native input --- we do \emph{not} upscale the thermal
 frame to 300$\times$300 like standard SSD; the network runs on
-$1\times62\times80$ directly. The backbone is built from
-\textbf{depthwise-separable convolutions} (depthwise $3{\times}3$ + pointwise
-$1{\times}1$, each with BatchNorm+ReLU), the MobileNet trick that cuts
-multiply--accumulates roughly 8--9$\times$ versus dense convolutions.
+$1\times62\times80$ directly.
+
+\paragraph{Why depthwise-separable convolutions.}
+A standard convolution mixes space and channels in one shot: a
+$3{\times}3$ conv from $C_{in}$ to $C_{out}$ channels costs
+$3\!\cdot\!3\!\cdot\!C_{in}\!\cdot\!C_{out}$ multiply--accumulates per
+output pixel. A \emph{depthwise-separable} block factors this into two
+cheaper steps: (i)~a \textbf{depthwise} $3{\times}3$ conv that filters each
+input channel independently (spatial mixing only, $3\!\cdot\!3\!\cdot\!C_{in}$
+MACs), then (ii)~a \textbf{pointwise} $1{\times}1$ conv that recombines
+channels (channel mixing only, $C_{in}\!\cdot\!C_{out}$ MACs); each is
+followed by BatchNorm+ReLU. The cost ratio is
+$\tfrac{1}{C_{out}}+\tfrac{1}{9}$ --- roughly $8$--$9\times$ fewer
+operations for the channel counts we use --- at a small accuracy cost. On a
+CPU-only edge device that factorization is what keeps the detector at a few
+milliseconds per frame.
 
 \begin{table}[H]\centering\small
 \begin{tabular}{llll}
@@ -234,10 +415,24 @@ $K{=}3$ anchors per cell $\Rightarrow$ $15{\cdot}20{\cdot}3 +
 \caption{Data flow. (Block 5, a stride-1 refinement after F2, omitted for clarity.)}
 \end{figure}
 
+\paragraph{F1 and F2 --- the two detection scales.}
+\textbf{F1} and \textbf{F2} are the two \emph{feature maps} the backbone
+taps for detection --- not to be confused with the F$_1$ \emph{score}
+metric. F1 is the earlier, higher-resolution map ($64\times15\times20$);
+F2 is the deeper, coarser map ($128\times7\times10$). SSD predicts boxes at
+both because a single scale cannot cover the range of apparent person sizes
+in the room: F1's small cells and small anchors catch people who are far
+away or small in the frame, while F2's large cells and large anchors catch
+people who are close and fill much of the view. Each map's cells carry
+their own anchors, and their predictions are concatenated before decoding
+--- a cheap way to get scale invariance without an image pyramid.
+
 \paragraph{Anchors.} Each feature-map cell holds $K{=}3$ anchor boxes with
 aspect ratios $\{1{:}1,\;1{:}2,\;1{:}3\}$ (square, tall, very tall ---
 person-shaped) and base widths of 10\,px (F1) and 16\,px (F2) in input
-coordinates.
+coordinates. An \emph{anchor} is a fixed reference box at a cell; the
+network predicts a small offset from it rather than absolute coordinates,
+which makes regression easier and stable.
 
 \paragraph{Input/output.} In: one raw frame, per-frame $z$-scored
 ($x\!-\!\mu)/(\sigma\!+\!10^{-6})$. Out: for each of the 1110 anchors, 4 box
@@ -257,12 +452,46 @@ ignored):
 \;+\; \lambda \underbrace{\textstyle\sum \mathrm{SmoothL1}(\text{loc})}_{\text{positives only}}
 \Big), \qquad \lambda = 1.
 \]
+The loss is ``multi-task'' because it trains two heads at once, one term
+each:
+
+\begin{itemize}
+\item \textbf{CE --- cross-entropy (classification).} For each considered
+      anchor the class head emits two logits (person vs.\ background);
+      softmax turns them into probabilities and cross-entropy
+      $-\log p(\text{true class})$ penalizes the model in proportion to how
+      confidently it was wrong. This teaches \emph{which} anchors contain a
+      person.
+\item \textbf{SmoothL1 --- localization (box regression).} For anchors
+      matched to a real person, the box head predicts four offsets
+      (center shift and log-size change) from the anchor to the true box;
+      SmoothL1 (Huber) loss scores the error. It is quadratic for small
+      errors (precise fitting near the target) but linear for large ones
+      ($|e|>1$), so a few badly-placed anchors early in training cannot
+      produce exploding gradients the way plain squared error would. This
+      teaches \emph{where} the box goes, and runs on positives only ---
+      there is no box to regress for background.
+\end{itemize}
+Both sums are divided by $N_{pos}$ (the number of matched anchors) so the
+loss scale does not depend on how many people are in the frame.
+
 \textbf{Hard-negative mining} keeps only the 3 highest-loss background
 anchors per positive (3:1), preventing the 1110-to-few anchor imbalance
-from drowning the signal. \textbf{Optimizer:} Adam, lr $10^{-3}$, weight
-decay $10^{-4}$ (the only explicit regularizer besides BatchNorm), 50
-epochs. \textbf{Augmentation:} random horizontal flips and small random
-translations (zero-padded), boxes transformed accordingly.
+from drowning the signal (almost every anchor is background, so without
+this the classifier would trivially predict ``background'' everywhere).
+\textbf{Optimizer:} Adam, lr $10^{-3}$, weight decay $10^{-4}$ (the only
+explicit regularizer besides BatchNorm), 50 epochs. \textbf{Augmentation:}
+random horizontal flips and small random translations (zero-padded), boxes
+transformed accordingly.
+
+\paragraph{NMS --- non-maximum suppression (at inference).}
+Because neighboring anchors and both feature maps fire on the same person,
+one body produces many overlapping boxes. NMS collapses them to one: sort
+the surviving boxes by score, keep the highest, discard every remaining box
+that overlaps it by more than an IoU threshold (0.3 here), and repeat on
+what is left. The result is one box per person --- the
+\code{(x,y,w,h,score)} detections drawn in the demo. It is a classical
+greedy geometric post-process, not learned.
 
 \subsection{Results}
 
@@ -343,6 +572,26 @@ statistics where \emph{maxima} matter (hot spots):
       convolved $1{\times}7{\times}7$, sigmoid-gated per location.
 \end{itemize}
 
+\paragraph{Why attention here is cheap (and why not Mamba).}
+This is \textbf{CBAM-style convolutional attention}, not the
+self-attention of a Transformer --- the distinction matters for CPU cost.
+Transformer/self-attention builds an $N\times N$ token-to-token similarity
+matrix, so its cost grows \emph{quadratically} with sequence length; that
+is the expense people mean when they say ``attention is heavy'', and it is
+what state-space models (Mamba) exist to avoid by replacing the quadratic
+mixer with a linear-time recurrence. Our attention has none of that
+structure. Channel attention is two global pools plus a tiny MLP on a
+length-$C$ vector ($O(C)$); spatial attention is a mean, a max, and one
+$7{\times}7$ convolution over the feature map ($O(HW)$). There is no
+token--token product and no quadratic term --- the module adds a couple of
+percent to the layer's FLOPs. Mamba/state-space blocks solve a problem we
+do not have (long-sequence quadratic attention over $T{=}5$ frames would be
+pointless) and would add a recurrent scan that ONNX/onnxruntime optimize
+far less well than the plain convolutions and pools we already use. The
+gate simply lets the network emphasize the hot, moving regions (channel and
+spatial hot spots) that signal contact --- worth its small cost, measured in
+the runtime table.
+
 \begin{figure}[h]\centering
 \begin{tikzpicture}[
   node distance=2.6mm,
@@ -365,6 +614,26 @@ statistics where \emph{maxima} matter (hot spots):
 \end{tikzpicture}
 \caption{One of three per-camera streams; features fuse late.}
 \end{figure}
+
+\paragraph{Why global \emph{average} pool at the head.}
+Two different poolings appear in this network, for two different jobs, and
+it is worth separating them. \emph{Downsampling} inside the backbone is
+done by \emph{strided convolution}, not max-pool --- modern practice, since
+a learned stride keeps more information than a hard max and exports cleanly
+to ONNX. The final collapse of the $96\times5\times16\times20$ tensor to a
+$128$-d descriptor uses \textbf{global average pooling}, which is the
+standard head in modern classification backbones (ResNet, X3D, etc.), not
+global max. The reason is what the two poolings assume about the signal.
+Global \emph{max} keeps only the single strongest activation per channel ---
+ideal when the class is defined by one localized peak. Contact is the
+opposite: it is a \emph{distributed, holistic} event --- two bodies, the
+region where they meet, their joint motion across the frame --- so averaging
+aggregates evidence over the whole scene and is robust to any single hot
+pixel, whereas max would throw away the spatial extent that distinguishes
+``two people touching'' from ``one hot spot''. Note we do \emph{not}
+discard max entirely: the attention module (above) uses average \emph{and}
+max pooling together, precisely because peak detection (hot spots) helps
+\emph{gating} even though averaging is the right \emph{final} aggregation.
 
 \paragraph{Inputs/outputs.} In: for each camera, the Tateno residual
 against the rolling p25 background, globally $z$-scored
@@ -454,6 +723,7 @@ MobileNet-SSD & 2.6\,ms & 1.8\,ms & 8--10\,ms\\
 Thermo-X3D (torch fp32, before work) & 93.7\,ms & --- & ---\\
 Thermo-X3D (ONNX fp32) & 34.5\,ms & --- & ---\\
 \textbf{Thermo-X3D (ONNX fp32, denormals flushed)} & \textbf{12.9\,ms} & 14.7\,ms & \textbf{45--60\,ms (4 cores)}\\
+Thermo-X3D (ONNX fp16, denormals flushed) & 13.3\,ms & --- & Pi candidate (native fp16)\\
 Thermo-X3D (ONNX int8) & 60.8\,ms & --- & untested\\
 \midrule
 Full tick: $3\times$(pre+fire+person) + contact & $\approx$24\,ms & & $\approx$65--90\,ms\\
@@ -468,6 +738,23 @@ microcode penalties; zeroing them in the model changed no output bit
 (max $|\Delta\text{logit}|=0$) and gave another 2.7$\times$. Future
 retrains should clamp subnormal weights post-training.}
 \end{table}
+
+\paragraph{fp16 vs.\ fp32-flushed --- and why the deployed model is
+fp32-flushed on x86.} Converting the model to fp16 also reaches
+$\approx$13\,ms on the PC, essentially tied with the fp32-flushed model,
+and it is near-lossless (max $|\Delta p|=0.0015$ vs.\ bit-identical for the
+flush). This tie is the whole point: fp16's apparent speedup on x86 \emph{is}
+the denormal flush --- casting the weights to fp16 underflows those
+$\sim$10$^{-41}$ values to zero as a side effect, and x86 has no native
+fp16 arithmetic unit (onnxruntime inserts fp16$\rightarrow$fp32 casts and
+computes in fp32 anyway). So on the PC we deploy the fp32-flushed model
+because it is exactly as fast and provably bit-identical. The Raspberry
+Pi~5 is the opposite case: its Cortex-A76 \emph{does} have native fp16 SIMD
+(ARMv8.2 fp16 extension), so there fp16 can compute in half precision and
+should beat fp32 --- making the fp16-flushed checkpoint the leading Pi
+candidate, to be confirmed on-device. (int8 is slower everywhere on our
+hardware: onnxruntime's CPU backend has no optimized int8 3-D convolution
+path, and neither x86 nor the A76 gains from int8 here.)
 
 In the demo application the three per-camera stacks run on parallel worker
 threads and X3D on a fourth, with depth-1 queues that drop stale frames;
