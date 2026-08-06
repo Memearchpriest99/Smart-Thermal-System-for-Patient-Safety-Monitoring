@@ -30,6 +30,8 @@ dependencies = [
     "scikit-image>=0.21",
     "torch>=2.1",
     "torchvision>=0.16",
+    "h5py>=3.9",
+    "hdf5plugin>=4.1",
 ]
 
 [project.optional-dependencies]

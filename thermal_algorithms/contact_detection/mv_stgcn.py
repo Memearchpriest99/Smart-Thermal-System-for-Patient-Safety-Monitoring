@@ -174,7 +174,14 @@ class MVSTGCNDetector(ContactDetector):
         batch_size: int = 16,
         device: Optional[str] = None,
         random_state: int = 0,
+        class_weight: Optional[tuple[float, float]] = None,
     ) -> None:
+        """
+        class_weight: Optional ``(weight_no_contact, weight_contact)`` passed
+            to ``nn.CrossEntropyLoss(weight=...)`` — contact is a small
+            minority class in the natural-ratio dataset (see
+            data/DATASET_NOTES.md). ``None`` keeps uniform weighting.
+        """
         super().__init__(
             sensor_profile=sensor_profile,
             homography=homography,
@@ -192,7 +199,9 @@ class MVSTGCNDetector(ContactDetector):
             batch_size=batch_size,
             device=device,
             random_state=random_state,
+            class_weight=class_weight,
         )
+        self._class_weight = class_weight
         self._human_detector = human_detector
         self._epsilon_m = float(epsilon_m)
         self._T = int(T)
@@ -275,7 +284,11 @@ class MVSTGCNDetector(ContactDetector):
             )
 
         optimizer = torch.optim.Adam(model.parameters(), lr=self._lr, weight_decay=self._wd)
-        criterion = nn.CrossEntropyLoss()
+        weight = (
+            torch.tensor(self._class_weight, dtype=torch.float32, device=device)
+            if self._class_weight is not None else None
+        )
+        criterion = nn.CrossEntropyLoss(weight=weight)
 
         model.train()
         for epoch in range(self._n_epochs):

@@ -222,7 +222,14 @@ class ThermoX3DDetector(ContactDetector):
         batch_size: int = 8,
         device: Optional[str] = None,
         random_state: int = 0,
+        class_weight: Optional[tuple[float, float]] = None,
     ) -> None:
+        """
+        class_weight: Optional ``(weight_no_contact, weight_contact)`` passed
+            to ``nn.CrossEntropyLoss(weight=...)`` — contact is a small
+            minority class in the natural-ratio dataset (see
+            data/DATASET_NOTES.md). ``None`` keeps uniform weighting.
+        """
         if sensor_profile is None:
             raise ValueError("ThermoX3DDetector requires a SensorProfile.")
 
@@ -238,7 +245,9 @@ class ThermoX3DDetector(ContactDetector):
             batch_size=batch_size,
             device=device,
             random_state=random_state,
+            class_weight=class_weight,
         )
+        self._class_weight = class_weight
         self._T = int(T)
         self._conf_threshold = float(conf_threshold)
         self._persistence_frames = int(persistence_frames)
@@ -319,7 +328,11 @@ class ThermoX3DDetector(ContactDetector):
 
         model, device = self._get_model()
         optimizer = torch.optim.Adam(model.parameters(), lr=self._lr, weight_decay=self._wd)
-        criterion = nn.CrossEntropyLoss()
+        weight = (
+            torch.tensor(self._class_weight, dtype=torch.float32, device=device)
+            if self._class_weight is not None else None
+        )
+        criterion = nn.CrossEntropyLoss(weight=weight)
 
         model.train()
         for epoch in range(self._n_epochs):

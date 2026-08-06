@@ -1,0 +1,2779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thermal Annotation Tool</title>
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #1a1d27;
+        --bg-tertiary: #252836;
+        --border: #333648;
+        --text-primary: #e4e6f0;
+        --text-secondary: #9498ad;
+        --accent-blue: #4a90d9;
+        --accent-green: #4caf50;
+        --accent-red: #e74c3c;
+        --accent-orange: #f39c12;
+        --mark-in-color: #2ecc71;
+        --mark-out-color: #e74c3c;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        user-select: none;
+    }
+
+    /* ── Top Bar ─────────────────────────────── */
+    .top-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    .top-bar label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .top-bar select, .top-bar button {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .top-bar select:hover, .top-bar button:hover { border-color: var(--accent-blue); }
+    #btn-load {
+        background: var(--accent-blue);
+        border-color: var(--accent-blue);
+        font-weight: 600;
+    }
+    #btn-load:hover { opacity: 0.85; }
+    .session-info {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+    /* ── FPS Block ───────────────────────────── */
+    .fps-block {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border: 1px solid var(--accent-orange);
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 11px;
+        opacity: 0.9;
+        flex-shrink: 0;
+    }
+    .fps-src-label, .fps-disp-label {
+        color: var(--text-secondary);
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .fps-src-val {
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+    .fps-sep {
+        color: var(--accent-orange);
+        font-size: 10px;
+        margin: 0 2px;
+    }
+    .fps-disp-sel {
+        background: transparent;
+        border: none;
+        color: var(--accent-orange);
+        font-family: monospace;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0 2px;
+        outline: none;
+    }
+    .fps-disp-sel option {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+    .fps-unit {
+        color: var(--text-secondary);
+        font-size: 10px;
+    }
+    .fps-step-hint {
+        color: var(--text-secondary);
+        font-size: 9px;
+        margin-left: 4px;
+        border-left: 1px solid var(--border);
+        padding-left: 6px;
+        white-space: nowrap;
+    }
+
+    /* ── Main Content ────────────────────────── */
+    .main-content {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* ── Video Area ──────────────────────────── */
+    .video-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    .video-grid {
+        display: grid;
+        gap: 4px;
+        padding: 8px;
+        flex: 1;
+        min-height: 0;
+    }
+    .video-cell {
+        position: relative;
+        background: #000;
+        border-radius: 4px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .video-cell video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    .video-cell .cam-label {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        background: rgba(0,0,0,0.7);
+        color: var(--accent-blue);
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 1px;
+    }
+    .video-cell .cam-label.master { color: var(--accent-green); }
+    .video-cell .no-video {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    /* Camera detection toggle */
+    .video-cell .cam-toggle {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        background: rgba(0,0,0,0.7);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        z-index: 2;
+        transition: all 0.15s;
+    }
+    .video-cell .cam-toggle:hover {
+        border-color: var(--accent-blue);
+        color: var(--text-primary);
+    }
+    .video-cell .cam-toggle.selected {
+        background: rgba(46, 204, 113, 0.3);
+        border-color: var(--accent-green);
+        color: var(--accent-green);
+    }
+    .video-cell.cam-selected {
+        outline: 2px solid var(--accent-green);
+        outline-offset: -2px;
+    }
+
+    /* ── Timeline Console ────────────────────── */
+    .timeline-console {
+        padding: 8px 16px 12px;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    .timeline-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+    }
+    .timeline-slider-wrap {
+        flex: 1;
+        position: relative;
+        height: 28px;
+        display: flex;
+        align-items: center;
+    }
+    #timeline-slider {
+        width: 100%;
+        height: 6px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: var(--bg-tertiary);
+        border-radius: 3px;
+        outline: none;
+        cursor: pointer;
+    }
+    #timeline-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--accent-blue);
+        cursor: grab;
+    }
+    .time-display {
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 13px;
+        color: var(--accent-blue);
+        min-width: 240px;
+        text-align: right;
+    }
+    .controls-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .playback-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .ctrl-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 4px 10px;
+        border-radius: 3px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+    .ctrl-btn:hover { border-color: var(--accent-blue); }
+    .ctrl-btn.active { background: var(--accent-blue); border-color: var(--accent-blue); }
+    .mark-display {
+        display: flex;
+        gap: 16px;
+        margin-left: 20px;
+    }
+    .mark-badge {
+        font-size: 12px;
+        font-family: monospace;
+        padding: 3px 10px;
+        border-radius: 3px;
+        border: 1px solid var(--border);
+        background: var(--bg-tertiary);
+    }
+    .mark-badge.in-set { border-color: var(--mark-in-color); color: var(--mark-in-color); }
+    .mark-badge.out-set { border-color: var(--mark-out-color); color: var(--mark-out-color); }
+    .speed-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+    }
+    .speed-controls span {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-right: 4px;
+    }
+    .hotkey-hint {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-left: 20px;
+    }
+    .hotkey-hint kbd {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        padding: 1px 5px;
+        border-radius: 2px;
+        font-family: monospace;
+        font-size: 11px;
+        color: var(--text-primary);
+    }
+
+    /* ── Right Panel (Ledger) ────────────────── */
+    .right-panel {
+        width: 320px;
+        background: var(--bg-secondary);
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+    }
+    .panel-header {
+        padding: 10px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .label-count {
+        background: var(--accent-blue);
+        color: #fff;
+        padding: 1px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+    }
+    .ledger-wrap {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px;
+    }
+    .ledger-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+    .ledger-table th {
+        position: sticky;
+        top: 0;
+        background: var(--bg-secondary);
+        padding: 6px 8px;
+        text-align: left;
+        color: var(--text-secondary);
+        font-weight: 500;
+        border-bottom: 1px solid var(--border);
+    }
+    .ledger-table td {
+        padding: 5px 8px;
+        border-bottom: 1px solid var(--bg-primary);
+        font-family: monospace;
+        font-size: 11px;
+    }
+    .ledger-table tr:hover { background: var(--bg-tertiary); }
+    .ledger-table .btn-del {
+        background: none;
+        border: 1px solid var(--accent-red);
+        color: var(--accent-red);
+        padding: 2px 6px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 10px;
+    }
+    .ledger-table .btn-del:hover { background: var(--accent-red); color: #fff; }
+    .ledger-table .btn-goto {
+        background: none;
+        border: 1px solid var(--accent-blue);
+        color: var(--accent-blue);
+        padding: 2px 6px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 10px;
+        margin-right: 4px;
+    }
+    .ledger-table .btn-goto:hover { background: var(--accent-blue); color: #fff; }
+    .event-badge {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 600;
+    }
+    .event-Violence { background: #e74c3c33; color: #e74c3c; }
+    .event-Fire { background: #f39c1233; color: #f39c12; }
+    .event-Contact { background: #9b59b633; color: #9b59b6; }
+    .event-Human { background: #3498db33; color: #3498db; }
+    .event-Empty { background: #2ecc7133; color: #2ecc71; }
+
+    /* ── Go-to Input ─────────────────────────── */
+    .goto-wrap {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 8px;
+    }
+    .goto-label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+    .goto-input {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 3px 7px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: monospace;
+        width: 148px;
+        outline: none;
+        transition: border-color 0.15s;
+    }
+    .goto-input:focus  { border-color: var(--accent-blue); }
+    .goto-input.ok     { border-color: var(--accent-green); }
+    .goto-input.err    { border-color: var(--accent-red); }
+    .goto-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .goto-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .dual-timeline {
+        padding: 6px 16px 10px;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .timeline-label-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 10px;
+        color: var(--text-secondary);
+    }
+    .timeline-label-row span { white-space: nowrap; min-width: 60px; }
+    .tl-canvas-wrap {
+        flex: 1;
+        position: relative;
+        height: 20px;
+        cursor: crosshair;
+    }
+    .tl-canvas {
+        width: 100%;
+        height: 100%;
+        border-radius: 3px;
+        background: var(--bg-primary);
+        display: block;
+    }
+    /* Zoom window controls */
+    .zoom-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 8px;
+    }
+    .zoom-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .zoom-btn:hover, .zoom-btn.active {
+        border-color: var(--accent-orange);
+        color: var(--accent-orange);
+    }
+    /* Pending mark region validity indicator */
+    .mark-validity {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 3px;
+        margin-left: 8px;
+        display: none;
+    }
+    .mark-validity.valid   { display:inline; background: #2ecc7122; color: #2ecc71; border: 1px solid #2ecc7166; }
+    .mark-validity.invalid { display:inline; background: #e74c3c22; color: #e74c3c; border: 1px solid #e74c3c66; }
+
+    /* ── Stats Panel ──────────────────────────── */
+    .stats-panel {
+        border-top: 1px solid var(--border);
+        padding: 8px 12px;
+        flex-shrink: 0;
+    }
+    .stats-header {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+    .stats-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+        font-size: 11px;
+    }
+    .stats-class-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .stats-class-name {
+        flex: 1;
+        color: var(--text-primary);
+        font-size: 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .stats-bar-wrap {
+        width: 60px;
+        height: 6px;
+        background: var(--bg-primary);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .stats-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+    }
+    .stats-nums {
+        font-family: monospace;
+        font-size: 10px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        min-width: 70px;
+        text-align: right;
+    }
+    .stats-total {
+        font-size: 10px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+        padding-top: 4px;
+        border-top: 1px solid var(--border);
+    }
+    .toast {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-size: 13px;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { border-color: var(--accent-green); }
+    .toast.error { border-color: var(--accent-red); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    /* ── Event Modal ─────────────────────────── */
+    .modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+        display: none; align-items: center; justify-content: center; z-index: 2000;
+        backdrop-filter: blur(2px);
+    }
+    .modal-overlay.open { display: flex; }
+    .event-modal {
+        background: var(--bg-secondary); border: 1px solid var(--accent-blue);
+        border-radius: 8px; padding: 20px; width: 600px; max-width: 90vw;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    }
+    .event-modal-header {
+        font-size: 15px; font-weight: 600; color: var(--text-primary);
+        margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .event-modal-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 60vh; overflow-y: auto;
+    }
+    .event-btn {
+        background: var(--bg-tertiary); border: 1px solid var(--border);
+        color: var(--text-primary); padding: 10px 12px; border-radius: 6px;
+        text-align: left; cursor: pointer; transition: all 0.15s ease;
+    }
+    .event-btn:hover { border-color: var(--accent-blue); background: #2a2d3d; transform: translateY(-1px); }
+    .event-modal-footer {
+        margin-top: 16px; font-size: 11px; color: var(--text-secondary); text-align: right;
+    }
+    /* ── Browse Modal ─────────────────────────── */
+    /* ── Path Input Bar ──────────────────────────── */
+    .path-input-bar {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: var(--bg-secondary);
+        border-bottom: 2px solid var(--accent-orange);
+        flex-shrink: 0;
+    }
+    .path-input-bar.open { display: flex; }
+    .path-input-bar input[type="text"] {
+        flex: 1;
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-family: monospace;
+    }
+    .path-input-bar input[type="text"]:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+    .path-input-bar .path-apply-btn {
+        background: var(--accent-blue);
+        border: 1px solid var(--accent-blue);
+        color: white;
+        padding: 5px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+    }
+    .path-input-bar .path-apply-btn:hover { opacity: 0.85; }
+    .path-input-bar .path-cancel-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 5px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+    }
+    .path-input-bar .path-status {
+        font-size: 12px;
+        margin-left: 4px;
+        min-width: 160px;
+    }
+    .path-input-bar .path-status.ok { color: var(--accent-green); }
+    .path-input-bar .path-status.err { color: var(--accent-red); }
+
+    /* ── Filter Panel ─────────────────────────── */
+    .filter-bar {
+        padding: 0;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.25s ease, padding 0.25s ease;
+    }
+    .filter-bar.open {
+        max-height: 200px;
+        padding: 8px 16px;
+    }
+    .filter-toggle-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 3px 10px;
+        border-radius: 3px;
+        font-size: 11px;
+        cursor: pointer;
+    }
+    .filter-toggle-btn.active { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .filter-group label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        min-width: 55px;
+    }
+    .filter-group input[type="range"] {
+        width: 100px;
+        height: 4px;
+        -webkit-appearance: none;
+        background: var(--bg-tertiary);
+        border-radius: 2px;
+        outline: none;
+    }
+    .filter-group input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        background: var(--accent-orange);
+        cursor: pointer;
+    }
+    .filter-group .val {
+        font-family: monospace;
+        font-size: 11px;
+        color: var(--text-primary);
+        min-width: 35px;
+    }
+    .filter-group select {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        padding: 3px 6px;
+        border-radius: 3px;
+        font-size: 11px;
+    }
+    .filter-separator {
+        width: 1px;
+        height: 40px;
+        background: var(--border);
+        margin: 0 6px;
+        flex-shrink: 0;
+    }
+    
+    .filter-presets {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: auto;
+    }
+    .filter-presets button, .filter-presets select {
+        background: var(--bg-tertiary); border: 1px solid var(--border);
+        color: var(--text-primary); padding: 3px 8px; border-radius: 3px;
+        font-size: 11px; cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<!-- ── Top Bar ─────────────────────────────────── -->
+<div class="top-bar">
+    <button id="btn-browse" style="border-color: var(--accent-orange); color: var(--accent-orange); font-weight: 600;" title="Change Dataset Path">📂 Path</button>
+    <label>Room</label>
+    <select id="sel-room"><option value="">--</option></select>
+    <label>Date</label>
+    <select id="sel-year" title="Year" style="width: 65px;"><option value="">YYYY</option></select>
+    <select id="sel-month" title="Month" style="width: 55px;"><option value="">MM</option></select>
+    <select id="sel-day" title="Day" style="width: 55px;"><option value="">DD</option></select>
+    <button id="btn-load">Load Session</button>
+    <button class="filter-toggle-btn" id="btn-filter-toggle" title="Toggle display filters">🔧 Filters</button>
+    <div class="fps-block" title="Source FPS = real camera recording rate&#10;Display FPS = frames shown &amp; stepped in the viewer (downsampled)&#10;Step size = source_fps ÷ display_fps real frames per step">
+        <span class="fps-src-label">SRC</span>
+        <span class="fps-src-val" id="fps-src-display">--</span>
+        <span class="fps-sep">▸</span>
+        <span class="fps-disp-label">VIEW</span>
+        <select id="sel-display-fps" class="fps-disp-sel" title="Change display / downsample FPS"></select>
+        <span class="fps-unit">FPS</span>
+        <span class="fps-step-hint" id="fps-step-hint"></span>
+    </div>
+    <div class="session-info" id="session-info">No session loaded</div>
+</div>
+
+<!-- ── Path Input Bar (inline, shown when 📂 is clicked) ────── -->
+<div class="path-input-bar" id="path-input-bar">
+    <span style="color:var(--text-secondary);font-size:12px;white-space:nowrap">📁 Dataset Path:</span>
+    <input type="text" id="path-input-field" placeholder="e.g.  D:\ThermalData\rooms   or   /mnt/external/dataset" spellcheck="false" autocomplete="off">
+    <button class="path-apply-btn" id="path-input-apply">Apply</button>
+    <button class="path-cancel-btn" id="path-input-cancel">Cancel</button>
+    <span id="path-input-status" class="path-status"></span>
+</div>
+
+<!-- ── Main Content ────────────────────────────── -->
+<div class="main-content">
+    <div class="video-area">
+        <!-- Video grid is built dynamically by JS based on config.video.cameras_per_room -->
+        <div class="video-grid" id="video-grid"></div>
+
+        <!-- Filter Bar (collapsible) -->
+        <div class="filter-bar" id="filter-bar">
+            <div class="filter-row">
+                <!-- Row 1: Server-side thermal rendering controls -->
+                <div class="filter-group">
+                    <label title="Clip the temperature range shown. Narrows the colormap to focus on the range you care about (e.g. 20–40°C to isolate human body heat).">Temp Min °C</label>
+                    <input type="range" id="f-temp-min" min="-20" max="80" value="-20" step="1">
+                    <span class="val" id="f-temp-min-val">auto</span>
+                </div>
+                <div class="filter-group">
+                    <label title="Clip top of temperature range. Lower this to prevent hot spots (fire, lights) from washing out the colormap.">Temp Max °C</label>
+                    <input type="range" id="f-temp-max" min="-20" max="200" value="200" step="1">
+                    <span class="val" id="f-temp-max-val">auto</span>
+                </div>
+                <div class="filter-group">
+                    <label title="Colormap palette used to render thermal data.">Colormap</label>
+                    <select id="f-colormap">
+                        <option value="">Default</option>
+                        <option value="inferno">inferno</option>
+                        <option value="plasma">plasma</option>
+                        <option value="magma">magma</option>
+                        <option value="hot">hot</option>
+                        <option value="jet">jet</option>
+                        <option value="gray">gray</option>
+                        <option value="bone">bone</option>
+                        <option value="viridis">viridis</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label title="Invert the colormap (cold=bright, hot=dark). Useful when background is warm and subject is cool.">Invert</label>
+                    <input type="checkbox" id="f-invert">
+                </div>
+
+                <div class="filter-separator"></div>
+
+                <!-- Row 2: Client-side preprocessing pipeline (mirrors student capstone pipeline) -->
+                <div class="filter-group">
+                    <label title="Gaussian blur: smooths sensor noise (same as student 3×3 kernel smoothing). Higher = more smoothing. 0 = off.">Smoothing
+                        <span style="font-size:9px;color:var(--accent-orange);display:block">Gaussian</span>
+                    </label>
+                    <input type="range" id="f-smooth" min="0" max="5" value="0" step="1">
+                    <span class="val" id="f-smooth-val">off</span>
+                </div>
+                <div class="filter-group">
+                    <label title="Background subtraction: subtracts the per-frame mean to isolate warm objects from the background (same approach as student mean-field approximation). Helps reveal humans in a warm room.">BG Subtract
+                        <span style="font-size:9px;color:var(--accent-orange);display:block">Mean field</span>
+                    </label>
+                    <input type="range" id="f-bgsub" min="0" max="100" value="0" step="5">
+                    <span class="val" id="f-bgsub-val">off</span>
+                </div>
+                <div class="filter-group">
+                    <label title="Contrast stretch: redistributes pixel intensity to fill the full 0–255 range. Similar to histogram equalization — makes subtle temperature differences visible.">Contrast
+                        <span style="font-size:9px;color:var(--accent-orange);display:block">Stretch</span>
+                    </label>
+                    <input type="range" id="f-stretch" min="0" max="100" value="0" step="5">
+                    <span class="val" id="f-stretch-val">off</span>
+                </div>
+                <div class="filter-group">
+                    <label title="Edge overlay: highlights thermal boundaries (Sobel-style). Helps see the outline of a person or fire blob. Overlaid in cyan on top of the original image.">Edge
+                        <span style="font-size:9px;color:var(--accent-orange);display:block">Overlay</span>
+                    </label>
+                    <input type="range" id="f-edge" min="0" max="100" value="0" step="5">
+                    <span class="val" id="f-edge-val">off</span>
+                </div>
+
+                <div class="filter-separator"></div>
+
+                <div class="filter-presets">
+                    <select id="f-preset-sel"><option value="">Presets...</option></select>
+                    <button id="f-preset-load">Load</button>
+                    <button id="f-preset-save">Save</button>
+                    <button id="f-reset">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline Console (scrubber + controls) -->
+        <div class="timeline-console">
+            <div class="timeline-row">
+                <div class="timeline-slider-wrap">
+                    <input type="range" id="timeline-slider" min="0" max="1000" step="1" value="0">
+                </div>
+                <div class="time-display" id="time-display">00:00:00.000 / F:0</div>
+            </div>
+            <div class="controls-row">
+                <div class="playback-controls">
+                    <button class="ctrl-btn" id="btn-step-back" title="Step Back">⏮</button>
+                    <button class="ctrl-btn" id="btn-play" title="Play/Pause">▶</button>
+                    <button class="ctrl-btn" id="btn-step-fwd" title="Step Forward">⏭</button>
+                </div>
+                <div class="mark-display">
+                    <span class="mark-badge" id="mark-in-badge">IN: --:--</span>
+                    <span class="mark-badge" id="mark-out-badge">OUT: --:--</span>
+                    <span class="mark-validity" id="mark-validity"></span>
+                </div>
+                <button id="btn-open-menu" class="ctrl-btn" style="border-color: var(--accent-green); color: var(--accent-green); font-weight: bold; margin-left: 12px; display: none;">Save Event...</button>
+                <div class="mark-display" id="cam-select-display" title="Click camera overlays or press F1-F9 to toggle"></div>
+                <div class="hotkey-hint" id="hotkey-hint"></div>
+                <div class="speed-controls" id="speed-controls">
+                    <span>Speed:</span>
+                </div>
+                <div class="goto-wrap">
+                    <span class="goto-label">Go to</span>
+                    <input type="text" id="goto-input" class="goto-input"
+                        placeholder="1:23:45 / 83.5s / f:2100"
+                        title="Jump to a time or frame.&#10;Formats: HH:MM:SS  MM:SS  seconds  f:framenum&#10;Press Enter to jump, Escape to cancel.">
+                    <button id="goto-btn" class="goto-btn" title="Jump">↵</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dual Timeline -->
+        <div class="dual-timeline">
+            <!-- Full session bar -->
+            <div class="timeline-label-row">
+                <span>Full session</span>
+                <div class="tl-canvas-wrap" id="tl-full-wrap">
+                    <canvas class="tl-canvas" id="tl-full" height="20"></canvas>
+                </div>
+            </div>
+            <!-- Zoom bar -->
+            <div class="timeline-label-row">
+                <span id="tl-zoom-label">±10 min</span>
+                <div class="tl-canvas-wrap" id="tl-zoom-wrap">
+                    <canvas class="tl-canvas" id="tl-zoom" height="20"></canvas>
+                </div>
+                <div class="zoom-controls">
+                    <button class="zoom-btn" data-window="30">±30s</button>
+                    <button class="zoom-btn" data-window="120">±2m</button>
+                    <button class="zoom-btn active" data-window="600">±10m</button>
+                    <button class="zoom-btn" data-window="1800">±30m</button>
+                    <button class="zoom-btn" data-window="7200">±2h</button>
+                    <button class="zoom-btn" data-window="0">Full</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Label Ledger + Stats -->
+    <div class="right-panel">
+        <div class="panel-header">
+            Session Labels <span class="label-count" id="label-count">0</span>
+        </div>
+        <div class="ledger-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr><th>Start</th><th>End</th><th>Event</th><th>Cams</th><th></th></tr>
+                </thead>
+                <tbody id="ledger-body"></tbody>
+            </table>
+        </div>
+        <!-- Stats Panel -->
+        <div class="stats-panel" id="stats-panel">
+            <div class="stats-header">Session Stats</div>
+            <div id="stats-body"></div>
+        </div>
+    </div>
+</div>
+<div id="event-modal-overlay" class="modal-overlay">
+    <div class="event-modal">
+        <div class="event-modal-header">Save Label: Select Event Class</div>
+        <div id="event-modal-grid" class="event-modal-grid"></div>
+        <div class="event-modal-footer">Press <b>Escape</b> to cancel or use hotkeys</div>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+    "use strict";
+
+    // ── State ────────────────────────────────────────────────────────
+    let CONFIG = null;
+    let currentRoom = null;
+    let currentDate = null;
+    let markIn = null;
+    let markOut = null;
+    let isPlaying = false;
+    let currentSpeed = 1;
+    let isScrubbing = false;
+    let sessionStartTimeOffset = 0;
+    let availableDates = [];
+
+    // Dynamic arrays — populated after config loads
+    let videoElements = [];  // all <video> DOM elements (video mode)
+    let imgElements = [];    // all <img> DOM elements (npz mode)
+    let masterVideo = null;  // videoElements[0], the sync master
+    let cameraNames = [];    // filenames without extension, e.g. ["cam1","cam2","cam3"]
+    let selectedCameras = new Set();  // which cameras are marked as detecting the event
+
+    // NPZ session state
+    let sessionType = "video";  // "video", "npz", or "h5"
+    // Both "npz" and "h5" use the same frame-by-frame NPZ/H5 playback path
+    // Both "npz" and "h5" use the same frame-by-frame NPZ/H5 playback path
+	function isNpzLike() { return sessionType === "npz" || sessionType === "h5"; }
+    let npzFrames = {};         // { cam_name: [file_list] }
+    let npzFrameCount = 0;      // total frames for this session
+    let npzCurrentFrame = 0;    // current frame index
+    let npzDuration = 0;        // total duration in seconds
+    let playTimer = null;       // setInterval handle for NPZ playback
+
+    // Filter state — server-side: tempMin/Max/colormap; client-side: smooth/bgsub/stretch/edge/invert
+    let filterState = {
+        tempMin: null,    // server-side °C or null=auto
+        tempMax: null,    // server-side °C or null=auto
+        colormap: "",     // server-side colormap name or ""=default
+        invert: false,    // client-side
+        smooth: 0,        // client-side Gaussian passes (0=off)
+        bgsub: 0,         // client-side BG subtraction strength 0–100
+        stretch: 0,       // client-side contrast stretch 0–100
+        edge: 0,          // client-side edge overlay 0–100
+    };
+    let filterPresets = {};
+
+    // Browse state
+    let browsePath = "";
+
+    // ── Static DOM refs ──────────────────────────────────────────────
+    const selRoom      = document.getElementById("sel-room");
+    const selYear      = document.getElementById("sel-year");
+    const selMonth     = document.getElementById("sel-month"); 
+    const selDay       = document.getElementById("sel-day");
+    const btnLoad      = document.getElementById("btn-load");
+    const sessionInfo  = document.getElementById("session-info");
+    const fpsSrcDisplay  = document.getElementById("fps-src-display");
+    const selDisplayFps  = document.getElementById("sel-display-fps");
+    const fpsStepHint    = document.getElementById("fps-step-hint");
+    const videoGrid    = document.getElementById("video-grid");
+    const slider       = document.getElementById("timeline-slider");
+    const timeDisplay  = document.getElementById("time-display");
+    const btnPlay      = document.getElementById("btn-play");
+    const btnStepBack  = document.getElementById("btn-step-back");
+    const btnStepFwd   = document.getElementById("btn-step-fwd");
+    const markInBadge  = document.getElementById("mark-in-badge");
+    const markOutBadge = document.getElementById("mark-out-badge");
+    const camSelectDisplay = document.getElementById("cam-select-display");
+    const hotkeyHint   = document.getElementById("hotkey-hint");
+    const speedControls= document.getElementById("speed-controls");
+    const ledgerBody   = document.getElementById("ledger-body");
+    const labelCount   = document.getElementById("label-count");
+    const toast        = document.getElementById("toast");
+
+    // ── Helpers ──────────────────────────────────────────────────────
+    function getSourceFps() {
+        return CONFIG?.video?.source_fps || 25;
+    }
+    function getDisplayFps() {
+        // Runtime-adjustable — read from the dropdown if it exists, else config
+        const sel = document.getElementById("sel-display-fps");
+        if (sel && sel.value) return parseFloat(sel.value);
+        return CONFIG?.video?.display_fps || 8;
+    }
+    // How many real source frames constitute one display frame step
+    function getFrameStep() {
+        return Math.max(1, Math.round(getSourceFps() / getDisplayFps()));
+    }
+    function updateFpsStepHint() {
+        const step = getFrameStep();
+        fpsStepHint.textContent = `step=${step} src frame${step > 1 ? "s" : ""}`;
+    }
+
+    function formatTime(seconds) {
+        if (seconds == null || isNaN(seconds)) return "--:--:--.---";
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return String(h).padStart(2,"0") + ":" +
+               String(m).padStart(2,"0") + ":" +
+               s.toFixed(3).padStart(6,"0");
+    }
+    function parseCsvTime(val) {
+        if (val == null) return 0;
+        if (typeof val === "number") return val;
+        const str = String(val).trim();
+        const parts = str.split(":");
+        if (parts.length === 3) {
+            const h = parseInt(parts[0], 10) || 0;
+            const m = parseInt(parts[1], 10) || 0;
+            const s = parseFloat(parts[2]) || 0;
+            return (h * 3600) + (m * 60) + s;
+        } else if (parts.length === 2) {
+            const m = parseInt(parts[0], 10) || 0;
+            const s = parseFloat(parts[1]) || 0;
+            return (m * 60) + s;
+        }
+        return parseFloat(str) || 0;
+    }
+
+    function showToast(msg, type) {
+        toast.textContent = msg;
+        toast.className = "toast show " + (type || "");
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => toast.className = "toast", 2000);
+    }
+    // ── Event Modal Logic ────────────────────────────────────────────
+    let isModalOpen = false;
+
+    function openEventModal() {
+        if (markIn == null || markOut == null) {
+            showToast("Set both IN and OUT marks first", "error"); return;
+        }
+        if (selectedCameras.size === 0) {
+            showToast("Select at least one camera", "error"); return;
+        }
+
+        const grid = document.getElementById("event-modal-grid");
+        grid.innerHTML = "";
+
+        // Build buttons dynamically from config
+        Object.entries(CONFIG.annotation.event_classes).forEach(([key, cls]) => {
+            const btn = document.createElement("button");
+            btn.className = "event-btn";
+            const color = classColor(cls);
+            
+            // CLEAN VERSION: No more number shortcuts on the right side
+            btn.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px">
+                    <span style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></span>
+                    <span style="flex:1;font-size:12px;font-weight:600">${cls.replace(/_/g," ")}</span>
+                </div>
+            `;
+            
+            btn.addEventListener("click", () => {
+                closeEventModal();
+                saveLabel(key);
+            });
+            grid.appendChild(btn);
+        });
+
+        document.getElementById("event-modal-overlay").classList.add("open");
+        isModalOpen = true;
+    }
+
+    function closeEventModal() {
+        document.getElementById("event-modal-overlay").classList.remove("open");
+        isModalOpen = false;
+    }
+
+    // Attach click to overlay background to close
+    document.getElementById("event-modal-overlay").addEventListener("click", (e) => {
+        if (e.target.id === "event-modal-overlay") closeEventModal();
+    });
+    
+    // Wire up the UI button if it exists
+    const btnOpenMenu = document.getElementById("btn-open-menu");
+    if (btnOpenMenu) btnOpenMenu.addEventListener("click", openEventModal);
+    // ── Build dynamic video grid from config ─────────────────────────
+    function buildVideoGrid(camCount) {
+        videoGrid.innerHTML = "";
+        videoElements = [];
+        imgElements = [];
+
+        // Grid layout: up to 3 → single row; 4 → 2×2; 5-6 → 2×3; etc.
+        let cols;
+        if (camCount <= 3) cols = camCount || 1;
+        else if (camCount <= 4) cols = 2;
+        else if (camCount <= 6) cols = 3;
+        else cols = Math.ceil(Math.sqrt(camCount));
+
+        videoGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+        for (let i = 0; i < camCount; i++) {
+            const cell = document.createElement("div");
+            cell.className = "video-cell";
+            cell.dataset.camIndex = i;
+
+            const label = document.createElement("span");
+            label.className = "cam-label" + (i === 0 ? " master" : "");
+            label.textContent = i === 0 ? `CAM ${i+1} (MASTER)` : `CAM ${i+1}`;
+            cell.appendChild(label);
+
+            // Camera detection toggle button
+            const toggle = document.createElement("button");
+            toggle.className = "cam-toggle";
+            toggle.dataset.camIndex = i;
+            toggle.textContent = `F${i+1}`;
+            toggle.title = `Toggle camera ${i+1} detection (F${i+1})`;
+            toggle.addEventListener("click", (e) => {
+                e.stopPropagation();
+                toggleCamera(i);
+            });
+            cell.appendChild(toggle);
+
+            // Video element (for video sessions)
+            const video = document.createElement("video");
+            video.id = `vid-${i}`;
+            video.muted = true;
+            video.preload = "auto";
+            video.style.display = "none";
+            cell.appendChild(video);
+
+            // Img element (for NPZ sessions)
+            const img = document.createElement("img");
+            img.id = `img-${i}`;
+            img.style.display = "none";
+            img.style.width = "100%";
+            img.style.height = "100%";
+            img.style.objectFit = "contain";
+            img.draggable = false;
+            cell.appendChild(img);
+
+            const noVid = document.createElement("span");
+            noVid.className = "no-video";
+            noVid.id = `nv-${i}`;
+            noVid.textContent = "No data loaded";
+            cell.appendChild(noVid);
+
+            videoGrid.appendChild(cell);
+            videoElements.push(video);
+            imgElements.push(img);
+        }
+
+        masterVideo = videoElements[0];
+        attachMasterListeners();
+    }
+
+    // ── Camera selection logic ───────────────────────────────────────
+    function toggleCamera(index) {
+        const name = cameraNames[index] || `cam${index+1}`;
+        if (selectedCameras.has(name)) {
+            selectedCameras.delete(name);
+        } else {
+            selectedCameras.add(name);
+        }
+        updateCameraUI();
+    }
+
+    function selectAllCameras() {
+        if (selectedCameras.size === cameraNames.length) {
+            // All selected → deselect all
+            selectedCameras.clear();
+        } else {
+            // Select all
+            cameraNames.forEach(n => selectedCameras.add(n));
+        }
+        updateCameraUI();
+    }
+
+    function resetCameraSelection() {
+        selectedCameras.clear();
+        if (CONFIG?.annotation?.default_all_cameras) {
+            cameraNames.forEach(n => selectedCameras.add(n));
+        }
+        updateCameraUI();
+    }
+
+    function updateCameraUI() {
+        // Update toggle buttons and cell outlines
+        document.querySelectorAll(".video-cell").forEach(cell => {
+            const idx = parseInt(cell.dataset.camIndex);
+            const name = cameraNames[idx] || `cam${idx+1}`;
+            const toggle = cell.querySelector(".cam-toggle");
+            const isSelected = selectedCameras.has(name);
+
+            if (toggle) {
+                toggle.classList.toggle("selected", isSelected);
+                toggle.textContent = isSelected ? `✓ F${idx+1}` : `F${idx+1}`;
+            }
+            cell.classList.toggle("cam-selected", isSelected);
+        });
+
+        // Update bottom bar camera display
+        camSelectDisplay.innerHTML = "";
+        cameraNames.forEach((name, idx) => {
+            const badge = document.createElement("span");
+            badge.className = "mark-badge" + (selectedCameras.has(name) ? " in-set" : "");
+            badge.textContent = name;
+            badge.style.cursor = "pointer";
+            badge.style.fontSize = "11px";
+            badge.addEventListener("click", () => toggleCamera(idx));
+            camSelectDisplay.appendChild(badge);
+        });
+    }
+
+    // ── Master video event listeners (video mode) ─────────────────────
+    function attachMasterListeners() {
+        if (!masterVideo) return;
+
+        masterVideo.addEventListener("timeupdate", () => {
+            if (sessionType !== "video" || isScrubbing) return;
+            slider.value = Math.floor(masterVideo.currentTime * 1000);
+            syncSlavesToMaster();
+            updateTimeDisplay();
+            drawTimelines();
+        });
+
+        masterVideo.addEventListener("ended", () => {
+            isPlaying = false;
+            btnPlay.textContent = "▶";
+        });
+    }
+
+    // ── Sync & display ───────────────────────────────────────────────
+    function syncSlavesToMaster() {
+        if (sessionType !== "video" || !masterVideo) return;
+        const masterTime = masterVideo.currentTime;
+        const threshold = 0.5 / getDisplayFps();
+
+        for (let i = 1; i < videoElements.length; i++) {
+            const v = videoElements[i];
+            if (v.readyState >= 1 && v.style.display !== "none") {
+                if (Math.abs(v.currentTime - masterTime) > threshold) {
+                    v.currentTime = masterTime;
+                }
+            }
+        }
+    }
+
+    function updateTimeDisplay() {
+        let t, srcFrame, dispFrame;
+        const sfps = getSourceFps();
+        const dfps = getDisplayFps();
+        if (isNpzLike()) {
+            srcFrame = npzCurrentFrame * getFrameStep();
+            t = srcFrame / sfps;
+            dispFrame = npzCurrentFrame;
+        } else {
+            t = masterVideo ? masterVideo.currentTime : 0;
+            srcFrame = Math.floor(t * sfps);
+            dispFrame = Math.floor(t * dfps);
+        }
+        // Offset the display time!
+        timeDisplay.textContent = `${formatTime(t + sessionStartTimeOffset)} / SrcF:${srcFrame} DispF:${dispFrame}`;
+    }
+
+    // Current time getter (works for both modes)
+    function getCurrentTime() {
+        if (isNpzLike()) {
+            return (npzCurrentFrame * getFrameStep()) / getSourceFps();
+        } else {
+            return masterVideo ? masterVideo.currentTime : 0;
+        }
+    }
+
+    // ── NPZ frame rendering ─────────────────────────────────────────
+    // Display frame count = how many display frames fit in the source recording
+    function getNpzDisplayFrameCount() {
+        return Math.max(1, Math.ceil(npzFrameCount / getFrameStep()));
+    }
+
+    function npzLoadFrame(dispFrameIdx) {
+        if (dispFrameIdx < 0) dispFrameIdx = 0;
+        const maxDisp = getNpzDisplayFrameCount() - 1;
+        if (dispFrameIdx > maxDisp) dispFrameIdx = maxDisp;
+        npzCurrentFrame = dispFrameIdx;
+
+        // Source frame index = display frame × step
+        const srcFrameIdx = dispFrameIdx * getFrameStep();
+
+        cameraNames.forEach((cam, i) => {
+            const img = imgElements[i];
+            if (!img) return;
+            const camFrames = npzFrames[cam];
+            if (camFrames && srcFrameIdx < camFrames.length) {
+                // 1. Clear old handlers to prevent memory leaks
+                img.onload = null;
+                img.onerror = null;
+
+                const url = npzFrameUrl(cam, srcFrameIdx);
+                
+                // 2. Normal load
+                img.onload = () => applyClientFilters(img);
+                
+                // 3. THE FAILSAFE: If the browser aborts the request, try again!
+                img.onerror = () => {
+                    setTimeout(() => { 
+                        img.src = url + "&retry=" + Date.now(); 
+                    }, 50);
+                };
+                
+                img.src = url;
+                img.style.display = "block";
+            }
+        });
+
+        // Slider is in ms of real time
+        slider.value = Math.floor((srcFrameIdx / getSourceFps()) * 1000);
+        updateTimeDisplay();
+        drawTimelines();
+    }
+
+    function npzStartPlayback() {
+        if (isPlaying) return;
+        isPlaying = true;
+        btnPlay.textContent = "⏸";
+        
+        // Calculate how many frames we SHOULD show per second
+        const targetFramesPerSec = getDisplayFps() * currentSpeed;
+        
+        // Cap physical network requests to ~15 per second to prevent browser freezing
+        const physicalUpdatesPerSec = Math.min(targetFramesPerSec, 15);
+        const interval = 1000 / physicalUpdatesPerSec;
+        
+        // If target is 64fps but we only update 15 times, we must skip frames (jump by ~4)
+        const stepSize = Math.max(1, Math.round(targetFramesPerSec / physicalUpdatesPerSec));
+
+        playTimer = setInterval(() => {
+            if (npzCurrentFrame >= getNpzDisplayFrameCount() - 1) {
+                npzStopPlayback();
+                return;
+            }
+            npzLoadFrame(npzCurrentFrame + stepSize);
+        }, interval);
+    }
+
+    function npzStopPlayback() {
+        isPlaying = false;
+        btnPlay.textContent = "▶";
+        if (playTimer) {
+            clearInterval(playTimer);
+            playTimer = null;
+        }
+    }
+
+    // ── Slider scrubbing (unified) ───────────────────────────────────
+    slider.addEventListener("input", () => {
+        isScrubbing = true;
+        const time = parseInt(slider.value) / 1000;
+        if (isNpzLike()) {
+            // time (seconds) → display frame index
+            const frame = Math.min(
+                getNpzDisplayFrameCount() - 1,
+                Math.round(time * getSourceFps() / getFrameStep())
+            );
+            npzLoadFrame(frame);
+        } else {
+            if (!masterVideo) return;
+            masterVideo.currentTime = time;
+            syncSlavesToMaster();
+            updateTimeDisplay();
+        }
+    });
+
+    slider.addEventListener("change", () => {
+        isScrubbing = false;
+        drawTimelines();
+    });
+
+    // ── Playback controls (unified) ──────────────────────────────────
+    function togglePlay() {
+        if (isNpzLike()) {
+            if (npzFrameCount === 0) return;
+            if (isPlaying) npzStopPlayback();
+            else npzStartPlayback();
+        } else {
+            if (!masterVideo || masterVideo.readyState < 2) return;
+            if (isPlaying) {
+                videoElements.forEach(v => v.pause());
+                isPlaying = false;
+                btnPlay.textContent = "▶";
+            } else {
+                videoElements.forEach(v => {
+                    if (v.style.display !== "none") v.play();
+                });
+                isPlaying = true;
+                btnPlay.textContent = "⏸";
+            }
+        }
+    }
+
+    function stepFrame(direction) {
+        if (isNpzLike()) {
+            if (npzFrameCount === 0) return;
+            npzStopPlayback();
+            npzLoadFrame(npzCurrentFrame + direction);
+        } else {
+            if (!masterVideo || !masterVideo.duration) return;
+            const step = direction * getFrameStep() / getSourceFps();
+            videoElements.forEach(v => v.pause());
+            isPlaying = false;
+            btnPlay.textContent = "▶";
+            masterVideo.currentTime = Math.max(0, Math.min(masterVideo.duration, masterVideo.currentTime + step));
+            syncSlavesToMaster();
+            updateTimeDisplay();
+            slider.value = Math.floor(masterVideo.currentTime * 1000);
+        }
+    }
+
+    function setSpeed(speed) {
+        currentSpeed = speed;
+        if (isNpzLike()) {
+            // Restart playback at new speed if playing
+            if (isPlaying) {
+                npzStopPlayback();
+                npzStartPlayback();
+            }
+        } else {
+            videoElements.forEach(v => v.playbackRate = speed);
+        }
+        document.querySelectorAll(".speed-controls .ctrl-btn").forEach(btn => {
+            btn.classList.toggle("active", btn.textContent === speed + "×");
+        });
+    }
+
+    btnPlay.addEventListener("click", togglePlay);
+    btnStepBack.addEventListener("click", () => stepFrame(-1));
+    btnStepFwd.addEventListener("click", () => stepFrame(1));
+
+    // ── Mark In / Out ────────────────────────────────────────────────
+    function setMarkIn() {
+        if (isNpzLike() ? npzFrameCount === 0 : (!masterVideo || !masterVideo.duration)) return;
+        markIn = getCurrentTime();
+        updateMarkBadges();
+        showToast(`IN: ${formatTime(markIn)}`, "success");
+    }
+
+    function setMarkOut() {
+        if (isNpzLike() ? npzFrameCount === 0 : (!masterVideo || !masterVideo.duration)) return;
+        markOut = getCurrentTime();
+        updateMarkBadges();
+        showToast(`OUT: ${formatTime(markOut)}`, "success");
+    }
+
+    function updateMarkBadges() {
+        if (btnOpenMenu) {
+            btnOpenMenu.style.display = (markIn != null && markOut != null) ? "block" : "none";
+        }
+        if (markIn != null) {
+            markInBadge.textContent = `IN: ${formatTime(markIn + sessionStartTimeOffset)}`;
+            markInBadge.classList.add("in-set");
+        } else {
+            markInBadge.textContent = "IN: --:--";
+            markInBadge.classList.remove("in-set");
+        }
+        if (markOut != null) {
+            markOutBadge.textContent = `OUT: ${formatTime(markOut + sessionStartTimeOffset)}`;
+            markOutBadge.classList.add("out-set");
+        } else {
+            markOutBadge.textContent = "OUT: --:--";
+            markOutBadge.classList.remove("out-set");
+        }
+        drawTimelines();
+    }
+
+    async function saveLabel(classKey) {
+        if (!currentRoom || !currentDate) { showToast("No session loaded", "error"); return; }
+        if (markIn == null || markOut == null) { showToast("Set both IN and OUT marks first", "error"); return; }
+        if (selectedCameras.size === 0) { showToast("Select at least one camera", "error"); return; }
+
+        // Add the offset before saving to CSV
+        const start = Math.min(markIn, markOut) + sessionStartTimeOffset;
+        const end   = Math.max(markIn, markOut) + sessionStartTimeOffset;
+
+        const validErr = validateMarks();
+        if (validErr !== null) { showToast(`Cannot save: ${validErr}`, "error"); return; }
+
+        const camerasArray = Array.from(selectedCameras).sort();
+
+        try {
+            const res = await fetch("/api/save_label", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    room_id: currentRoom,
+                    date: currentDate,
+                    start_time: start,
+                    end_time: end,
+                    event_class: classKey,
+                    cameras: camerasArray,
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                renderLedger(data.labels);
+                const className = CONFIG.annotation.event_classes[classKey] || classKey;
+                showToast(`Saved: ${className.split('_')[0]} [${formatTime(start)} → ${formatTime(end)}]`, "success");
+                markIn = null; markOut = null;
+                updateMarkBadges();
+                resetCameraSelection();
+            } else {
+                const err = await res.json();
+                showToast(`Error: ${err.detail}`, "error");
+            }
+        } catch (e) {
+            showToast("Network error", "error");
+        }
+    }
+
+    // ── Load Session ─────────────────────────────────────────────────
+    async function loadSession() {
+        const room = selRoom.value;
+        const y = selYear.value;
+        const m = selMonth.value;
+        const d = selDay.value;
+
+        if (!room || !y || !m || !d) {
+            showToast("Select Room, Year, Month, and Day", "error");
+            return;
+        }
+        
+        const date = `${y}-${m}-${d}`; // Reconstruct the date string!
+
+        // Stop any existing playback
+
+        // Stop any existing playback
+        if (isPlaying) {
+            if (isNpzLike()) npzStopPlayback();
+            else videoElements.forEach(v => v.pause());
+            isPlaying = false;
+            btnPlay.textContent = "▶";
+        }
+
+        currentRoom = room;
+        currentDate = date;
+        markIn = null;
+        markOut = null;
+        updateMarkBadges();
+
+        // Fetch session info (auto-detects video vs npz)
+        const res = await fetch(`/api/session/${room}/${date}`);
+        const session = await res.json();
+        sessionType = session.type;
+        sessionStartTimeOffset = session.start_time_offset || 0;
+
+        if (sessionType === "empty") {
+            showToast("No video or NPZ files found in this folder", "error");
+            return;
+        }
+
+        cameraNames = session.cameras;
+        const camCount = CONFIG.video.cameras_per_room || 3;
+        const needed = Math.max(camCount, cameraNames.length);
+        if (needed !== videoElements.length) {
+            buildVideoGrid(needed);
+        }
+
+        if (sessionType === "video") {
+            // ── VIDEO MODE ──────────────────────────────────
+            const videoFiles = session.files; // flat array of filenames
+
+            // Hide all img elements, show video elements
+            imgElements.forEach(img => img.style.display = "none");
+
+            videoElements.forEach((v, i) => {
+                v.pause();
+                v.currentTime = 0;
+                const noVid = document.getElementById(`nv-${i}`);
+                if (i < videoFiles.length) {
+                    v.src = `/Dataset_Root/${room}/${date}/${videoFiles[i]}`;
+                    v.load();
+                    v.style.display = "block";
+                    if (noVid) noVid.style.display = "none";
+                    const label = v.parentElement.querySelector(".cam-label");
+                    if (label) {
+                        label.textContent = i === 0 ? `${cameraNames[i]} (MASTER)` : cameraNames[i];
+                    }
+                } else {
+                    v.removeAttribute("src");
+                    v.style.display = "none";
+                    if (noVid) noVid.style.display = "block";
+                }
+            });
+
+            // Wait for master to be ready
+            if (videoFiles.length > 0) {
+                masterVideo.addEventListener("loadedmetadata", () => {
+                    slider.max = Math.floor(masterVideo.duration * 1000);
+                    slider.value = 0;
+                    sessionDurSec = masterVideo.duration;
+                    updateTimeDisplay();
+                    drawTimelines();
+                }, { once: true });
+            }
+
+            sessionInfo.textContent = `${room} / ${date} — ${cameraNames.length} cam(s) [VIDEO]`;
+
+        } else if (isNpzLike()) {
+            // ── NPZ / HDF5 MODE ──────────────────────────────
+            npzFrames = session.files;
+            npzFrameCount = session.frame_count;  // total SOURCE frames
+            npzDuration = session.duration;
+            npzCurrentFrame = 0;
+
+            // If the session carries its own source_fps (HDF5 reads it from
+            // file attributes), update the SRC display in the top bar
+            if (session.source_fps && session.source_fps !== getSourceFps()) {
+                // Update the in-memory config so getSourceFps() returns the
+                // correct value for this session without restarting the server
+                if (CONFIG && CONFIG.video) CONFIG.video.source_fps = session.source_fps;
+                fpsSrcDisplay.textContent = session.source_fps;
+                updateFpsStepHint();
+            }
+
+            // Hide all video elements, show img elements
+            videoElements.forEach(v => { v.pause(); v.removeAttribute("src"); v.style.display = "none"; });
+
+            cameraNames.forEach((cam, i) => {
+                const noVid = document.getElementById(`nv-${i}`);
+                const label = imgElements[i]?.parentElement?.querySelector(".cam-label");
+                if (npzFrames[cam] && npzFrames[cam].length > 0) {
+                    if (noVid) noVid.style.display = "none";
+                    if (label) label.textContent = i === 0 ? `${cam} (MASTER)` : cam;
+                } else {
+                    if (noVid) noVid.style.display = "block";
+                }
+            });
+
+            // Setup slider for session duration
+            slider.max = Math.floor(npzDuration * 1000);
+            slider.value = 0;
+            sessionDurSec = npzDuration;
+
+            // Load first frame
+            npzLoadFrame(0);
+
+            const fmtLabel = sessionType === "h5" ? "HDF5" : "NPZ";
+            sessionInfo.textContent = `${room} / ${date} — ${cameraNames.length} cam(s) [${fmtLabel}: ${npzFrameCount} src frames → ${getNpzDisplayFrameCount()} @ ${getDisplayFps()}fps]`;
+        }
+
+        // Reset camera selection for new session
+        resetCameraSelection();
+
+        showToast(`Loaded: ${room} / ${date} (${sessionType.toUpperCase()})`, "success");
+        loadLabels();
+    }
+
+    // ── Labels Ledger ────────────────────────────────────────────────
+    async function loadLabels() {
+        if (!currentRoom || !currentDate) return;
+        try {
+            const res = await fetch(`/api/labels/${currentRoom}/${currentDate}`);
+            const data = await res.json();
+            renderLedger(data.labels);
+        } catch(e) {
+            console.error("Failed to load labels:", e);
+        }
+    }
+
+    function renderLedger(labels) {
+        sessionLabels = labels || [];   
+        ledgerBody.innerHTML = "";
+        labelCount.textContent = labels.length;
+
+        labels.forEach((label, i) => {
+            const tr = document.createElement("tr");
+            const cams = label.Cameras ? String(label.Cameras).split("|").join(", ") : "all";
+            
+            // Translate the saved ID (e.g. "16") back to the readable string
+            const rawClass = String(label.Event_Class);
+            const className = CONFIG.annotation.event_classes[rawClass] || rawClass;
+            const displayName = className.replace(/_/g," ");
+            const color = classColor(className);
+            
+            // Safely parse time (handles both raw seconds and HH:MM:SS format)
+            const startT = parseCsvTime(label.Start_Time);
+            const endT = parseCsvTime(label.End_Time);
+
+            tr.innerHTML = `
+                <td>${formatTime(startT)}</td>
+                <td>${formatTime(endT)}</td>
+                <td><span class="event-badge" style="background:${color}33; color:${color}; border: 1px solid ${color}66">${displayName}</span></td>
+                <td style="font-size:10px;color:var(--text-secondary)">${cams}</td>
+                <td>
+                    <button class="btn-goto" data-time="${startT}" title="Go to start">▶</button>
+                    <button class="btn-del" data-idx="${i}" title="Delete">✕</button>
+                </td>
+            `;
+            ledgerBody.appendChild(tr);
+        });
+
+        ledgerBody.querySelectorAll(".btn-goto").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const t = parseFloat(btn.dataset.time);
+                if (isNaN(t)) return;
+                jumpToTime(t - sessionStartTimeOffset);
+            });
+        });
+
+        ledgerBody.querySelectorAll(".btn-del").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const idx = parseInt(btn.dataset.idx);
+                if (!confirm("Delete this label?")) return;
+                try {
+                    await fetch("/api/delete_label", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ index: idx, room_id: currentRoom, date: currentDate })
+                    });
+                    loadLabels();
+                    showToast("Label deleted", "success");
+                } catch(e) { showToast("Delete failed", "error"); }
+            });
+        });
+
+        renderStats(labels);
+        drawTimelines();
+    }
+
+    // ── Class colour palette (driven by event_classes order) ─────────
+    // Colours cycle through a fixed palette — no hardcoding per class name.
+    const CLASS_PALETTE = [
+        "#3498db", "#e74c3c", "#2ecc71", "#f39c12",
+        "#9b59b6", "#1abc9c", "#e67e22", "#e91e63",
+        "#00bcd4", "#8bc34a"
+    ];
+    let classColorMap = {};   // eventClass string → hex color
+    function buildClassColorMap() {
+        classColorMap = {};
+        const classes = Object.values(CONFIG?.annotation?.event_classes || {});
+        classes.forEach((cls, i) => {
+            classColorMap[cls] = CLASS_PALETTE[i % CLASS_PALETTE.length];
+        });
+    }
+    function classColor(cls) {
+        // Match on prefix so "Human_Movement_1Human" → blue family
+        if (classColorMap[cls]) return classColorMap[cls];
+        // Fallback: derive from full class name
+        const classes = Object.values(CONFIG?.annotation?.event_classes || {});
+        const idx = classes.findIndex(c => cls.startsWith(c) || c.startsWith(cls));
+        return CLASS_PALETTE[Math.max(0, idx) % CLASS_PALETTE.length];
+    }
+
+    // ── Dual Timeline State ───────────────────────────────────────────
+    let sessionLabels  = [];   // current labels array (kept in sync with ledger)
+    let sessionDurSec  = 0;    // total session duration in seconds
+    let zoomWindowSec  = 600;  // ±N seconds around current position (0 = full)
+
+    const tlFull   = document.getElementById("tl-full");
+    const tlZoom   = document.getElementById("tl-zoom");
+    const tlFullWrap = document.getElementById("tl-full-wrap");
+    const tlZoomWrap = document.getElementById("tl-zoom-wrap");
+    const tlZoomLabel = document.getElementById("tl-zoom-label");
+    const markValidity = document.getElementById("mark-validity");
+
+    // Zoom button wiring
+    document.querySelectorAll(".zoom-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".zoom-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            const w = parseInt(btn.dataset.window);
+            zoomWindowSec = w;
+            if (w === 0) tlZoomLabel.textContent = "Full";
+            else if (w < 120) tlZoomLabel.textContent = `±${w}s`;
+            else if (w < 3600) tlZoomLabel.textContent = `±${w/60}m`;
+            else tlZoomLabel.textContent = `±${w/3600}h`;
+            drawTimelines();
+        });
+    });
+
+    // Click on full-session bar → jump to that time
+    tlFull.addEventListener("click", e => {
+        if (sessionDurSec <= 0) return;
+        const rect = tlFull.getBoundingClientRect();
+        const ratio = (e.clientX - rect.left) / rect.width;
+        jumpToTime(ratio * sessionDurSec);
+    });
+
+    // Click on zoom bar → jump to that time
+    tlZoom.addEventListener("click", e => {
+        if (sessionDurSec <= 0) return;
+        const rect = tlZoom.getBoundingClientRect();
+        const ratio = (e.clientX - rect.left) / rect.width;
+        const cur = getCurrentTime();
+        const half = zoomWindowSec === 0 ? sessionDurSec / 2 : zoomWindowSec;
+        const start = zoomWindowSec === 0 ? 0 : Math.max(0, cur - half);
+        const end   = zoomWindowSec === 0 ? sessionDurSec : Math.min(sessionDurSec, cur + half);
+        jumpToTime(start + ratio * (end - start));
+    });
+
+    function jumpToTime(t) {
+        t = Math.max(0, Math.min(sessionDurSec, t));
+        if (isNpzLike()) {
+            const frame = Math.min(
+                getNpzDisplayFrameCount() - 1,
+                Math.round(t * getSourceFps() / getFrameStep())
+            );
+            npzLoadFrame(frame);
+        } else if (masterVideo) {
+            masterVideo.currentTime = t;
+            syncSlavesToMaster();
+            updateTimeDisplay();
+            slider.value = Math.floor(t * 1000);
+        }
+    }
+
+    // ── Draw both timeline canvases ───────────────────────────────────
+    function drawTimelines() {
+        drawFullTimeline();
+        drawZoomTimeline();
+        updateMarkValidity();
+    }
+
+    function resizeCanvas(canvas, wrap) {
+        const w = wrap.clientWidth || 400;
+        if (canvas.width !== w) canvas.width = w;
+    }
+
+    function drawFullTimeline() {
+        resizeCanvas(tlFull, tlFullWrap);
+        const ctx = tlFull.getContext("2d");
+        const W = tlFull.width, H = tlFull.height;
+        const dur = sessionDurSec;
+        ctx.clearRect(0, 0, W, H);
+
+        // Background
+        ctx.fillStyle = "#1a1d27";
+        ctx.fillRect(0, 0, W, H);
+
+        if (dur <= 0) return;
+
+        // Labeled segments — thin colored ticks (4px wide, full height)
+        sessionLabels.forEach(lbl => {
+            const startT = parseCsvTime(lbl.Start_Time) - sessionStartTimeOffset;
+            const endT = parseCsvTime(lbl.End_Time) - sessionStartTimeOffset;
+            const x1 = (startT / dur) * W;
+            const x2 = (endT   / dur) * W;
+            const color = classColor(lbl.Event_Class);
+            ctx.fillStyle = color + "cc";
+            ctx.fillRect(x1, 0, Math.max(2, x2 - x1), H);
+        });
+
+        // Pending mark region
+        if (markIn != null && markOut != null) {
+            const x1 = (Math.min(markIn, markOut) / dur) * W;
+            const x2 = (Math.max(markIn, markOut) / dur) * W;
+            ctx.fillStyle = "rgba(255,255,255,0.12)";
+            ctx.fillRect(x1, 0, Math.max(1, x2 - x1), H);
+        }
+
+        // Current position needle
+        const cur = getCurrentTime();
+        const cx = (cur / dur) * W;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(Math.max(0, cx - 1), 0, 2, H);
+
+        // Mark-in / mark-out triangles
+        if (markIn != null) {
+            const mx = (markIn / dur) * W;
+            ctx.fillStyle = "#2ecc71";
+            ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx+6, 0); ctx.lineTo(mx, 8); ctx.fill();
+        }
+        if (markOut != null) {
+            const mx = (markOut / dur) * W;
+            ctx.fillStyle = "#e74c3c";
+            ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx-6, 0); ctx.lineTo(mx, 8); ctx.fill();
+        }
+    }
+
+    function drawZoomTimeline() {
+        resizeCanvas(tlZoom, tlZoomWrap);
+        const ctx = tlZoom.getContext("2d");
+        const W = tlZoom.width, H = tlZoom.height;
+        const dur = sessionDurSec;
+        ctx.clearRect(0, 0, W, H);
+
+        if (dur <= 0) return;
+
+        const cur = getCurrentTime();
+        const half = zoomWindowSec === 0 ? dur : zoomWindowSec;
+        const viewStart = zoomWindowSec === 0 ? 0 : Math.max(0, cur - half);
+        const viewEnd   = zoomWindowSec === 0 ? dur : Math.min(dur, cur + half);
+        const viewSpan  = viewEnd - viewStart;
+        if (viewSpan <= 0) return;
+
+        function toX(t) { return ((t - viewStart) / viewSpan) * W; }
+
+        // Background
+        ctx.fillStyle = "#1a1d27";
+        ctx.fillRect(0, 0, W, H);
+
+        // Time grid lines (every reasonable interval)
+        ctx.strokeStyle = "#333648";
+        ctx.lineWidth = 1;
+        const gridInterval = niceInterval(viewSpan, 8);
+        const gridStart = Math.ceil(viewStart / gridInterval) * gridInterval;
+        ctx.font = "9px monospace";
+        ctx.fillStyle = "#555870";
+        for (let t = gridStart; t < viewEnd; t += gridInterval) {
+            const x = toX(t);
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+            const absTime = t + sessionStartTimeOffset;
+            ctx.fillText(formatTime(absTime).split(".")[0], x + 2, H - 2);
+        }
+
+        // Labeled segments — full-height colored bands
+        sessionLabels.forEach(lbl => {
+            const startT = parseCsvTime(lbl.Start_Time) - sessionStartTimeOffset;
+            const endT = parseCsvTime(lbl.End_Time) - sessionStartTimeOffset;
+            const x1 = toX(startT);
+            const x2 = toX(endT);
+            if (x2 < 0 || x1 > W) return;
+            
+            const rawClass = String(lbl.Event_Class);
+            const clsName = CONFIG.annotation.event_classes[rawClass] || rawClass;
+            const color = classColor(clsName);
+            
+            ctx.fillStyle = color + "55";
+            ctx.fillRect(x1, 0, Math.max(2, x2 - x1), H);
+            // Top border stripe
+            ctx.fillStyle = color + "dd";
+            ctx.fillRect(x1, 0, Math.max(2, x2 - x1), 3);
+            // Label text if wide enough
+            if (x2 - x1 > 30) {
+                ctx.fillStyle = color;
+                ctx.font = "9px sans-serif";
+                ctx.fillText(clsName.split("_")[0], x1 + 3, 13);
+            }
+        });
+
+        // Pending mark region
+        if (markIn != null || markOut != null) {
+            const pendStart = markIn  != null ? toX(markIn)  : 0;
+            const pendEnd   = markOut != null ? toX(markOut) : W;
+            const isValid   = validateMarks() === null;
+            ctx.fillStyle = isValid ? "rgba(46,204,113,0.15)" : "rgba(231,76,60,0.15)";
+            const rx1 = Math.min(pendStart, pendEnd);
+            const rx2 = Math.max(pendStart, pendEnd);
+            ctx.fillRect(rx1, 0, rx2 - rx1, H);
+            // Dashed border
+            ctx.strokeStyle = isValid ? "#2ecc71aa" : "#e74c3caa";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 3]);
+            ctx.strokeRect(rx1, 0, rx2 - rx1, H);
+            ctx.setLineDash([]);
+        }
+
+        // Mark-in line
+        if (markIn != null) {
+            const mx = toX(markIn);
+            ctx.strokeStyle = "#2ecc71";
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx, H); ctx.stroke();
+            ctx.fillStyle = "#2ecc71";
+            ctx.font = "bold 9px monospace";
+            ctx.fillText("IN", mx + 3, 10);
+        }
+        // Mark-out line
+        if (markOut != null) {
+            const mx = toX(markOut);
+            ctx.strokeStyle = "#e74c3c";
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx, H); ctx.stroke();
+            ctx.fillStyle = "#e74c3c";
+            ctx.font = "bold 9px monospace";
+            ctx.fillText("OUT", Math.max(0, mx - 24), 10);
+        }
+
+        // Current position — bright white needle
+        const cx = toX(cur);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(Math.max(0, cx - 1), 0, 2, H);
+        // Diamond marker at top
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(cx, 0); ctx.lineTo(cx+5, 6); ctx.lineTo(cx, 12); ctx.lineTo(cx-5, 6);
+        ctx.closePath(); ctx.fill();
+    }
+
+    // Nice round interval for grid lines
+    function niceInterval(span, targetLines) {
+        const raw = span / targetLines;
+        const candidates = [0.5,1,2,5,10,15,30,60,120,300,600,900,1800,3600,7200];
+        for (const c of candidates) if (c >= raw) return c;
+        return 3600;
+    }
+
+    function formatTimeShort(sec) {
+        if (sec < 60) return `${Math.round(sec)}s`;
+        if (sec < 3600) return `${Math.floor(sec/60)}m${String(Math.round(sec%60)).padStart(2,'0')}s`;
+        return `${Math.floor(sec/3600)}h${String(Math.floor((sec%3600)/60)).padStart(2,'0')}m`;
+    }
+
+    // ── Validation ────────────────────────────────────────────────────
+    const MIN_LABEL_DURATION = 1.0;  // seconds — hard floor
+
+    // Returns null if valid, or an error string
+    function validateMarks() {
+        if (markIn == null || markOut == null) return "Set both IN and OUT";
+        const start = Math.min(markIn, markOut) + sessionStartTimeOffset;
+        const end   = Math.max(markIn, markOut) + sessionStartTimeOffset;
+        const dur   = end - start;
+        if (dur < MIN_LABEL_DURATION) return `Too short: ${dur.toFixed(2)}s (min ${MIN_LABEL_DURATION}s)`;
+        
+        const overlapping = sessionLabels.filter(lbl =>
+            parseCsvTime(lbl.Start_Time) < end && parseCsvTime(lbl.End_Time) > start
+        );
+        if (overlapping.length > 0) return `Overlaps ${overlapping.length} existing label(s)`;
+        return null;
+    }
+
+    function updateMarkValidity() {
+        if (markIn == null && markOut == null) {
+            markValidity.className = "mark-validity";
+            markValidity.textContent = "";
+            return;
+        }
+        const err = validateMarks();
+        if (err === null) {
+            markValidity.className = "mark-validity valid";
+            markValidity.textContent = `✓ ${(Math.abs((markOut||0)-(markIn||0))).toFixed(2)}s`;
+        } else {
+            markValidity.className = "mark-validity invalid";
+            markValidity.textContent = `✗ ${err}`;
+        }
+    }
+
+    // ── Stats Panel ───────────────────────────────────────────────────
+    function renderStats(labels) {
+        const statsBody = document.getElementById("stats-body");
+        if (!statsBody) return;
+
+        // Aggregate per class
+        const classStats = {};
+        let totalDur = 0;
+        labels.forEach(lbl => {
+            const rawClass = String(lbl.Event_Class);
+            const cls = CONFIG.annotation.event_classes[rawClass] || rawClass;
+            
+            if (!classStats[cls]) classStats[cls] = { count: 0, duration: 0 };
+            const startT = parseCsvTime(lbl.Start_Time);
+            const endT = parseCsvTime(lbl.End_Time);
+            const d = Math.max(0, endT - startT);
+            classStats[cls].count++;
+            classStats[cls].duration += d;
+            totalDur += d;
+        });
+
+        if (Object.keys(classStats).length === 0) {
+            statsBody.innerHTML = '<div style="font-size:11px;color:var(--text-secondary);padding:4px 0">No labels yet</div>';
+            return;
+        }
+
+        const maxDur = Math.max(...Object.values(classStats).map(s => s.duration));
+        statsBody.innerHTML = "";
+
+        Object.entries(classStats)
+            .sort((a, b) => b[1].duration - a[1].duration)
+            .forEach(([cls, st]) => {
+                const color = classColor(cls);
+                const barPct = maxDur > 0 ? (st.duration / maxDur * 100).toFixed(0) : 0;
+                const durStr = st.duration >= 60
+                    ? `${(st.duration/60).toFixed(1)}m`
+                    : `${st.duration.toFixed(1)}s`;
+                const row = document.createElement("div");
+                row.className = "stats-row";
+                row.innerHTML = `
+                    <div class="stats-class-dot" style="background:${color}"></div>
+                    <div class="stats-class-name" title="${cls}">${cls.replace(/_/g," ")}</div>
+                    <div class="stats-bar-wrap">
+                        <div class="stats-bar-fill" style="width:${barPct}%;background:${color}"></div>
+                    </div>
+                    <div class="stats-nums">${st.count}× ${durStr}</div>
+                `;
+                statsBody.appendChild(row);
+            });
+
+        const totalRow = document.createElement("div");
+        totalRow.className = "stats-total";
+        const totalStr = totalDur >= 60 ? `${(totalDur/60).toFixed(1)}m` : `${totalDur.toFixed(1)}s`;
+        totalRow.textContent = `${labels.length} labels · ${totalStr} total`;
+        statsBody.appendChild(totalRow);
+    }
+
+    // ── Go-to Input ──────────────────────────────────────────────────
+    const gotoInput = document.getElementById("goto-input");
+    const gotoBtn   = document.getElementById("goto-btn");
+
+    // Parse input string → seconds, or null if invalid
+    // Accepted formats:
+    //   f:12500          → source frame number
+    //   1:23:45          → HH:MM:SS
+    //   1:23:45.678      → HH:MM:SS.mmm
+    //   23:45            → MM:SS
+    //   83.5             → raw seconds
+    //   83               → raw seconds (integer)
+    function parseGotoInput(raw) {
+        raw = raw.trim();
+        if (!raw) return null;
+
+        // Frame number: f:12500 or F:12500
+        const frameMatch = raw.match(/^[fF]:(\d+)$/);
+        if (frameMatch) {
+            const srcFrame = parseInt(frameMatch[1]);
+            return srcFrame / getSourceFps();
+        }
+
+        // HH:MM:SS or HH:MM:SS.mmm
+        const hmsMatch = raw.match(/^(\d+):(\d{1,2}):(\d{1,2})(?:\.(\d+))?$/);
+        if (hmsMatch) {
+            const h = parseInt(hmsMatch[1]);
+            const m = parseInt(hmsMatch[2]);
+            const s = parseInt(hmsMatch[3]);
+            const ms = hmsMatch[4] ? parseFloat("0." + hmsMatch[4]) : 0;
+            if (m > 59 || s > 59) return null;
+            return h * 3600 + m * 60 + s + ms;
+        }
+
+        // MM:SS or MM:SS.mmm
+        const msMatch = raw.match(/^(\d+):(\d{1,2})(?:\.(\d+))?$/);
+        if (msMatch) {
+            const m = parseInt(msMatch[1]);
+            const s = parseInt(msMatch[2]);
+            const ms = msMatch[3] ? parseFloat("0." + msMatch[3]) : 0;
+            if (s > 59) return null;
+            return m * 60 + s + ms;
+        }
+
+        // Raw seconds (integer or decimal)
+        const secMatch = raw.match(/^(\d+(?:\.\d+)?)$/);
+        if (secMatch) return parseFloat(secMatch[1]);
+
+        return null;
+    }
+
+    function executeGoto() {
+        let t = parseGotoInput(gotoInput.value);
+        if (t === null) {
+            gotoInput.classList.add("err");
+            setTimeout(() => gotoInput.classList.remove("err"), 800);
+            return;
+        }
+        if (t >= sessionStartTimeOffset && sessionStartTimeOffset > 0) {
+            t -= sessionStartTimeOffset;
+        }
+        const clamped = Math.max(0, Math.min(sessionDurSec || Infinity, t));
+        jumpToTime(clamped);
+        gotoInput.classList.add("ok");
+        setTimeout(() => {
+            gotoInput.classList.remove("ok");
+            gotoInput.value = "";
+            gotoInput.blur();
+        }, 600);
+    }
+
+    gotoBtn.addEventListener("click", executeGoto);
+    gotoInput.addEventListener("keydown", e => {
+        if (e.key === "Enter")  { e.preventDefault(); executeGoto(); }
+        if (e.key === "Escape") { gotoInput.value = ""; gotoInput.blur(); }
+    });
+    // Prevent hotkeys from firing while typing in goto field
+    gotoInput.addEventListener("keyup",  e => e.stopPropagation());
+    gotoInput.addEventListener("keypress", e => e.stopPropagation());
+
+    // ── Keyboard Shortcuts ───────────────────────────────────────────
+    document.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+
+        // Handle Modal state first
+        if (isModalOpen) {
+            if (e.key === "Escape") { e.preventDefault(); closeEventModal(); }
+            return; // Block EVERYTHING else while menu is open
+        }
+
+        const key = e.key;
+        const hk = CONFIG?.hotkeys;
+
+        // Trigger menu
+        if (key === hk?.open_menu)     { e.preventDefault(); openEventModal(); return; }
+        
+        if (key === hk?.play_pause)    { e.preventDefault(); togglePlay(); return; }
+        if (key === hk?.step_backward) { e.preventDefault(); stepFrame(-1); return; }
+        if (key === hk?.step_forward)  { e.preventDefault(); stepFrame(1); return; }
+        if (key === hk?.mark_in)       { e.preventDefault(); setMarkIn(); return; }
+        if (key === hk?.mark_out)      { e.preventDefault(); setMarkOut(); return; }
+
+        if (key === hk?.toggle_all_cameras) {
+            e.preventDefault(); selectAllCameras(); return;
+        }
+
+        // F1-F9 → toggle camera by index
+        const fMatch = key.match(/^F(\d)$/);
+        if (fMatch) {
+            const camIdx = parseInt(fMatch[1]) - 1;
+            if (camIdx >= 0 && camIdx < cameraNames.length) {
+                e.preventDefault(); toggleCamera(camIdx); return;
+            }
+        }
+    });
+
+    // ── Path Input Bar ───────────────────────────────────────────────
+    const pathInputBar    = document.getElementById("path-input-bar");
+    const pathInputField  = document.getElementById("path-input-field");
+    const pathInputStatus = document.getElementById("path-input-status");
+
+    document.getElementById("btn-browse").addEventListener("click", async () => {
+        pathInputBar.classList.toggle("open");
+        if (pathInputBar.classList.contains("open")) {
+            // Pre-fill with current dataset path
+            try {
+                const res = await fetch("/api/dataset_path");
+                const data = await res.json();
+                pathInputField.value = data.path;
+            } catch(e) {}
+            pathInputField.focus();
+            pathInputField.select();
+            pathInputStatus.textContent = "";
+            pathInputStatus.className = "path-status";
+        }
+    });
+
+    document.getElementById("path-input-cancel").addEventListener("click", () => {
+        pathInputBar.classList.remove("open");
+        pathInputStatus.textContent = "";
+        pathInputStatus.className = "path-status";
+    });
+
+    // Apply on button click or Enter key
+    async function applyDatasetPath() {
+        const path = pathInputField.value.trim();
+        if (!path) return;
+        pathInputStatus.textContent = "Applying…";
+        pathInputStatus.className = "path-status";
+        try {
+            const res = await fetch("/api/set_dataset_path", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ path })
+            });
+            if (res.ok) {
+                pathInputStatus.textContent = "✓ Path set";
+                pathInputStatus.className = "path-status ok";
+                // Refresh rooms dropdown
+                const roomRes = await fetch("/api/rooms");
+                const roomData = await roomRes.json();
+                selRoom.innerHTML = '<option value="">-- Select Room --</option>';
+                roomData.rooms.forEach(r => {
+                    const opt = document.createElement("option");
+                    opt.value = r; opt.textContent = r;
+                    selRoom.appendChild(opt);
+                });
+                selYear.innerHTML = '<option value="">YYYY</option>';
+                selMonth.innerHTML = '<option value="">MM</option>';
+                selDay.innerHTML = '<option value="">DD</option>';
+                availableDates = [];
+                showToast(`Dataset: ${path}`, "success");
+                setTimeout(() => pathInputBar.classList.remove("open"), 1200);
+            } else {
+                const err = await res.json();
+                pathInputStatus.textContent = "✗ " + (err.detail || "Error");
+                pathInputStatus.className = "path-status err";
+            }
+        } catch(e) {
+            pathInputStatus.textContent = "✗ Server unreachable";
+            pathInputStatus.className = "path-status err";
+        }
+    }
+
+    document.getElementById("path-input-apply").addEventListener("click", applyDatasetPath);
+    pathInputField.addEventListener("keydown", e => { if (e.key === "Enter") applyDatasetPath(); });
+
+    // ── Filter Panel ─────────────────────────────────────────────────
+    const filterBar       = document.getElementById("filter-bar");
+    const btnFilterToggle = document.getElementById("btn-filter-toggle");
+    const fTempMin        = document.getElementById("f-temp-min");
+    const fTempMax        = document.getElementById("f-temp-max");
+    const fColormap       = document.getElementById("f-colormap");
+    const fInvert         = document.getElementById("f-invert");
+    const fSmooth         = document.getElementById("f-smooth");
+    const fBgsub          = document.getElementById("f-bgsub");
+    const fStretch        = document.getElementById("f-stretch");
+    const fEdge           = document.getElementById("f-edge");
+    const fPresetSel      = document.getElementById("f-preset-sel");
+
+    btnFilterToggle.addEventListener("click", () => {
+        filterBar.classList.toggle("open");
+        btnFilterToggle.classList.toggle("active");
+    });
+
+    // Server-side filters (temp clip, colormap) — need NPZ frame reload
+    let filterReloadTimer = null;
+    function scheduleNpzReload() {
+        if (!isNpzLike()) return;
+        clearTimeout(filterReloadTimer);
+        filterReloadTimer = setTimeout(() => npzLoadFrame(npzCurrentFrame), 150);
+    }
+
+    // Build frame URL — routes to /api/h5_frame or /api/npz_frame based on session type
+    function npzFrameUrl(cam, frameIdx) {
+        const endpoint = sessionType === "h5" ? "h5_frame" : "npz_frame";
+        let url = `/api/${endpoint}/${currentRoom}/${currentDate}/${cam}/${frameIdx}`;
+        const params = [];
+        if (filterState.tempMin !== null) params.push(`temp_min=${filterState.tempMin}`);
+        if (filterState.tempMax !== null) params.push(`temp_max=${filterState.tempMax}`);
+        if (filterState.colormap) params.push(`colormap=${filterState.colormap}`);
+        if (params.length) url += "?" + params.join("&");
+        return url;
+    }
+
+    // ── Client-side thermal preprocessing (Canvas API) ───────────────
+    // Mirrors the student capstone pipeline:
+    //   smoothing    → Gaussian blur (3×3 kernel, iterative passes)
+    //   bgsub        → Mean-field background subtraction
+    //   stretch      → Contrast stretching (histogram equalization)
+    //   edge overlay → Sobel edge detection overlaid in cyan
+    //   invert       → Invert all channels
+
+    function gaussianBlur3x3(data, w, h) {
+        // 3×3 Gaussian kernel (same kernel the capstone used)
+        const kernel = [1,2,1, 2,4,2, 1,2,1];
+        const ksum = 16;
+        const out = new Uint8ClampedArray(data.length);
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                let r=0, g=0, b=0, a=0;
+                for (let ky = -1; ky <= 1; ky++) {
+                    for (let kx = -1; kx <= 1; kx++) {
+                        const nx = Math.min(Math.max(x+kx, 0), w-1);
+                        const ny = Math.min(Math.max(y+ky, 0), h-1);
+                        const ki = (ky+1)*3 + (kx+1);
+                        const pi = (ny*w + nx)*4;
+                        r += data[pi]   * kernel[ki];
+                        g += data[pi+1] * kernel[ki];
+                        b += data[pi+2] * kernel[ki];
+                        a += data[pi+3] * kernel[ki];
+                    }
+                }
+                const oi = (y*w + x)*4;
+                out[oi]   = r/ksum;
+                out[oi+1] = g/ksum;
+                out[oi+2] = b/ksum;
+                out[oi+3] = a/ksum;
+            }
+        }
+        return out;
+    }
+
+    function applyClientFilters(imgEl) {
+        const s = filterState;
+        const hasClientFilter = s.smooth > 0 || s.bgsub > 0 || s.stretch > 0 || s.edge > 0 || s.invert;
+        if (!hasClientFilter) {
+            // Remove any canvas overlay — show original img
+            const existing = imgEl.parentElement.querySelector(".filter-canvas");
+            if (existing) existing.style.display = "none";
+            imgEl.style.display = "";
+            return;
+        }
+
+        // Draw img onto offscreen canvas, apply pipeline, display result
+        const offscreen = document.createElement("canvas");
+        offscreen.width  = imgEl.naturalWidth  || imgEl.width  || 320;
+        offscreen.height = imgEl.naturalHeight || imgEl.height || 240;
+        const ctx = offscreen.getContext("2d");
+        ctx.drawImage(imgEl, 0, 0);
+        const id = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
+        let d = id.data;
+        const w = offscreen.width, h = offscreen.height;
+
+        // 1. Gaussian smoothing (N passes of 3×3)
+        if (s.smooth > 0) {
+            for (let pass = 0; pass < s.smooth; pass++) {
+                d = gaussianBlur3x3(d, w, h);
+            }
+        }
+
+        // 2. Background subtraction (mean-field) — subtract mean luminance scaled by strength
+        if (s.bgsub > 0) {
+            const strength = s.bgsub / 100;
+            let sum = 0;
+            for (let i = 0; i < d.length; i+=4) sum += (d[i] + d[i+1] + d[i+2]) / 3;
+            const mean = sum / (d.length/4);
+            for (let i = 0; i < d.length; i+=4) {
+                d[i]   = Math.min(255, Math.max(0, d[i]   - mean * strength + 128 * strength));
+                d[i+1] = Math.min(255, Math.max(0, d[i+1] - mean * strength + 128 * strength));
+                d[i+2] = Math.min(255, Math.max(0, d[i+2] - mean * strength + 128 * strength));
+            }
+        }
+
+        // 3. Contrast stretch (redistribute histogram to 0–255 range)
+        if (s.stretch > 0) {
+            const strength = s.stretch / 100;
+            // Find per-channel min/max
+            let rMin=255,rMax=0,gMin=255,gMax=0,bMin=255,bMax=0;
+            for (let i = 0; i < d.length; i+=4) {
+                rMin=Math.min(rMin,d[i]);   rMax=Math.max(rMax,d[i]);
+                gMin=Math.min(gMin,d[i+1]); gMax=Math.max(gMax,d[i+1]);
+                bMin=Math.min(bMin,d[i+2]); bMax=Math.max(bMax,d[i+2]);
+            }
+            for (let i = 0; i < d.length; i+=4) {
+                const rRange = (rMax-rMin) || 1;
+                const gRange = (gMax-gMin) || 1;
+                const bRange = (bMax-bMin) || 1;
+                d[i]   = d[i]   * (1-strength) + ((d[i]  -rMin)/rRange*255) * strength;
+                d[i+1] = d[i+1] * (1-strength) + ((d[i+1]-gMin)/gRange*255) * strength;
+                d[i+2] = d[i+2] * (1-strength) + ((d[i+2]-bMin)/bRange*255) * strength;
+            }
+        }
+
+        // 4. Sobel edge detection overlay (cyan edges)
+        if (s.edge > 0) {
+            const strength = s.edge / 100;
+            // Compute luminance
+            const lum = new Float32Array(w*h);
+            for (let i = 0; i < w*h; i++) lum[i] = (d[i*4] + d[i*4+1] + d[i*4+2]) / 3;
+            // Sobel
+            for (let y = 1; y < h-1; y++) {
+                for (let x = 1; x < w-1; x++) {
+                    const gx = -lum[(y-1)*w+(x-1)] + lum[(y-1)*w+(x+1)]
+                               -2*lum[y*w+(x-1)]   + 2*lum[y*w+(x+1)]
+                               -lum[(y+1)*w+(x-1)] + lum[(y+1)*w+(x+1)];
+                    const gy = -lum[(y-1)*w+(x-1)] - 2*lum[(y-1)*w+x] - lum[(y-1)*w+(x+1)]
+                               +lum[(y+1)*w+(x-1)] + 2*lum[(y+1)*w+x] + lum[(y+1)*w+(x+1)];
+                    const mag = Math.min(255, Math.sqrt(gx*gx + gy*gy));
+                    const pi = (y*w+x)*4;
+                    // Blend cyan edge over existing pixel
+                    d[pi]   = d[pi]   * (1 - mag/255*strength);        // R: darken
+                    d[pi+1] = Math.min(255, d[pi+1] + mag*strength);   // G: brighten
+                    d[pi+2] = Math.min(255, d[pi+2] + mag*strength);   // B: brighten → cyan
+                }
+            }
+        }
+
+        // 5. Invert
+        if (s.invert) {
+            for (let i = 0; i < d.length; i+=4) {
+                d[i]   = 255-d[i];
+                d[i+1] = 255-d[i+1];
+                d[i+2] = 255-d[i+2];
+            }
+        }
+
+        // Write processed data to a display canvas inside the cell
+        let canvas = imgEl.parentElement.querySelector(".filter-canvas");
+        if (!canvas) {
+            canvas = document.createElement("canvas");
+            canvas.className = "filter-canvas";
+            canvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;";
+            imgEl.parentElement.appendChild(canvas);
+        }
+        canvas.width  = w;
+        canvas.height = h;
+        const outCtx = canvas.getContext("2d");
+        const outId = outCtx.createImageData(w, h);
+        outId.data.set(d);
+        outCtx.putImageData(outId, 0, 0);
+        canvas.style.display = "";
+        imgEl.style.display = "none";   // hide raw img, show canvas
+    }
+
+    // Run client-side filters on all img elements that have loaded content
+    function applyAllClientFilters() {
+        imgElements.forEach(img => {
+            if (img.naturalWidth > 0) applyClientFilters(img);
+        });
+        // For video mode: apply invert only (CSS)
+        if (sessionType === "video") {
+            videoGrid.style.filter = filterState.invert ? "invert(1)" : "";
+        }
+    }
+
+    // ── Wire up filter controls ───────────────────────────────────────
+    fTempMin.addEventListener("input", () => {
+        const v = parseInt(fTempMin.value);
+        filterState.tempMin = v <= -20 ? null : v;
+        document.getElementById("f-temp-min-val").textContent = filterState.tempMin === null ? "auto" : v + "°C";
+        scheduleNpzReload();
+    });
+    fTempMax.addEventListener("input", () => {
+        const v = parseInt(fTempMax.value);
+        filterState.tempMax = v >= 200 ? null : v;
+        document.getElementById("f-temp-max-val").textContent = filterState.tempMax === null ? "auto" : v + "°C";
+        scheduleNpzReload();
+    });
+    fColormap.addEventListener("change", () => {
+        filterState.colormap = fColormap.value;
+        scheduleNpzReload();
+    });
+    fInvert.addEventListener("change", () => {
+        filterState.invert = fInvert.checked;
+        applyAllClientFilters();
+    });
+
+    function wireClientFilter(input, valEl, stateKey, formatFn) {
+        input.addEventListener("input", () => {
+            const v = parseInt(input.value);
+            filterState[stateKey] = v;
+            valEl.textContent = formatFn(v);
+            applyAllClientFilters();
+        });
+    }
+    wireClientFilter(fSmooth, document.getElementById("f-smooth-val"), "smooth",
+        v => v === 0 ? "off" : `${v}×`);
+    wireClientFilter(fBgsub, document.getElementById("f-bgsub-val"), "bgsub",
+        v => v === 0 ? "off" : `${v}%`);
+    wireClientFilter(fStretch, document.getElementById("f-stretch-val"), "stretch",
+        v => v === 0 ? "off" : `${v}%`);
+    wireClientFilter(fEdge, document.getElementById("f-edge-val"), "edge",
+        v => v === 0 ? "off" : `${v}%`);
+
+    // ── Reset all filters ─────────────────────────────────────────────
+    document.getElementById("f-reset").addEventListener("click", () => {
+        filterState = { tempMin:null, tempMax:null, colormap:"", invert:false, smooth:0, bgsub:0, stretch:0, edge:0 };
+        fTempMin.value = -20;  document.getElementById("f-temp-min-val").textContent = "auto";
+        fTempMax.value = 200;  document.getElementById("f-temp-max-val").textContent = "auto";
+        fColormap.value = "";  fInvert.checked = false;
+        fSmooth.value = 0;   document.getElementById("f-smooth-val").textContent = "off";
+        fBgsub.value = 0;    document.getElementById("f-bgsub-val").textContent = "off";
+        fStretch.value = 0;  document.getElementById("f-stretch-val").textContent = "off";
+        fEdge.value = 0;     document.getElementById("f-edge-val").textContent = "off";
+        // Clear canvas overlays
+        document.querySelectorAll(".filter-canvas").forEach(c => c.style.display = "none");
+        imgElements.forEach(img => img.style.display = "");
+        videoGrid.style.filter = "";
+        scheduleNpzReload();
+    });
+
+    // Filter presets
+    async function loadFilterPresets() {
+        try {
+            const res = await fetch("/api/filter_presets");
+            const data = await res.json();
+            filterPresets = data.presets || {};
+            fPresetSel.innerHTML = '<option value="">Presets...</option>';
+            Object.keys(filterPresets).forEach(name => {
+                const opt = document.createElement("option");
+                opt.value = name; opt.textContent = name;
+                fPresetSel.appendChild(opt);
+            });
+        } catch(e) {}
+    }
+
+    document.getElementById("f-preset-save").addEventListener("click", async () => {
+        const name = prompt("Preset name:");
+        if (!name) return;
+        await fetch("/api/filter_presets", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ name, settings: {...filterState} })
+        });
+        loadFilterPresets();
+        showToast(`Preset "${name}" saved`, "success");
+    });
+
+    document.getElementById("f-preset-load").addEventListener("click", () => {
+        const name = fPresetSel.value;
+        if (!name || !filterPresets[name]) return;
+        const s = filterPresets[name];
+        filterState = {...s};
+        fTempMin.value = s.tempMin ?? -20;   document.getElementById("f-temp-min-val").textContent = s.tempMin===null?"auto":(s.tempMin+"°C");
+        fTempMax.value = s.tempMax ?? 200;   document.getElementById("f-temp-max-val").textContent = s.tempMax===null?"auto":(s.tempMax+"°C");
+        fColormap.value = s.colormap || "";  fInvert.checked = s.invert || false;
+        fSmooth.value  = s.smooth  || 0;    document.getElementById("f-smooth-val").textContent  = s.smooth  ? `${s.smooth}×` : "off";
+        fBgsub.value   = s.bgsub   || 0;    document.getElementById("f-bgsub-val").textContent   = s.bgsub   ? `${s.bgsub}%` : "off";
+        fStretch.value = s.stretch || 0;    document.getElementById("f-stretch-val").textContent = s.stretch ? `${s.stretch}%` : "off";
+        fEdge.value    = s.edge    || 0;    document.getElementById("f-edge-val").textContent    = s.edge    ? `${s.edge}%` : "off";
+        applyAllClientFilters();
+        scheduleNpzReload();
+        showToast(`Preset "${name}" loaded`, "success");
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────
+    async function init() {
+        // Fetch config
+        const res = await fetch("/api/config");
+        CONFIG = await res.json();
+
+        buildClassColorMap();   // build event-class → colour map from config
+        const camCount = CONFIG.video.cameras_per_room || 3;
+
+        // ── Populate FPS block ───────────────────────────────────────
+        const srcFps = getSourceFps();
+        fpsSrcDisplay.textContent = srcFps;
+
+        // Build display FPS dropdown from config options
+        const fpsOptions = CONFIG.video.display_fps_options || [1, 2, 4, 8, 12, 15, 25];
+        const configDisplayFps = CONFIG.video.display_fps || 8;
+        selDisplayFps.innerHTML = "";
+        fpsOptions.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            if (f === configDisplayFps) opt.selected = true;
+            selDisplayFps.appendChild(opt);
+        });
+        updateFpsStepHint();
+
+        // When annotator changes display FPS at runtime
+        selDisplayFps.addEventListener("change", () => {
+            updateFpsStepHint();
+            // If NPZ is playing, restart timer at new rate
+            if (isNpzLike() && isPlaying) {
+                npzStopPlayback();
+                npzStartPlayback();
+            }
+            // Resync slider max for current session
+            if (isNpzLike() && npzDuration > 0) {
+                slider.max = Math.floor(npzDuration * 1000);
+            }
+            updateTimeDisplay();
+        });
+
+        // Build video grid
+        buildVideoGrid(camCount);
+
+        // Load filter presets
+        loadFilterPresets();
+
+        // Build speed buttons from config
+        CONFIG.video.playback_speeds.forEach(speed => {
+            const btn = document.createElement("button");
+            btn.className = "ctrl-btn" + (speed === 1 ? " active" : "");
+            btn.textContent = speed + "×";
+            btn.addEventListener("click", () => setSpeed(speed));
+            speedControls.appendChild(btn);
+        });
+
+        // Build hotkey hints from config
+        const hk = CONFIG.hotkeys;
+        const eventKeys = Object.keys(CONFIG.annotation.event_classes);
+        hotkeyHint.innerHTML =
+            `<kbd>${hk.mark_in.toUpperCase()}</kbd> In &nbsp;` +
+            `<kbd>${hk.mark_out.toUpperCase()}</kbd> Out &nbsp;` +
+            `<kbd>F1-F${camCount}</kbd> Cams &nbsp;` +
+            `<kbd>${(hk.toggle_all_cameras || 'A').toUpperCase()}</kbd> All &nbsp;` +
+            `<kbd>${eventKeys.join(",")}</kbd> Save`;
+
+        // Populate rooms
+        const roomRes = await fetch("/api/rooms");
+        const roomData = await roomRes.json();
+        selRoom.innerHTML = '<option value="">-- Select Room --</option>';
+        roomData.rooms.forEach(r => {
+            const opt = document.createElement("option");
+            opt.value = r; opt.textContent = r;
+            selRoom.appendChild(opt);
+        });
+
+        // Room change → fetch available folders and populate Year
+        selRoom.addEventListener("change", async () => {
+            selYear.innerHTML = '<option value="">YYYY</option>';
+            selMonth.innerHTML = '<option value="">MM</option>';
+            selDay.innerHTML = '<option value="">DD</option>';
+            availableDates = [];
+
+            if (!selRoom.value) return;
+            const dateRes = await fetch(`/api/dates/${selRoom.value}`);
+            const dateData = await dateRes.json();
+            availableDates = dateData.dates; // e.g. ["2026-04-19", "2026-04-20"]
+
+            // Extract unique years
+            const years = [...new Set(availableDates.map(d => d.split("-")[0]))].sort();
+            years.forEach(y => {
+                if (y && y.length === 4) selYear.appendChild(new Option(y, y));
+            });
+        });
+
+        // Year change → populate Month
+        selYear.addEventListener("change", () => {
+            selMonth.innerHTML = '<option value="">MM</option>';
+            selDay.innerHTML = '<option value="">DD</option>';
+            if (!selYear.value) return;
+
+            const yearDates = availableDates.filter(d => d.startsWith(selYear.value + "-"));
+            const months = [...new Set(yearDates.map(d => d.split("-")[1]))].sort();
+            months.forEach(m => {
+                if (m) selMonth.appendChild(new Option(m, m));
+            });
+        });
+
+        // Month change → populate Day
+        selMonth.addEventListener("change", () => {
+            selDay.innerHTML = '<option value="">DD</option>';
+            if (!selMonth.value) return;
+
+            const prefix = `${selYear.value}-${selMonth.value}-`;
+            const monthDates = availableDates.filter(d => d.startsWith(prefix));
+            const days = [...new Set(monthDates.map(d => d.split("-")[2]))].sort();
+            days.forEach(d => {
+                if (d) selDay.appendChild(new Option(d, d));
+            });
+        });
+
+        btnLoad.addEventListener("click", loadSession);
+
+        // Set muted from config
+        if (CONFIG.video.default_muted) {
+            videoElements.forEach(v => v.muted = true);
+        }
+    }
+
+    // Redraw timelines on window resize so canvases refit their containers
+    window.addEventListener("resize", () => drawTimelines());
+
+    init();
+})();
+</script>
+</body>
+</html>

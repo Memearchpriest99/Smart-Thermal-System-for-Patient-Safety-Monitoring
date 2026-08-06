@@ -110,6 +110,16 @@ class TestX3DFit:
         det.fit(frames, events)
         assert det._global_mean != 0.0 or det._global_std != 1.0
 
+    def test_class_weight_defaults_to_none(self):
+        det = ThermoX3DDetector(sensor_profile=MLX90640)
+        assert det.get_params()["class_weight"] is None
+
+    def test_class_weight_trains_without_error(self):
+        det = ThermoX3DDetector(sensor_profile=MLX90640, T=4, n_epochs=1, class_weight=(1.0, 5.0))
+        frames, events = _make_training_data(n=8, T=4)
+        det.fit(frames, events)
+        assert det.is_fitted
+
 
 # ---------------------------------------------------------------------------
 # Predict

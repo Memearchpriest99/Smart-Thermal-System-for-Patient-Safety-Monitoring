@@ -127,6 +127,18 @@ class TestMVSTGCNFit:
         with pytest.raises(ValueError):
             det.fit(frames, events)
 
+    def test_class_weight_defaults_to_none(self):
+        det = MVSTGCNDetector()
+        assert det.get_params()["class_weight"] is None
+
+    def test_class_weight_trains_without_error(self):
+        # Weighted CrossEntropyLoss with a real (uneven) weight tensor —
+        # just needs to run cleanly end-to-end, not change the API shape.
+        det = MVSTGCNDetector(T=4, n_epochs=1, class_weight=(1.0, 5.0))
+        frames, events = _make_training_set(n=10, T=4)
+        det.fit(frames, events)
+        assert det.is_fitted
+
 
 # ---------------------------------------------------------------------------
 # Predict

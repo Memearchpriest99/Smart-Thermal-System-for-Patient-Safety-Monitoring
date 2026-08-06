@@ -141,6 +141,19 @@ class TestFit:
         examples = _make_small_train_set(MLX90640, n=10)
         assert d.fit(examples) is d
 
+    def test_class_weight_defaults_to_none(self):
+        d = HOGSVMDetector(MLX90640)
+        assert d.get_params()["class_weight"] is None
+
+    def test_class_weight_reaches_underlying_svc(self):
+        d = HOGSVMDetector(MLX90640, class_weight="balanced")
+        examples = _make_small_train_set(MLX90640, n=10)
+        d.fit(examples)
+        # LinearSVC (unlike SVC) doesn't expose a class_weight_ computed
+        # attribute — confirming the constructor param was threaded through
+        # is what matters here.
+        assert d._svm.class_weight == "balanced"
+
     def test_fit_with_explicit_negatives(self):
         d = HOGSVMDetector(MLX90640)
         # Only positives in examples; provide negatives explicitly

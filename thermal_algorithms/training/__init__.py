@@ -28,6 +28,40 @@ from thermal_algorithms.training.datasets import (
     SessionMetadata,
     sample_background_patches,
 )
+from thermal_algorithms.training.hdf5_source import (
+    HDF5CameraSession,
+    infer_fps_from_chunk_spacing,
+    list_chunks,
+    read_chunk,
+)
+from thermal_algorithms.training.label_join import (
+    LabelInterval,
+    LabelJoiner,
+    classify_event,
+    load_room_labels,
+)
+from thermal_algorithms.training.multi_source import (
+    HDF5Session,
+    HDF5SessionRef,
+    MultiSourceContactDataset,
+    MultiSourceFireDataset,
+    discover_hdf5_sessions,
+)
+from thermal_algorithms.training.pseudo_labels import (
+    PseudoLabeledFrameDataset,
+    generate_pseudo_person_labels,
+    load_pseudo_labels,
+    merge_by_session,
+    save_pseudo_labels,
+)
+from thermal_algorithms.training.full_corpus import (
+    SYNTH_ROOMS,
+    iter_contact_training_chunks,
+    iter_synth_sessions,
+    stream_contact_examples,
+    stream_fire_examples,
+)
+from thermal_algorithms.training.split import session_train_test_split
 from thermal_algorithms.training.trainer import Trainer
 from thermal_algorithms.training.metrics import (
     BinaryConfusionMatrix,
@@ -66,6 +100,36 @@ __all__ = [
     "FrameLevelDataset",
     "SessionMetadata",
     "sample_background_patches",
+    # hdf5_source
+    "HDF5CameraSession",
+    "infer_fps_from_chunk_spacing",
+    "list_chunks",
+    "read_chunk",
+    # label_join
+    "LabelInterval",
+    "LabelJoiner",
+    "classify_event",
+    "load_room_labels",
+    # multi_source
+    "HDF5Session",
+    "HDF5SessionRef",
+    "MultiSourceContactDataset",
+    "MultiSourceFireDataset",
+    "discover_hdf5_sessions",
+    # pseudo_labels
+    "PseudoLabeledFrameDataset",
+    "generate_pseudo_person_labels",
+    "load_pseudo_labels",
+    "merge_by_session",
+    "save_pseudo_labels",
+    # full_corpus
+    "SYNTH_ROOMS",
+    "iter_contact_training_chunks",
+    "iter_synth_sessions",
+    "stream_contact_examples",
+    "stream_fire_examples",
+    # split
+    "session_train_test_split",
     # trainer
     "Trainer",
     # metrics

@@ -26,6 +26,7 @@ Class convention (user-confirmed):
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Iterator, Optional
 
@@ -44,6 +45,23 @@ from thermal_algorithms.training.label_io import (
     load_contact_labels,
     load_yolo_labels,
 )
+
+
+@lru_cache(maxsize=64)
+def _load_npz_frames_cached(path: Path) -> np.ndarray:
+    """Cache the decompressed 'frames' array per npz path.
+
+    Without this, `SessionMetadata.load_frame()` re-opens and fully
+    re-decompresses the whole npz archive on every single frame access —
+    negligible for a handful of calls, but iterating a `FrameLevelDataset`
+    over a real session (hundreds to thousands of frames from the same file)
+    turns an O(1)-per-file decompression into O(n_frames), which is slow
+    enough to make whole-dataset iteration impractical. Safe to cache: these
+    files are written once and never modified in place during a run, and
+    every caller immediately `.astype()`s the result into a fresh array
+    rather than mutating it in place.
+    """
+    return np.load(path)["frames"]
 
 
 @dataclass(frozen=True)
@@ -75,7 +93,7 @@ class SessionMetadata:
         return self.root / f"ch{channel}_frames"
 
     def load_frame(self, channel: int, frame_idx: int) -> Frame:
-        arr = np.load(self.npz_path(channel))["frames"][frame_idx]
+        arr = _load_npz_frames_cached(self.npz_path(channel))[frame_idx]
         return Frame(
             data=arr.astype(np.float32),
             timestamp=frame_idx / self.fps,
@@ -84,7 +102,7 @@ class SessionMetadata:
         )
 
     def load_frames(self, channel: int) -> np.ndarray:
-        return np.load(self.npz_path(channel))["frames"].astype(np.float32)
+        return _load_npz_frames_cached(self.npz_path(channel)).astype(np.float32)
 
 
 class DatasetIndex:

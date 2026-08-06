@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import cv2
 import numpy as np
 import pytest
 
 from thermal_algorithms.core.sensor_profile import MLX90640, WAVESHARE_26984
 from thermal_algorithms.core.types import FireAlert, FireLevel, Frame
-from thermal_algorithms.fire_detection.fire_svm import FireSVMDetector
+from thermal_algorithms.fire_detection.fire_svm import FireSVMDetector, _frame_to_feature_vector
 
 
 # ---------------------------------------------------------------------------
@@ -74,6 +75,14 @@ class TestConstruction:
     def test_is_trainable(self):
         assert FireSVMDetector.is_trainable is True
 
+    def test_class_weight_defaults_to_none(self):
+        det = FireSVMDetector()
+        assert det.get_params()["class_weight"] is None
+
+    def test_class_weight_round_trips_to_params(self):
+        det = FireSVMDetector(class_weight="balanced")
+        assert det.get_params()["class_weight"] == "balanced"
+
 
 # ---------------------------------------------------------------------------
 # Training
@@ -105,6 +114,14 @@ class TestFit:
         det.fit(frames, alerts)
         assert det._scaler is not None
         assert det._svm is not None
+
+    def test_class_weight_reaches_underlying_svc(self):
+        det = FireSVMDetector(class_weight="balanced")
+        frames, alerts = _make_training_set(10, 10)
+        det.fit(frames, alerts)
+        assert det._svm.class_weight == "balanced"
+        # sklearn computes this attribute only when class_weight is set.
+        assert hasattr(det._svm, "class_weight_")
 
 
 # ---------------------------------------------------------------------------
@@ -177,6 +194,32 @@ class TestPredict:
         ws_frame = Frame(data=data, timestamp=0.0)
         result = det.predict(ws_frame)
         assert isinstance(result.level, FireLevel)
+
+
+class TestDegenerateFrames:
+    """A perfectly uniform frame (e.g. a frozen/degenerate sensor reading, or
+    a preprocessor whose background estimate is a single global scalar
+    applied to an already-uniform input) makes Otsu segment nearly the whole
+    frame as one zero-variance 'blob' — skewness/kurtosis are then undefined
+    (NaN) by the underlying formula. Found for real: GlobalNormPreprocessor
+    output on a genuinely frozen room-1 hardware frame crashed the SVM with
+    'Input X contains NaN' before this was fixed."""
+
+    def test_feature_vector_has_no_nan_for_uniform_frame(self):
+        data = np.full((24, 32), 27.31, dtype=np.float32)
+        morph = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        fv = _frame_to_feature_vector(data, morph, 256)
+        assert not np.isnan(fv).any()
+        assert not np.isinf(fv).any()
+
+    def test_predict_does_not_raise_on_uniform_frame(self):
+        det = FireSVMDetector()
+        frames, alerts = _make_training_set(10, 10)
+        det.fit(frames, alerts)
+        frozen = Frame(data=np.full((24, 32), 27.31, dtype=np.float32), timestamp=0.0)
+        result = det.predict(frozen)  # must not raise
+        assert isinstance(result, FireAlert)
+        assert not any(np.isnan(v) for v in result.blob_features.values() if isinstance(v, float))
 
 
 # ---------------------------------------------------------------------------

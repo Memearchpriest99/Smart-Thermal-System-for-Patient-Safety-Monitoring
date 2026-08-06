@@ -115,7 +115,14 @@ class HOGSVMDetector(HumanDetector):
         # Negative sampling defaults (when caller doesn't provide negatives)
         n_negatives_per_frame: int = 5,
         random_state: int = 0,
+        class_weight: Optional[str | dict] = None,
     ) -> None:
+        """
+        class_weight: Passed straight through to sklearn's ``LinearSVC`` —
+            ``'balanced'`` or an explicit ``{0: w0, 1: w1}`` dict. A
+            constructor parameter (not `fit()`-time) because sklearn's
+            `class_weight` is fixed at estimator construction.
+        """
         if sensor_profile is None:
             raise ValueError("HOGSVMDetector requires a SensorProfile.")
 
@@ -135,7 +142,9 @@ class HOGSVMDetector(HumanDetector):
             pyramid_scales=pyramid_scales,
             n_negatives_per_frame=n_negatives_per_frame,
             random_state=random_state,
+            class_weight=class_weight,
         )
+        self._class_weight = class_weight
 
         self._cell_size = self._resolve_cell_size(window_size or (0, 0), cell_size)
         resolved_wh_ww = self._resolve_window_size(
@@ -375,7 +384,9 @@ class HOGSVMDetector(HumanDetector):
             np.zeros(len(neg_feats), dtype=np.int32),
         ])
 
-        self._svm = LinearSVC(C=self._svm_C, dual="auto", max_iter=5000)
+        self._svm = LinearSVC(
+            C=self._svm_C, dual="auto", max_iter=5000, class_weight=self._class_weight,
+        )
         self._svm.fit(X_mat, y_vec)
         self._n_features = int(X_mat.shape[1])
         self._is_fitted = True

@@ -52,7 +52,16 @@ def _frame_to_feature_vector(
 
     # Use the hottest blob as the candidate region of interest
     hottest = max(blobs, key=lambda b: b["max_temp"])
-    return np.array([hottest[k] for k in _FEATURES], dtype=np.float64)
+    fv = np.array([hottest[k] for k in _FEATURES], dtype=np.float64)
+
+    # skewness/kurtosis are NaN for a zero-variance blob (see
+    # otsu_utils._skew_kurtosis — deliberately scipy-compatible there).
+    # A perfectly flat blob happens on real data (e.g. a frozen/degenerate
+    # sensor frame, or a preprocessor whose background estimate is a single
+    # global scalar rather than a spatially-varying one) — treat "no
+    # measurable shape" as neutral (0.0) rather than letting NaN reach the
+    # scaler/SVM, which raises on non-finite input.
+    return np.nan_to_num(fv, nan=0.0, posinf=0.0, neginf=0.0)
 
 
 class FireSVMDetector(FireDetector):
@@ -72,6 +81,7 @@ class FireSVMDetector(FireDetector):
         morph_kernel_size: int = 3,
         n_bins: int = 256,
         random_state: int = 0,
+        class_weight: Optional[str | dict] = None,
     ) -> None:
         """
         Args:
@@ -86,6 +96,13 @@ class FireSVMDetector(FireDetector):
                 that precedes feature extraction. Must be positive odd.
             n_bins: Histogram bins for Otsu. Default 256.
             random_state: RNG seed for reproducible SVM training.
+            class_weight: Passed straight through to sklearn's ``SVC`` —
+                ``'balanced'`` reweights inversely proportional to class
+                frequency (fire is a minority class in the natural-ratio
+                dataset), or an explicit ``{0: w0, 1: w1}`` dict. ``None``
+                (default) keeps sklearn's uniform-weight behavior. This is a
+                constructor parameter, not a `fit()`-time one, because
+                sklearn's `class_weight` is fixed at estimator construction.
         """
         if morph_kernel_size < 1 or morph_kernel_size % 2 == 0:
             raise ValueError(
@@ -100,11 +117,13 @@ class FireSVMDetector(FireDetector):
             morph_kernel_size=morph_kernel_size,
             n_bins=n_bins,
             random_state=random_state,
+            class_weight=class_weight,
         )
 
         self._kernel = kernel
         self._svm_C = float(svm_C)
         self._gamma = gamma
+        self._class_weight = class_weight
         self._morph_kernel = cv2.getStructuringElement(
             cv2.MORPH_RECT, (morph_kernel_size, morph_kernel_size)
         )
@@ -162,6 +181,7 @@ class FireSVMDetector(FireDetector):
             gamma=self._gamma,
             probability=True,
             random_state=self._random_state,
+            class_weight=self._class_weight,
         )
         self._svm.fit(X_scaled, y_vec)
         self._is_fitted = True
