@@ -78,7 +78,12 @@ def _build_stgcn_model(node_feat_dim: int, hidden_dim: int, n_layers: int, max_a
             B, N, _ = x.shape
             # Adaptive adjacency A_ij = softmax(-dist2 / σ²) along dim j
             neg_dist = -dist2 / max(self.sigma2, 1e-6)
-            neg_dist = neg_dist.masked_fill(mask.unsqueeze(1).expand_as(neg_dist) == 0, -1e9)
+            # A hardcoded -1e9 sentinel overflows float16 (max ~65504) --
+            # use the dtype's own most-negative finite value instead, which
+            # is safe (and equivalent for softmax masking purposes) in
+            # float32/float64 too.
+            mask_fill_value = torch.finfo(neg_dist.dtype).min
+            neg_dist = neg_dist.masked_fill(mask.unsqueeze(1).expand_as(neg_dist) == 0, mask_fill_value)
             A = F.softmax(neg_dist, dim=2)      # (B, N, N) row-stochastic
             # Add self-loops
             I = torch.eye(N, device=x.device, dtype=x.dtype).unsqueeze(0)
@@ -89,8 +94,11 @@ def _build_stgcn_model(node_feat_dim: int, hidden_dim: int, n_layers: int, max_a
             # GCN step
             support = torch.bmm(A_norm, x)      # (B, N, in_d)
             out = F.relu(self.W(support))        # (B, N, out_d)
-            # Zero-out padded nodes
-            out = out * mask.unsqueeze(-1).float()
+            # Zero-out padded nodes -- cast to out's dtype, not hardcoded
+            # float32, so this stays a same-dtype op under fp16/bf16 (a
+            # hardcoded .float() here promotes `out` to float32, which then
+            # mismatches the next layer's bf16/fp16 weights at its matmul).
+            out = out * mask.unsqueeze(-1).to(out.dtype)
             return out
 
     class _ThermalSTGCN(nn.Module):
@@ -129,8 +137,12 @@ def _build_stgcn_model(node_feat_dim: int, hidden_dim: int, n_layers: int, max_a
             # x: (B*T, N, hidden_dim) → (B, T, N, hidden_dim)
             x = x.view(B, T_len, N, -1)
 
-            # Global average pool over valid (actor, timestep) pairs
-            valid = masks.unsqueeze(-1).float()  # (B, T, N, 1)
+            # Global average pool over valid (actor, timestep) pairs.
+            # Cast to x's dtype (not hardcoded float32) so this stays a
+            # same-dtype op under fp16/bf16 -- see _AdaptiveGCNLayer.forward
+            # for why a hardcoded .float() here would otherwise promote
+            # `pooled` to float32 and mismatch self.head's fp16/bf16 weights.
+            valid = masks.unsqueeze(-1).to(x.dtype)  # (B, T, N, 1)
             n_valid = valid.sum(dim=(1, 2)).clamp(min=1)  # (B, 1)
             pooled = (x * valid).sum(dim=(1, 2)) / n_valid  # (B, hidden_dim)
 

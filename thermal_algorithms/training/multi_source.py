@@ -38,7 +38,7 @@ from typing import Iterable, Iterator, Optional
 from thermal_algorithms.core.types import ContactEvent, Frame, FireAlert, FireLevel
 from thermal_algorithms.training.datasets import ContactFrameDataset, FireFrameDataset
 from thermal_algorithms.training.hdf5_source import HDF5CameraSession
-from thermal_algorithms.training.label_join import LabelJoiner
+from thermal_algorithms.training.label_join import LabelJoiner, detect_room_id
 
 
 @dataclass(frozen=True)
@@ -105,7 +105,14 @@ class HDF5Session:
                 )
         if not self._cams:
             raise ValueError(f"no cam_N directories under {ref.date_dir}")
-        self._joiner = LabelJoiner.from_csv(labels_csv, room_id=ref.room_id, date=ref.date)
+        # Filter by the labels.csv's OWN Room_ID for this date, not the
+        # folder-derived ref.room_id -- some rooms' label files were copied
+        # from a differently-numbered room in the original generation set
+        # and never relabeled to match their folder (see detect_room_id's
+        # docstring). ref.room_id is still used for .scene/display naming
+        # below; only label filtering needs the CSV's ground truth.
+        actual_room_id = detect_room_id(labels_csv, date=ref.date)
+        self._joiner = LabelJoiner.from_csv(labels_csv, room_id=actual_room_id, date=ref.date)
 
     @property
     def scene(self) -> str:

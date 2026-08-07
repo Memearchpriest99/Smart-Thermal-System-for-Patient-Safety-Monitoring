@@ -25,7 +25,8 @@ classifiers = [
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
-    "opencv-python>=4.8",
+    "opencv-python>=4.8,<5",  # 5.0.0.93 + numpy 2.4 caused a native access violation (Windows fatal
+                              # exception) inside fire_svm.py's cv2-based feature extraction -- pin to 4.x
     "scikit-learn>=1.3",
     "scikit-image>=0.21",
     "torch>=2.1",

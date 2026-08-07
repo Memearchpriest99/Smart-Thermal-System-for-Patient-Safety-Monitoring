@@ -46,6 +46,9 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import faulthandler
+import logging
+import signal
 import sys
 import time
 from itertools import tee
@@ -59,6 +62,75 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
 except Exception:
     pass
+
+LOG_DIR = _REPO_ROOT / "logs"
+logger = logging.getLogger("train_full_corpus")
+
+
+def _setup_diagnostics() -> Path:
+    """Best-effort diagnostics for a run that dies with no Python traceback
+    (native crash in a C extension, or an external kill signal) -- both leave
+    stdout/the normal try/except silent, so this writes to its own file:
+
+    - faulthandler.enable(): installs a fatal-signal / Windows-fatal-exception
+      handler that dumps a full C-level traceback on crashes that never reach
+      normal Python exception handling (e.g. a segfault inside cv2/torch).
+      Passive -- only fires on an actual fatal signal, so it can't itself
+      perturb a healthy run.
+    - signal handlers: log receipt of SIGINT/SIGTERM/SIGBREAK before exiting,
+      in case this is a graceful external stop rather than a crash.
+
+    Deliberately NOT using faulthandler.dump_traceback_later(): its periodic
+    watchdog thread walks every thread's C stack on a timer regardless of
+    what the main thread is doing, and empirically that collided with cv2
+    native calls (Windows fatal exception: access violation, reproducibly at
+    the ~60s mark -- exactly the configured dump interval) that did not occur
+    at all with faulthandler.enable() alone. The cure was worse than the
+    disease; don't reintroduce it without confirming this platform/opencv
+    combination is actually safe with it.
+    """
+    LOG_DIR.mkdir(exist_ok=True)
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    diag_path = LOG_DIR / f"train_full_corpus_diag_{ts}.log"
+    diag_fh = open(diag_path, "a", buffering=1, encoding="utf-8")
+
+    faulthandler.enable(file=diag_fh, all_threads=True)
+
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler(diag_fh)
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    logger.addHandler(handler)
+    logger.propagate = False
+
+    def _on_signal(signum, _frame):
+        logger.warning(f"received signal {signum} ({signal.Signals(signum).name}) -- exiting")
+        diag_fh.flush()
+        raise SystemExit(128 + signum)
+
+    for sig_name in ("SIGINT", "SIGTERM", "SIGBREAK"):
+        sig = getattr(signal, sig_name, None)
+        if sig is not None:
+            try:
+                signal.signal(sig, _on_signal)
+            except (ValueError, OSError):
+                pass
+
+    logger.info("diagnostics active")
+    print(f"Diagnostics (crash/signal/hang traces) -> {diag_path}", flush=True)
+    return diag_path
+
+
+def _log_every(iterable, label: str, every: int = 500):
+    """Pass-through generator wrapper that logs a heartbeat every `every`
+    items, so a run that dies mid-stream still tells us how far it got."""
+    t0 = time.time()
+    n = 0
+    for item in iterable:
+        n += 1
+        if n % every == 0:
+            logger.info(f"{label}: {n} items, {time.time() - t0:.1f}s elapsed")
+        yield item
+    logger.info(f"{label}: done, {n} items total, {time.time() - t0:.1f}s elapsed")
 
 from thermal_algorithms.core.checkpoints import CheckpointRegistry  # noqa: E402
 from thermal_algorithms.core.sensor_profile import WAVESHARE_26984  # noqa: E402
@@ -117,12 +189,15 @@ def train_fire(data_root: Path, waveshare_index: DatasetIndex, train_scenes: set
             yield from session.fire_examples()
 
     ex_for_x, ex_for_y = tee(examples(), 2)
+    ex_for_x = _log_every(ex_for_x, "fire-train frames")
     X = (preprocessor.predict(frame) for frame, _ in ex_for_x)
     y = (alert for _, alert in ex_for_y)
 
     det = FireSVMDetector(sensor_profile=WAVESHARE_26984, class_weight="balanced")
     t0 = time.time()
+    logger.info("FireSVMDetector.fit() starting")
     det.fit(X, y)
+    logger.info("FireSVMDetector.fit() returned")
     print(f"  fit() done in {time.time() - t0:.1f}s")
     print(f"  saved -> {registry.register(det)}")
     return det
@@ -304,6 +379,15 @@ def main() -> int:
     ap.add_argument("--skip-eval", action="store_true")
     args = ap.parse_args()
 
+    _setup_diagnostics()
+    try:
+        return _run(args)
+    except BaseException:
+        logger.exception("main() crashed")
+        raise
+
+
+def _run(args) -> int:
     data_root = Path(args.data_root)
     if not data_root.is_dir():
         raise SystemExit(f"data root not found: {data_root}")
@@ -318,16 +402,19 @@ def main() -> int:
     print(f"Checkpoints -> {registry.root}")
 
     if not args.skip_fire:
+        logger.info("stage: fire")
         det = train_fire(data_root, waveshare_index, train_scenes, preprocessor, registry)
         if not args.skip_eval:
             eval_fire(det, waveshare_index, test_scenes, preprocessor)
 
     if not args.skip_human:
+        logger.info("stage: human")
         detectors = train_human(waveshare_index, train_scenes, preprocessor, registry)
         if not args.skip_eval:
             eval_human(detectors, waveshare_index, test_scenes, preprocessor)
 
     if not args.skip_contact:
+        logger.info("stage: contact")
         detectors = train_contact(data_root, waveshare_index, train_scenes, preprocessor, registry, args.contact_chunk_size)
         if not args.skip_eval:
             eval_contact(detectors, waveshare_index, test_scenes, preprocessor)
@@ -336,6 +423,7 @@ def main() -> int:
     for algo, profile in registry.list_available():
         print(f"  {algo} / {profile or 'invariant'}")
 
+    logger.info("main() completed normally")
     return 0
 
 

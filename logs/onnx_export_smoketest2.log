@@ -1,0 +1,22 @@
+=== Exporting FireSVMDetector ===
+C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\.venv\Lib\site-packages\sklearn\utils\deprecation.py:109: FutureWarning: Attribute `probA_` was deprecated in version 1.9 and will be removed in 1.11 as the `probability=True` option for SVC and NuSVC was deprecated and will be removed in 1.11.
+  warnings.warn(msg, category=FutureWarning)
+C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\.venv\Lib\site-packages\sklearn\utils\deprecation.py:109: FutureWarning: Attribute `probB_` was deprecated in version 1.9 and will be removed in 1.11 as the `probability=True` option for SVC and NuSVC was deprecated and will be removed in 1.11.
+  warnings.warn(msg, category=FutureWarning)
+  FireSVMDetector -> C:\Users\guych\Desktop\Final Project\Weights\onnx\fire_svm_detector.onnx
+=== Exporting HOGSVMDetector ===
+  HOGSVMDetector -> C:\Users\guych\Desktop\Final Project\Weights\onnx\hog_svm_detector.onnx
+=== Exporting MobileNetSSDDetector ===
+C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\export_onnx_models.py:127: DeprecationWarning: You are using the legacy TorchScript-based ONNX export. Starting in PyTorch 2.9, the new torch.export-based ONNX exporter has become the default. Learn more about the new export logic: https://docs.pytorch.org/docs/stable/onnx_export.html. For exporting control flow: https://pytorch.org/tutorials/beginner/onnx/export_control_flow_model_to_onnx_tutorial.html
+  torch.onnx.export(
+  MobileNetSSDDetector -> C:\Users\guych\Desktop\Final Project\Weights\onnx\mobilenet_ssd_detector.onnx
+=== Exporting MVSTGCNDetector ===
+C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\export_onnx_models.py:161: DeprecationWarning: You are using the legacy TorchScript-based ONNX export. Starting in PyTorch 2.9, the new torch.export-based ONNX exporter has become the default. Learn more about the new export logic: https://docs.pytorch.org/docs/stable/onnx_export.html. For exporting control flow: https://pytorch.org/tutorials/beginner/onnx/export_control_flow_model_to_onnx_tutorial.html
+  torch.onnx.export(
+  MVSTGCNDetector -> C:\Users\guych\Desktop\Final Project\Weights\onnx\mv_stgcn_detector.onnx
+=== Exporting ThermoX3DDetector ===
+C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\export_onnx_models.py:196: DeprecationWarning: You are using the legacy TorchScript-based ONNX export. Starting in PyTorch 2.9, the new torch.export-based ONNX exporter has become the default. Learn more about the new export logic: https://docs.pytorch.org/docs/stable/onnx_export.html. For exporting control flow: https://pytorch.org/tutorials/beginner/onnx/export_control_flow_model_to_onnx_tutorial.html
+  torch.onnx.export(
+  ThermoX3DDetector -> C:\Users\guych\Desktop\Final Project\Weights\onnx\thermo_x3d_detector.onnx
+
+Manifest -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\reports\onnx_export_manifest.json

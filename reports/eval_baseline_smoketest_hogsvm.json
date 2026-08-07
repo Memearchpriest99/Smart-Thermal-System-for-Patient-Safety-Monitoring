@@ -1,0 +1,43 @@
+{
+  "checkpoints_dir": "C:\\Users\\guych\\Desktop\\Final Project\\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\\checkpoints_baseline_waveshare",
+  "test_scenes": [
+    "1person cig",
+    "1ppl_single_forever",
+    "man_light_cig"
+  ],
+  "train_scenes": [
+    "1_man_run",
+    "1person",
+    "2ppl_fight",
+    "2ppl_hug",
+    "2ppl_walk",
+    "3pp_standing_still",
+    "3pp_surprise",
+    "3ppl_dance",
+    "3pplhedroncolider",
+    "calibrate_room",
+    "empty_room",
+    "heater_in_middle",
+    "man_light_cig_1",
+    "the_more_the_merrier"
+  ],
+  "results": [
+    {
+      "detector_name": "HOGSVMDetector",
+      "variant": "fp32_baseline_smoketest",
+      "task": "human",
+      "n_frames": 1893,
+      "accuracy": 0.9698890649762282,
+      "precision": 0.9698890649762282,
+      "recall": 1.0,
+      "f1": 0.9847144006436042,
+      "mean_iou": 0.5716693215525699,
+      "mean_inference_ms": 7641.50590493912,
+      "p95_inference_ms": 8899.338010011707,
+      "tp": 1836,
+      "tn": 0,
+      "fp": 57,
+      "fn": 0
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+Test scenes (3): ['1person cig', '1ppl_single_forever', 'man_light_cig']
+{'detector_name': 'FireSVMDetector', 'variant': 'fp32_baseline_smoketest', 'task': 'fire', 'n_frames': 1893, 'accuracy': 0.2952984680401479, 'precision': 0.2952984680401479, 'recall': 1.0, 'f1': 0.45595432300163136, 'mean_iou': None, 'mean_inference_ms': 2.338676472910172, 'p95_inference_ms': 2.9311599675565954, 'tp': 559, 'tn': 0, 'fp': 1334, 'fn': 0}
+{'detector_name': 'MobileNetSSDDetector', 'variant': 'fp32_baseline_smoketest', 'task': 'human', 'n_frames': 1893, 'accuracy': 0.9683042789223455, 'precision': 0.9698412698412698, 'recall': 0.9983660130718954, 'f1': 0.9838969404186795, 'mean_iou': 0.656313375637252, 'mean_inference_ms': 4.227684333658838, 'p95_inference_ms': 5.371220037341118, 'tp': 1833, 'tn': 0, 'fp': 57, 'fn': 3}
+Traceback (most recent call last):
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\eval_all_detectors.py", line 188, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\eval_all_detectors.py", line 169, in main
+    r = evaluate_contact_timed(wrapped, contact_ds, variant=args.variant, detector_name=label)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\thermal_algorithms\training\eval_report.py", line 241, in evaluate_contact_timed
+    pred_event = _timed_predict(lambda: detector.predict(frames), latencies_ms, warmup_left)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\thermal_algorithms\training\eval_report.py", line 118, in _timed_predict
+    return predict_fn()
+           ^^^^^^^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\thermal_algorithms\training\eval_report.py", line 241, in <lambda>
+    pred_event = _timed_predict(lambda: detector.predict(frames), latencies_ms, warmup_left)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\eval_all_detectors.py", line 83, in predict
+    return self._inner.predict(tuple(self._pre.predict(f) for f in frames))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\thermal_algorithms\contact_detection\mv_stgcn.py", line 335, in predict
+    raise ValueError(
+ValueError: MVSTGCNDetector.predict(): provide pre-computed detections or inject a human_detector at construction.

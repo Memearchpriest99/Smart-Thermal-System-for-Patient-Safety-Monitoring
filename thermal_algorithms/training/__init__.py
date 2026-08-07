@@ -38,6 +38,7 @@ from thermal_algorithms.training.label_join import (
     LabelInterval,
     LabelJoiner,
     classify_event,
+    detect_room_id,
     load_room_labels,
 )
 from thermal_algorithms.training.multi_source import (
@@ -63,6 +64,12 @@ from thermal_algorithms.training.full_corpus import (
 )
 from thermal_algorithms.training.split import session_train_test_split
 from thermal_algorithms.training.trainer import Trainer
+from thermal_algorithms.training.eval_report import (
+    TimedEvalResult,
+    evaluate_contact_timed,
+    evaluate_fire_timed,
+    evaluate_human_timed,
+)
 from thermal_algorithms.training.metrics import (
     BinaryConfusionMatrix,
     ScenarioResult,
@@ -109,6 +116,7 @@ __all__ = [
     "LabelInterval",
     "LabelJoiner",
     "classify_event",
+    "detect_room_id",
     "load_room_labels",
     # multi_source
     "HDF5Session",
@@ -132,6 +140,11 @@ __all__ = [
     "session_train_test_split",
     # trainer
     "Trainer",
+    # eval_report
+    "TimedEvalResult",
+    "evaluate_contact_timed",
+    "evaluate_fire_timed",
+    "evaluate_human_timed",
     # metrics
     "BinaryConfusionMatrix",
     "ScenarioResult",

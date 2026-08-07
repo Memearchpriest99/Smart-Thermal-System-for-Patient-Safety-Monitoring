@@ -8,20 +8,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Students: Guy Chen, Yaniv Blau, Roy Lieberman. Supervisor: Or Zilberberg. Advisor: Dr. Oshrit Hoffer (Afeka College of Engineering, Tel-Aviv).
 
-**Current phase:** Dataset annotation (YOLO format). Algorithms and training infrastructure are complete; awaiting labeled data to train ML models and run §5.3 benchmarks.
+**Current phase:** Full-corpus training (Task 3 of `../current_state_and_tasks.md`). Dataset annotation is done — `waveshare_work` has complete real YOLO/contact labels across all 17 scenarios, and the multi-source training layer for `synth_room_1..5` is built and tested. `GlobalNormPreprocessor` won the Task 2 preprocessing comparison against `TatenoPipeline` (`reports/preprocessing_comparison_results.json`) and is what `scripts/train_full_corpus.py` uses. That script has not been run yet — no `checkpoints_full_corpus/` exists. See `../data/DATASET_NOTES.md` for the full, verified-against-disk dataset writeup (schemas, class ratios, why `room-1` is excluded).
 
 ---
 
 ## Commands
 
 ```bash
-# Run the full working test suite (skimage / torch tests are gated separately)
-python -m pytest tests/test_types.py tests/test_sensor_profile.py tests/test_base.py \
-  tests/test_checkpoints.py tests/test_tateno_pipeline.py tests/test_otsu_pipeline.py \
-  tests/test_fire_svm.py tests/test_contact_multiview.py tests/test_contact_geometric.py \
-  tests/test_contact_mv_stgcn.py tests/test_contact_thermo_x3d.py tests/test_metrics.py \
-  tests/test_label_io_extended.py tests/test_fire_contact_datasets.py \
-  tests/test_trainer.py tests/test_pipeline.py tests/test_acquisition.py
+# Run the whole suite (testpaths=tests is set in pyproject.toml)
+python -m pytest
 
 # Run a single test file
 python -m pytest tests/test_pipeline.py -v
@@ -34,11 +29,17 @@ python -m pytest tests/test_pipeline.py::TestRestrictedAreaPath::test_human_dete
 python examples/demo_fire_detection.py
 python examples/demo_contact_geometric.py
 python examples/demo_pipeline.py
+
+# Task 3: retrain every trainable detector on the full corpus (synth_room_1..5 + waveshare_work)
+python scripts/train_full_corpus.py
+python scripts/train_full_corpus.py --skip-contact          # fire+human only, much faster
 ```
 
 **Tests that require optional deps (skip if not installed):**
 - `tests/test_adaptive_threshold.py`, `tests/test_hog_svm.py` — require `scikit-image`
 - `tests/test_mobilenet_ssd.py`, `tests/test_contact_mv_stgcn.py`, `tests/test_contact_thermo_x3d.py` — require `torch` (auto-skipped via `pytest.importorskip`)
+
+**Known-failing tests (pre-existing, unrelated to the training-pipeline work):** `tests/test_mobilenet_ssd.py::TestArchitecture::test_waveshare_forward_shapes` and `::TestDetector::test_save_load_roundtrip` fail against the currently-installed `torch==2.13`/`opencv==5.0` — a backbone stride-rounding assumption is off by one pixel, and predict() isn't deterministic across save/load. Everything else passes (603 passed, 2 skipped as of the last full run).
 
 ---
 
@@ -51,17 +52,20 @@ thermal_algorithms/
 ├── core/               base ABC, frozen dataclasses, sensor profiles, checkpoints, CSV I/O
 ├── acquisition/        live capture from the Waveshare MI48 module — wiki SPI/I2C pipeline
 │                       via pysenxor; hardware imports are lazy (testable off-Pi)
-├── preprocessing/      TatenoPipeline (Gaussian smooth → background subtract → L1 residual)
+├── preprocessing/      TatenoPipeline (learned per-pixel background) and GlobalNormPreprocessor
+│                       (per-frame scalar background, no calibration) — see "Preprocessing" below
 ├── human_detection/    3 alternatives: AdaptiveThreshold / HOG-SVM / MobileNet-SSD
 ├── fire_detection/     2 alternatives: OtsuFireDetector / FireSVMDetector
 ├── contact_detection/  3 alternatives: Geometric / MV-STGCN / Thermo-X3D
 │   └── multi_view/     shared: homography.py, tracker.py, fusion.py
-├── training/           datasets, label I/O, metrics, trainer
+├── training/           datasets (waveshare/YOLO), label I/O, metrics, trainer,
+│                       + the synth/room-1 multi-source layer — see below
 └── pipeline.py         ThermalPipeline — runtime integration (Figure 5 flow)
 
 examples/               demo scripts (all fall back to synthetic data)
   utils.py              shared helpers: load_frames, find_session, make_synthetic_homographies
-tests/                  one file per module; 363 tests passing
+scripts/                one-off eval/training drivers; train_full_corpus.py is the Task 3 entrypoint
+tests/                  one file per module; 600+ tests passing
 ```
 
 ### The universal base contract
@@ -117,6 +121,53 @@ print(format_scenario_table(results, include_iou=True))
 
 `Trainer.evaluate_preprocessing` returns `(mean_raw_sbr, mean_processed_sbr)` — the report achieved 5.61× (1.21 → 6.80).
 
+### Preprocessing: TatenoPipeline vs GlobalNormPreprocessor
+
+`GlobalNormPreprocessor` (`preprocessing/global_norm_pipeline.py`) is a redesign of the annotation
+tool's client-side display filter into a real `Preprocessor`: Gaussian smooth → subtract the
+**current frame's own scalar mean** (not a learned per-pixel background) → L1 residual. `fit()` is
+a genuine no-op — there's no calibration state, unlike `TatenoPipeline`'s per-pixel background
+learned from empty-room frames. This was built specifically to A/B against `TatenoPipeline`
+(Task 2); `reports/preprocessing_comparison_results.json` (via
+`scripts/eval_preprocessing_comparison.py`) is the result — `GlobalNormPreprocessor` won on SBR,
+fire accuracy/recall, and contact accuracy, with human detection roughly tied. `scripts/
+train_full_corpus.py` uses it as the default preprocessor.
+
+### The multi-source training layer (`training/hdf5_source.py`, `label_join.py`, `multi_source.py`, `split.py`, `full_corpus.py`)
+
+`waveshare_work` and `synth_room_1..5`/`room-1` are structurally different sources and are NOT
+unified into one dataset class — see `data/DATASET_NOTES.md` (one level up) for the full,
+verified-against-disk writeup. In short:
+
+- **`hdf5_source.py`** reads the synthetic/real-hardware chunked `.h5` files
+  (`<date>/cam_{0,1,2}/*.h5`) that `DatasetIndex` doesn't understand at all. `HDF5CameraSession`
+  loads lazily (LRU chunk cache) — a full synthetic camera-day is ~1.45M frames, too large to
+  materialize. Handles two real acquisition bugs found on disk: unusable per-chunk timestamps
+  (falls back to filename-derived wall-clock time, chained off the previous chunk's end) and a
+  fps that isn't the same across sessions (inferred from chunk-filename spacing, not hardcoded).
+- **`label_join.py`** turns a room's `labels.csv` (event **intervals**, not per-frame) into
+  per-frame fire/human/contact booleans via substring rules on `Event_Class` (e.g.
+  `Contact_2+Humans+Fire`). No bounding boxes exist in this source, ever.
+- **`multi_source.py`** (`HDF5Session`, `MultiSourceContactDataset`, `MultiSourceFireDataset`)
+  combines `waveshare_work`'s real bbox/contact examples with the synth sources' presence-only
+  examples behind one iterable. These are drop-ins for `Trainer.evaluate_contact_detection`/
+  `evaluate_fire_detection` (duck-typed on `.by_session()`/`.scene`) but **not** recognized by
+  `Trainer.fit_and_evaluate`'s `isinstance` dispatch — assemble training examples by iterating
+  directly instead (see each class's docstring).
+- **`split.py`** — session-level (not frame-level) train/test split for real sources, avoiding
+  leakage between near-duplicate consecutive frames. Synthetic data is used wholesale for
+  training (no split) per the Task 3 instruction.
+- **`full_corpus.py`** — streaming helpers (`iter_synth_sessions`, `stream_fire_examples`,
+  `iter_contact_training_chunks`) over the *entire* corpus (~31M frame-instances) without ever
+  materializing a list. Contact detectors (MV-STGCN, Thermo-X3D) build sliding windows by
+  materializing `fit(X, y)` internally, so they must be fed bounded, session-contiguous chunks —
+  `iter_contact_training_chunks` / `scripts/train_full_corpus.py`'s chunked loop is the pattern to
+  reuse for any future full-corpus training.
+- **`pseudo_labels.py`** — infrastructure for silver-labeling a source with no real bboxes via a
+  fitted detector's own predictions. Built for `waveshare_work` before its real annotations were
+  restored; now superseded there (real ground truth exists for all 17 scenarios) but kept as
+  tested infrastructure — e.g. `synth_room_*` could be pseudo-labeled the same way if ever needed.
+
 ### The runtime pipeline
 
 `ThermalPipeline` matches Figure 5's flow diagram exactly:
@@ -170,19 +221,44 @@ checkpoints/<algorithm_name>/_default.thalg   # invariant algorithms
 
 ---
 
-## What requires data before it works
+## What requires data before it works — now resolved except homography
 
-- **FireSVMDetector.fit()** — needs `FireFrameDataset` with annotated fire frames
-- **HOGSVMDetector.fit()** — needs `FrameLevelDataset` with person bbox labels
-- **MobileNetSSDDetector.fit()** — same, with enough data for DL training
-- **MVSTGCNDetector.fit()** / **ThermoX3DDetector.fit()** — need `ContactFrameDataset` with `contact_labels.csv`
-- **Homography calibration** — `detector.calibrate_homography(marker_correspondences)` requires ≥4 heated targets at known floor coordinates per camera
-- **OtsuFireDetector** and **GeometricContactDetector** are rule-based — no training needed, but thresholds (`t_ign`, `t_fire`, `delta_m`) will need tuning against real data
+All of the below now have real data available (`waveshare_work`'s bboxes/contact labels are
+complete across all 17 scenarios; `synth_room_1..5` adds frame-level presence data for fire/
+human/contact). `scripts/train_full_corpus.py` is the entrypoint that fits all of them.
+
+- **FireSVMDetector.fit()** / **MVSTGCNDetector.fit()** / **ThermoX3DDetector.fit()** — can train
+  on the full corpus (waveshare + all synth rooms; contact detectors need chunked fitting, see
+  `iter_contact_training_chunks`).
+- **HOGSVMDetector.fit()** / **MobileNetSSDDetector.fit()** — waveshare_work only (synth has no
+  bounding boxes, ever).
+- **Homography calibration** — `detector.calibrate_homography(marker_correspondences)` requires
+  ≥4 heated targets at known floor coordinates per camera. Synthetic homographies are still used
+  in demos; `image_annotator`'s Homography Calibration dialog produces a real one per session but
+  no real H matrices have been wired into the full-corpus training run yet.
+- **OtsuFireDetector** and **GeometricContactDetector** are rule-based — no training needed, but
+  thresholds (`t_ign`, `t_fire`, `delta_m`) haven't been validated against the full dataset yet.
 
 ---
 
 ## Key open items
 
-1. **Threshold calibration** — `OtsuFireDetector` defaults: `t_ign=45°C`, `t_fire=60°C`, `a_limit≈3%` of frame. These were derived from initial EDA and will need validation against the full dataset.
-2. **Homography for contact detection** — synthetic homographies are used in all demos; real H matrices require the on-site Hot-Point Calibration procedure.
-3. **Restricted area zones** — the pipeline supports `restricted=True/False` globally; per-camera restriction or floor-polygon containment checks are not yet implemented.
+1. **Task 3 (full-corpus retrain) hasn't been run** — `scripts/train_full_corpus.py` exists and
+   is tested (`tests/test_full_corpus.py`) but no `checkpoints_full_corpus/` has been produced
+   yet. This is the immediate next step.
+2. **Task 4 (50/50 balanced retrain) has no driver script yet** — re-train each model with a
+   non-biased 50% positive/50% negative ratio; not started (`../current_state_and_tasks.md`).
+3. **Task 5 (final consolidated report) not started** — needs results from both Task 3 and
+   Task 4 across all models/scenarios.
+4. **Two pre-existing `test_mobilenet_ssd.py` failures** against the currently-installed
+   `torch`/`opencv` versions — see the Commands section. Doesn't block training (the detector
+   still fits/predicts), but the backbone shape assumption and save/load determinism should be
+   revisited.
+5. **Homography for contact detection** — synthetic homographies are used in all demos/training;
+   real H matrices require the on-site Hot-Point Calibration procedure (`image_annotator` can
+   produce one per session, but none is wired into `train_full_corpus.py` yet).
+6. **Threshold calibration** — `OtsuFireDetector` defaults: `t_ign=45°C`, `t_fire=60°C`,
+   `a_limit≈3%` of frame. These were derived from initial EDA and haven't been validated against
+   the full dataset.
+7. **Restricted area zones** — the pipeline supports `restricted=True/False` globally; per-camera
+   restriction or floor-polygon containment checks are not yet implemented.

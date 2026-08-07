@@ -1,0 +1,6 @@
+Test scenes (3): ['1person cig', '1ppl_single_forever', 'man_light_cig']
+  [HOGSVMDetector] ONNX Runtime providers: ['CPUExecutionProvider']
+{'detector_name': 'HOGSVMDetector', 'variant': 'onnx_fp32', 'task': 'human', 'n_frames': 1893, 'accuracy': 0.9698890649762282, 'precision': 0.9698890649762282, 'recall': 1.0, 'f1': 0.9847144006436042, 'mean_iou': 0.5716693215525699, 'mean_inference_ms': 7146.270979660629, 'p95_inference_ms': 8348.421700007748, 'tp': 1836, 'tn': 0, 'fp': 57, 'fn': 0}
+
+Saved -> reports\eval_onnx_smoketest_hogsvm.json
+DONE_EXIT_0 

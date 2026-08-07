@@ -1,0 +1,51 @@
+{
+  "class_name": "thermal_algorithms.human_detection.hog_svm.HOGSVMDetector",
+  "checkpoint_path": "C:\\Users\\guych\\Desktop\\Final Project\\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\\checkpoints_baseline_waveshare\\hog_svm_detector\\Waveshare_26984.thalg",
+  "format_version": 1,
+  "library_version": "0.1.0",
+  "sensor_profile_name": "Waveshare_26984",
+  "hyperparameters": {
+    "window_size": null,
+    "physical_person_size_m": [
+      0.9,
+      0.45
+    ],
+    "assumed_distance_m": 2.0,
+    "max_window_fraction": 0.65,
+    "cell_size": null,
+    "block_size_cells": [
+      2,
+      2
+    ],
+    "orientations": 9,
+    "svm_C": 1.0,
+    "stride": [
+      2,
+      2
+    ],
+    "score_threshold": 0.0,
+    "nms_iou_threshold": 0.3,
+    "pyramid_scales": [
+      0.75,
+      1.0,
+      1.25,
+      1.5
+    ],
+    "n_negatives_per_frame": 5,
+    "random_state": 0
+  },
+  "training_data": "waveshare_work TRAIN scenes ONLY (14/17). synth_room_1..5 has no bounding-box ground truth at all (data/DATASET_NOTES.md), so it cannot train a bbox-regression detector.",
+  "input_output": "Input: HOG descriptor of a sliding-window patch (window_size, multi-scale pyramid). Output: list[Detection] after per-scale NMS.",
+  "known_limitations": null,
+  "onnx_export": {
+    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\hog_svm_detector.onnx",
+    "input_shape": [
+      1,
+      4032
+    ],
+    "input_dtype": "float32",
+    "scope": "LinearSVC decision function only -- the HOG descriptor and multi-scale sliding-window pyramid are classical CV code, not exported."
+  },
+  "evaluated_variants": [],
+  "how_to_load": "from thermal_algorithms.core.checkpoints import CheckpointRegistry\nfrom thermal_algorithms.human_detection.hog_svm import HOGSVMDetector\nregistry = CheckpointRegistry(root='checkpoints_baseline_waveshare')\ndet = registry.load(HOGSVMDetector, profile_name='Waveshare_26984')"
+}

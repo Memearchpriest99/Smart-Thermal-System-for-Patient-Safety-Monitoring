@@ -114,6 +114,44 @@ def classify_event(event_class: str) -> dict[str, bool]:
     }
 
 
+def detect_room_id(csv_path: str | Path, *, date: str) -> str:
+    """Auto-detect the Room_ID a labels.csv actually uses for `date`.
+
+    Confirmed 2026-08-07 (project owner): synth_room_3/4/5's labels.csv files
+    were each copied from a differently-numbered room in the original
+    generation set and never relabeled to match their containing folder's
+    name -- synth_room_3's file says "synth_room_4" throughout,
+    synth_room_4 says "synth_room_6", synth_room_5 says "synth_room_8",
+    each internally consistent (not randomly corrupted, not a pixel/label
+    mismatch -- just a rename-without-relabel). Filtering by the
+    folder-derived room_id therefore finds zero rows and
+    LabelJoiner.__init__ raises "no label intervals given". This scans the
+    file's own Room_ID column for `date` and returns whatever it actually
+    contains, so the caller filters by ground truth rather than an assumed
+    naming convention.
+
+    Raises ValueError if zero or more than one distinct Room_ID is found
+    for this date -- multiple distinct values would be a different, more
+    serious problem than the confirmed case above and needs human review,
+    not an automatic pick.
+    """
+    path = Path(csv_path)
+    found: set[str] = set()
+    with path.open(newline="", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        for row in reader:
+            if row["Date"] == date:
+                found.add(row["Room_ID"])
+    if len(found) == 0:
+        raise ValueError(f"{path}: no rows found for date={date!r} at all.")
+    if len(found) > 1:
+        raise ValueError(
+            f"{path}: date={date!r} has multiple distinct Room_ID values "
+            f"{sorted(found)} -- needs human review, not an automatic pick."
+        )
+    return next(iter(found))
+
+
 class LabelJoiner:
     """Looks up the enclosing ``LabelInterval`` (and derived fire/human/
     contact booleans) for a given frame timestamp (Unix-epoch seconds, e.g.

@@ -1,0 +1,30 @@
+Test scenes (3): ['1person cig', '1ppl_single_forever', 'man_light_cig']
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+{'detector_name': 'FireSVMDetector', 'variant': 'int8', 'task': 'fire', 'n_frames': 1893, 'accuracy': 0.2952984680401479, 'precision': 0.2952984680401479, 'recall': 1.0, 'f1': 0.45595432300163136, 'mean_iou': None, 'mean_inference_ms': 2.4649560816518754, 'p95_inference_ms': 2.714859961997717, 'tp': 559, 'tn': 0, 'fp': 1334, 'fn': 0}
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+{'detector_name': 'MobileNetSSDDetector', 'variant': 'int8', 'task': 'human', 'n_frames': 1893, 'accuracy': 0.9683042789223455, 'precision': 0.9698412698412698, 'recall': 0.9983660130718954, 'f1': 0.9838969404186795, 'mean_iou': 0.6567902137140326, 'mean_inference_ms': 13.154202971478357, 'p95_inference_ms': 20.888610021211207, 'tp': 1833, 'tn': 0, 'fp': 57, 'fn': 3}
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+{'detector_name': 'MVSTGCNDetector', 'variant': 'int8', 'task': 'contact', 'n_frames': 631, 'accuracy': 1.0, 'precision': 0.0, 'recall': 0.0, 'f1': 0.0, 'mean_iou': None, 'mean_inference_ms': 500.06612914373676, 'p95_inference_ms': 1023.2876000227407, 'tp': 0, 'tn': 631, 'fp': 0, 'fn': 0}
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+Traceback (most recent call last):
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\eval_quantized_models.py", line 241, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\eval_quantized_models.py", line 193, in main
+    int8_path = quantize_to_int8(manifest["ThermoX3DDetector"]["onnx_path"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\eval_quantized_models.py", line 91, in quantize_to_int8
+    quantize_dynamic(model_input=str(src), model_output=str(dst), weight_type=QuantType.QInt8)
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\.venv\Lib\site-packages\onnxruntime\quantization\quantize.py", line 1015, in quantize_dynamic
+    quantizer.quantize_model()
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\.venv\Lib\site-packages\onnxruntime\quantization\onnx_quantizer.py", line 213, in quantize_model
+    op_quantizer.quantize()
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\.venv\Lib\site-packages\onnxruntime\quantization\operators\matmul.py", line 84, in quantize
+    otype = self.quantizer.get_tensor_type(node.output[0], mandatory=True)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\.venv\Lib\site-packages\onnxruntime\quantization\onnx_quantizer.py", line 273, in get_tensor_type
+    return self._get_default_tensor_type(tensor_name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\.venv\Lib\site-packages\onnxruntime\quantization\onnx_quantizer.py", line 252, in _get_default_tensor_type
+    raise RuntimeError(
+RuntimeError: Unable to find data type for weight_name='/streams.0/block1/attention/channel/mlp/mlp.0/Gemm_output_0_MatMul'. shape_inference failed to return a type probably this node is from a different domain or using an input produced by such an operator. This may happen if you quantize a model already quantized. You may use extra_options `DefaultTensorType` to indicate the default weight type, usually `onnx.TensorProto.FLOAT`.
