@@ -14,6 +14,12 @@ what wasn't available yet) so this can be re-run at any point while the
 slower evaluation jobs are still catching up, not only once every input is
 final.
 
+Layout: a two-column academic-paper page (Times body text, Computer-Modern
+math, booktabs-style tables) -- title/abstract and the results/ONNX section
+use a full-width single column (like a paper's title block and its
+table*/figure* wide elements), the dataset-notes and derivations sections
+flow in two columns.
+
 Usage::
 
     python scripts/generate_full_report.py
@@ -40,7 +46,16 @@ from reportlab.lib import colors  # noqa: E402
 from reportlab.lib.pagesizes import LETTER  # noqa: E402
 from reportlab.lib.styles import ParagraphStyle  # noqa: E402
 from reportlab.lib.units import inch  # noqa: E402
-from reportlab.platypus import Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer  # noqa: E402
+from reportlab.platypus import (  # noqa: E402
+    BaseDocTemplate,
+    Frame,
+    Image,
+    NextPageTemplate,
+    PageBreak,
+    PageTemplate,
+    Paragraph,
+    Spacer,
+)
 
 from thermal_algorithms.training.report_pdf import (  # noqa: E402
     _ImageCache,
@@ -52,6 +67,15 @@ from thermal_algorithms.training.report_pdf import (  # noqa: E402
 
 REPORTS_DIR = _REPO_ROOT / "reports"
 DATA_ROOT = _REPO_ROOT.parent / "data"
+
+# ---------------------------------------------------------------------------
+# Page geometry -- a two-column academic-paper layout (CVPR/IEEE style).
+# ---------------------------------------------------------------------------
+PAGE_W, PAGE_H = LETTER
+MARGIN = 0.55 * inch
+GUTTER = 0.28 * inch
+COL_W = (PAGE_W - 2 * MARGIN - GUTTER) / 2
+FULL_W = PAGE_W - 2 * MARGIN
 
 # Caveats that change how a detector's numbers should be read -- shown
 # inline with its results table rather than buried in prose elsewhere, so a
@@ -124,6 +148,28 @@ def collect_results(paths: list[Path]) -> dict[str, list[dict]]:
     return by_detector
 
 
+def _footer(canvas, doc) -> None:
+    canvas.saveState()
+    canvas.setFont("Times-Roman", 8)
+    canvas.drawCentredString(PAGE_W / 2, 0.35 * inch, str(doc.page))
+    canvas.restoreState()
+
+
+def build_doc(out_path: str) -> BaseDocTemplate:
+    frame_full = Frame(MARGIN, MARGIN, FULL_W, PAGE_H - 2 * MARGIN, id="full")
+    frame_col1 = Frame(MARGIN, MARGIN, COL_W, PAGE_H - 2 * MARGIN, id="col1")
+    frame_col2 = Frame(MARGIN + COL_W + GUTTER, MARGIN, COL_W, PAGE_H - 2 * MARGIN, id="col2")
+
+    return BaseDocTemplate(
+        out_path, pagesize=LETTER,
+        pageTemplates=[
+            PageTemplate(id="Cover", frames=[frame_full], onPage=_footer),
+            PageTemplate(id="TwoCol", frames=[frame_col1, frame_col2], onPage=_footer),
+            PageTemplate(id="Full", frames=[frame_full], onPage=_footer),
+        ],
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default=str(REPORTS_DIR / "Full_Corpus_Engineering_Report.pdf"))
@@ -151,36 +197,54 @@ def main() -> int:
     images = _ImageCache(Path(args.image_dir))
     story: list = []
 
-    # ---- Title page ----
-    story.append(Spacer(1, 2.0 * inch))
-    story.append(Paragraph("Smart Thermal System for Patient Safety Monitoring", styles["H1c"]))
-    story.append(Paragraph("Full-Corpus Training, ONNX Export, and Quantization Report", styles["H2c"]))
-    story.append(Spacer(1, 0.3 * inch))
-    n_with_results = len(by_detector)
+    # ---- Title block (full width, page 1 only) ----
+    story.append(Spacer(1, 0.4 * inch))
+    story.append(Paragraph("Smart Thermal System for Patient Safety Monitoring:", styles["TitleC"]))
+    story.append(Paragraph("Full-Corpus Training, ONNX Export, and Quantization Analysis", styles["TitleC"]))
     story.append(Paragraph(
-        f"Covers {n_with_results} detector(s) with at least one evaluated variant "
-        f"at generation time. Missing variants are noted per section rather than "
-        f"silently omitted.", styles["Bodyc"],
+        "Guy Chen &nbsp;&middot;&nbsp; Yaniv Blau &nbsp;&middot;&nbsp; Roy Lieberman<br/>"
+        "Afeka Academic College of Engineering, Tel-Aviv &mdash; "
+        "in collaboration with the Center for Mental Health, Be&rsquo;er Sheva",
+        styles["SubtitleC"],
     ))
+    n_with_results = len(by_detector)
+    story.append(Paragraph("Abstract", styles["H3c"]))
+    story.append(Paragraph(
+        "This report documents the full-corpus retraining of every detector in the "
+        "Smart Thermal System pipeline (fire, human, and multi-view contact detection), "
+        "together with ONNX export and fp16/bf16/int8 quantization benchmarks. "
+        f"Results below cover {n_with_results} detector(s) with at least one evaluated "
+        "variant at generation time; missing variants are noted per section rather than "
+        "silently omitted. Every metric is computed against the identical held-out "
+        "waveshare_work test split for every detector and every variant, so numbers are "
+        "directly comparable across the whole report. Mathematical derivations for each "
+        "algorithm -- including the SVM KKT-eligibility argument -- are given in full, "
+        "cross-checked against the shipped implementation rather than a textbook "
+        "description of the method.",
+        styles["AbstractC"],
+    ))
+    story.append(Spacer(1, 0.15 * inch))
+
+    story.append(NextPageTemplate("TwoCol"))
     story.append(PageBreak())
 
-    # ---- Dataset composition ----
+    # ---- Dataset composition (two columns) ----
     if dataset_notes_text:
-        story.append(Paragraph("Dataset Composition", styles["H1c"]))
-        story.extend(markdown_to_flowables(dataset_notes_text, images, styles))
-        story.append(PageBreak())
+        story.append(Paragraph("1. Dataset Composition", styles["H1c"]))
+        story.extend(markdown_to_flowables(dataset_notes_text, images, styles, max_width_pt=COL_W))
     else:
         print("  WARNING: data/DATASET_NOTES.md not found -- skipping dataset section")
 
-    # ---- Algorithm derivations ----
+    # ---- Algorithm derivations (two columns) ----
     if derivations_text:
-        story.extend(markdown_to_flowables(derivations_text, images, styles))
-        story.append(PageBreak())
+        story.extend(markdown_to_flowables(derivations_text, images, styles, max_width_pt=COL_W))
     else:
         print("  WARNING: reports/algorithm_derivations.md not found -- skipping derivations section")
 
-    # ---- Results per detector ----
-    story.append(Paragraph("Evaluation Results", styles["H1c"]))
+    # ---- Results per detector (full width -- wide tables/figures) ----
+    story.append(NextPageTemplate("Full"))
+    story.append(PageBreak())
+    story.append(Paragraph("2. Evaluation Results", styles["H1c"]))
     story.append(Paragraph(
         "All numbers below come from the exact same held-out waveshare_work test "
         "scenes for every detector and every variant (see scripts/eval_all_detectors.py:"
@@ -193,6 +257,7 @@ def main() -> int:
     ))
 
     chart_dir = Path(args.image_dir) / "charts"
+    table_num = 1
     for name in DETECTOR_ORDER:
         rows = by_detector.get(name)
         if not rows:
@@ -200,13 +265,12 @@ def main() -> int:
             continue
         rows_sorted = sorted(rows, key=lambda r: VARIANT_ORDER.index(r["variant"]) if r["variant"] in VARIANT_ORDER else 99)
         caveat = DETECTOR_CAVEATS.get(name)
+        story.append(Paragraph(name, styles["H3c"]))
         if caveat:
-            story.append(Paragraph(f"<b>{name}</b>", styles["H3c"]))
             caveat_style = ParagraphStyle("Caveat", parent=styles["Bodyc"], backColor=colors.HexColor("#fff4e0"), borderPadding=6)
             story.append(Paragraph(caveat, caveat_style))
-            story.extend(results_table(rows_sorted, styles, title=None))
-        else:
-            story.extend(results_table(rows_sorted, styles, title=name))
+        story.extend(results_table(rows_sorted, styles, title=f"{name} -- metrics by variant", table_num=table_num))
+        table_num += 1
 
         labels = [r["variant"] for r in rows_sorted]
         latencies = [r["mean_inference_ms"] for r in rows_sorted]
@@ -215,16 +279,16 @@ def main() -> int:
                 labels, latencies, ylabel="mean ms/frame",
                 title=f"{name}: mean inference latency by variant",
                 out_path=chart_dir / f"{name}_latency.png",
+                figsize=(4.2, 2.6),
             )
-            img = Image(str(chart_path), width=4.5 * inch, height=4.5 * inch * 3 / 5.5)
+            img = Image(str(chart_path), width=4.2 * inch, height=4.2 * inch * 2.6 / 4.2)
             img.hAlign = "CENTER"
             story.append(img)
         story.append(Spacer(1, 12))
 
+    # ---- ONNX export scope (full width) ----
     story.append(PageBreak())
-
-    # ---- ONNX export scope ----
-    story.append(Paragraph("ONNX Export Scope", styles["H1c"]))
+    story.append(Paragraph("3. ONNX Export Scope", styles["H1c"]))
     story.append(Paragraph(
         "Only the learned sub-component of each detector is traced into ONNX. "
         "Classical-CV pre/post-processing is deterministic NumPy/OpenCV code, "
@@ -232,11 +296,11 @@ def main() -> int:
         "ONNX graph by construction -- see each row's scope note.", styles["Bodyc"],
     ))
     for name, info in manifest.items():
-        story.append(Paragraph(f"<b>{name}</b>", styles["H3c"]))
+        story.append(Paragraph(name, styles["H3c"]))
         story.append(Paragraph(info.get("scope", ""), styles["Bodyc"]))
-        story.append(Paragraph(f"ONNX path: <font face=\"Courier\">{info.get('onnx_path', '')}</font>", styles["Bodyc"]))
+        story.append(Paragraph(f"ONNX path: <font face=\"Courier\" size=\"7.5\">{info.get('onnx_path', '')}</font>", styles["Bodyc"]))
 
-    doc = SimpleDocTemplate(args.out, pagesize=LETTER, topMargin=0.9 * inch, bottomMargin=0.9 * inch)
+    doc = build_doc(args.out)
     doc.build(story)
     print(f"\nSaved -> {args.out}")
     return 0

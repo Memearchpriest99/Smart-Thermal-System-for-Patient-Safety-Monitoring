@@ -26,7 +26,20 @@ from typing import Optional
 import matplotlib
 
 matplotlib.use("Agg")
+# 'cm' (Computer Modern) mathtext font, not matplotlib's default DejaVu Sans
+# -- this is what actually makes rendered equations look like a real LaTeX
+# paper (CVPR's own template renders in Computer Modern) instead of a web
+# stylesheet's math widget.
+matplotlib.rcParams["mathtext.fontset"] = "cm"
+# Match chart text (axis labels, ticks, titles) to the same serif family as
+# the surrounding paper body text -- a sans-serif chart embedded in an
+# otherwise Times-set document is exactly the kind of inconsistency that
+# breaks the "looks like a real paper" illusion.
+matplotlib.rcParams["font.family"] = "serif"
+matplotlib.rcParams["font.serif"] = ["Times New Roman", "Times", "DejaVu Serif"]
 import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.mathtext as mathtext  # noqa: E402
+import matplotlib.font_manager  # noqa: E402
 from reportlab.lib import colors  # noqa: E402
 from reportlab.lib.pagesizes import LETTER  # noqa: E402
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet  # noqa: E402
@@ -43,8 +56,12 @@ from reportlab.platypus import (  # noqa: E402
 )
 
 _MATH_DPI = 300
-_INLINE_FONTSIZE = 11
-_DISPLAY_FONTSIZE = 15
+_INLINE_FONTSIZE = 9.5
+_DISPLAY_FONTSIZE = 13
+_INLINE_MAX_HEIGHT_RATIO = 1.75  # covers ~all real inline spans (measured); only the rare
+# inline \sum-with-sub/superscript (mathtext stacks it like displaystyle even inline,
+# unlike real LaTeX's compact textstyle -- there's no \nolimits support to fix that
+# properly) gets mildly scaled down rather than left to overflow the line.
 
 # matplotlib's mathtext is a LIMITED subset of LaTeX -- these substitutions
 # cover the constructs that show up repeatedly in hand-written derivations
@@ -52,18 +69,38 @@ _DISPLAY_FONTSIZE = 15
 # auto-sizing delimiters, the \le/\ge short aliases, \texttt, and a stray
 # backslash before a bare * that isn't even valid full LaTeX either).
 _LATEX_SANITIZE = [
-    (re.compile(r"\\tag\{[^}]*\}"), ""),
-    (re.compile(r"\\[Bb]igg?[lr]?\("), "("),
-    (re.compile(r"\\[Bb]igg?[lr]?\)"), ")"),
-    (re.compile(r"\\[Bb]igg?[lr]?\["), "["),
-    (re.compile(r"\\[Bb]igg?[lr]?\]"), "]"),
-    (re.compile(r"\\[Bb]igg?[lr]?\\\{"), r"\{"),
-    (re.compile(r"\\[Bb]igg?[lr]?\\\}"), r"\}"),
-    (re.compile(r"\\le\b"), r"\leq"),
-    (re.compile(r"\\ge\b"), r"\geq"),
-    (re.compile(r"\\texttt\{"), r"\text{"),
-    (re.compile(r"\^\\\*"), "^*"),
-    (re.compile(r"\\\*"), "*"),
+    (re.compile(r"\\tag\{[^}]*\}"), lambda m: ""),
+    (re.compile(r"\\[Bb]igg?[lr]?\("), lambda m: "("),
+    (re.compile(r"\\[Bb]igg?[lr]?\)"), lambda m: ")"),
+    (re.compile(r"\\[Bb]igg?[lr]?\["), lambda m: "["),
+    (re.compile(r"\\[Bb]igg?[lr]?\]"), lambda m: "]"),
+    (re.compile(r"\\[Bb]igg?[lr]?\\\{"), lambda m: "\\{"),
+    (re.compile(r"\\[Bb]igg?[lr]?\\\}"), lambda m: "\\}"),
+    # No trailing \b: same issue as \tfrac below -- these are routinely
+    # followed by a digit (\ge0, \le1), which is a word char too, so \b
+    # never matches there. A negative lookahead for another LETTER (not
+    # \b's word-char test) avoids the boundary bug while still refusing to
+    # match inside \left/\leq-already/etc.
+    (re.compile(r"\\le(?![a-zA-Z])"), lambda m: "\\leq"),
+    (re.compile(r"\\ge(?![a-zA-Z])"), lambda m: "\\geq"),
+    (re.compile(r"\\iff(?![a-zA-Z])"), lambda m: "\\Leftrightarrow"),
+    # No \b after these two: they're routinely followed by a digit
+    # (\tfrac12), which is a word character too, so \b never matches there
+    # and the substitution would silently no-op.
+    (re.compile(r"\\tfrac"), lambda m: "\\frac"),
+    (re.compile(r"\\dfrac"), lambda m: "\\frac"),
+    # Unlike full LaTeX, mathtext requires \frac{num}{den} braces even for
+    # single-token arguments -- \frac12 / \frac1n (real LaTeX's bare-token
+    # shorthand) raise "Expected \frac{num}{den}" without them.
+    (re.compile(r"\\frac(\w)(\w)\b"), lambda m: f"\\frac{{{m.group(1)}}}{{{m.group(2)}}}"),
+    (re.compile(r"\\texttt\{"), lambda m: "\\text{"),
+    (re.compile(r"\^\\\*"), lambda m: "^*"),
+    (re.compile(r"\\\*"), lambda m: "*"),
+    # mathtext has no \underbrace/\overbrace -- drop the brace, keep the
+    # base expression, and fold the label into a trailing \text{(...)} so
+    # the annotation isn't silently lost, just repositioned.
+    (re.compile(r"\\underbrace\{(.+?)\}_\{(.+?)\}"), lambda m: f"{m.group(1)}\\ \\text{{[{m.group(2)}]}}"),
+    (re.compile(r"\\overbrace\{(.+?)\}\^\{(.+?)\}"), lambda m: f"{m.group(1)}\\ \\text{{[{m.group(2)}]}}"),
 ]
 
 
@@ -73,19 +110,26 @@ def _sanitize_latex(latex_body: str) -> str:
     return latex_body
 
 
-def render_math_png(latex_body: str, *, fontsize: float, color: str = "black") -> tuple[bytes, float, float]:
+def render_math_png(
+    latex_body: str, *, fontsize: float, color: str = "black",
+) -> tuple[bytes, float, float, float]:
     """Render a mathtext expression (no surrounding $) to a tightly cropped
-    PNG. Returns (png_bytes, width_pt, height_pt) so the caller can size the
-    <img> tag to match the surrounding text's line height.
+    PNG via matplotlib's own math_to_image (not a manually-cropped
+    Figure.savefig -- that hack under-reported real glyph extents and gave
+    no baseline info at all). Returns (png_bytes, width_pt, height_pt,
+    depth_pt): depth_pt is the descent below the text baseline (e.g. how
+    far a fraction's denominator or a subscript hangs below the line the
+    surrounding text sits on), which the caller needs to align the image
+    against the paragraph's baseline instead of guessing a fixed offset --
+    guessing is exactly what caused inline equations to visually collide
+    with the line above/below them.
     """
     latex_body = _sanitize_latex(latex_body)
-    fig = plt.figure()
-    try:
-        fig.text(0, 0, f"${latex_body}$", fontsize=fontsize, color=color)
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=_MATH_DPI, transparent=True, bbox_inches="tight", pad_inches=0.02)
-    finally:
-        plt.close(fig)
+    buf = io.BytesIO()
+    depth_px = mathtext.math_to_image(
+        f"${latex_body}$", buf, dpi=_MATH_DPI, format="png", color=color,
+        prop=matplotlib.font_manager.FontProperties(size=fontsize),
+    )
     buf.seek(0)
     from PIL import Image as PILImage
 
@@ -93,7 +137,7 @@ def render_math_png(latex_body: str, *, fontsize: float, color: str = "black") -
         w_px, h_px = im.size
     buf.seek(0)
     scale = 72.0 / _MATH_DPI
-    return buf.getvalue(), w_px * scale, h_px * scale
+    return buf.getvalue(), w_px * scale, h_px * scale, depth_px * scale
 
 
 class _ImageCache:
@@ -104,19 +148,19 @@ class _ImageCache:
     def __init__(self, out_dir: Path) -> None:
         self.out_dir = out_dir
         self.out_dir.mkdir(parents=True, exist_ok=True)
-        self._cache: dict[tuple[str, float], tuple[Path, float, float]] = {}
+        self._cache: dict[tuple[str, float], tuple[Path, float, float, float]] = {}
         self._n = 0
 
-    def get(self, latex_body: str, fontsize: float) -> tuple[Path, float, float]:
+    def get(self, latex_body: str, fontsize: float) -> tuple[Path, float, float, float]:
         key = (latex_body, fontsize)
         if key in self._cache:
             return self._cache[key]
-        png_bytes, w_pt, h_pt = render_math_png(latex_body, fontsize=fontsize)
+        png_bytes, w_pt, h_pt, depth_pt = render_math_png(latex_body, fontsize=fontsize)
         self._n += 1
         path = self.out_dir / f"eq_{self._n:04d}.png"
         path.write_bytes(png_bytes)
-        self._cache[key] = (path, w_pt, h_pt)
-        return path, w_pt, h_pt
+        self._cache[key] = (path, w_pt, h_pt, depth_pt)
+        return path, w_pt, h_pt, depth_pt
 
 
 _BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
@@ -163,8 +207,26 @@ def _inline_markup(text: str, images: _ImageCache) -> str:
         if isinstance(part, tuple):
             _, latex_body = part
             try:
-                path, w_pt, h_pt = images.get(latex_body, _INLINE_FONTSIZE)
-                rendered.append(f'<img src="{path.as_posix()}" width="{w_pt:.1f}" height="{h_pt:.1f}" valign="-20%"/>')
+                path, w_pt, h_pt, depth_pt = images.get(latex_body, _INLINE_FONTSIZE)
+                # Cap inline height so a tall nested fraction/subscript can
+                # never grow past the paragraph's line spacing and visually
+                # collide with the line above/below -- this, not a wrong
+                # valign, was the main cause of "math slides into other
+                # text": every inline image used to be placed at a fixed
+                # -20% offset regardless of its actual size, so anything
+                # taller than one text line intruded into its neighbors.
+                max_h = _INLINE_MAX_HEIGHT_RATIO * _INLINE_FONTSIZE
+                if h_pt > max_h:
+                    scale = max_h / h_pt
+                    w_pt, h_pt, depth_pt = w_pt * scale, h_pt * scale, depth_pt * scale
+                # valign is the offset of the image's BOTTOM edge from the
+                # text baseline; a mathtext glyph's bottom edge sits `depth`
+                # below its own baseline, so shift down by exactly that much
+                # (negative) to line the two baselines up precisely, instead
+                # of the old fixed "-20%" guess.
+                rendered.append(
+                    f'<img src="{path.as_posix()}" width="{w_pt:.1f}" height="{h_pt:.1f}" valign="{-depth_pt:.1f}"/>'
+                )
             except Exception:
                 # matplotlib's mathtext is a LIMITED subset of LaTeX -- a few
                 # spans in hand-written derivations use syntax it can't parse
@@ -181,16 +243,55 @@ def _inline_markup(text: str, images: _ImageCache) -> str:
 
 
 def build_styles():
+    """Times-family serif throughout (CVPR/IEEE-style papers are set in
+    Times, not a sans-serif UI font), justified body text, and leading
+    generous enough (~1.4x font size) to hold the capped inline-math height
+    (_INLINE_MAX_HEIGHT_RATIO * _INLINE_FONTSIZE) without the image
+    intruding into the line above/below -- ReportLab's Paragraph leading is
+    fixed for the whole paragraph (unlike real LaTeX, which nudges
+    line-to-line spacing per line when tall inline content appears), so
+    this has to be generous enough for the worst case up front.
+    """
+    from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle("H1c", parent=styles["Heading1"], spaceBefore=18, spaceAfter=10))
-    styles.add(ParagraphStyle("H2c", parent=styles["Heading2"], spaceBefore=14, spaceAfter=8))
-    styles.add(ParagraphStyle("H3c", parent=styles["Heading3"], spaceBefore=10, spaceAfter=6))
-    styles.add(ParagraphStyle("Bodyc", parent=styles["BodyText"], spaceBefore=4, spaceAfter=8, leading=15))
-    styles.add(ParagraphStyle("Bulletc", parent=styles["BodyText"], leading=14))
+    styles.add(ParagraphStyle(
+        "H1c", fontName="Times-Bold", fontSize=15, leading=18,
+        spaceBefore=16, spaceAfter=8, keepWithNext=True,
+    ))
+    styles.add(ParagraphStyle(
+        "H2c", fontName="Times-Bold", fontSize=12, leading=15,
+        spaceBefore=12, spaceAfter=6, keepWithNext=True,
+    ))
+    styles.add(ParagraphStyle(
+        "H3c", fontName="Times-BoldItalic", fontSize=10.5, leading=13,
+        spaceBefore=9, spaceAfter=4, keepWithNext=True,
+    ))
+    styles.add(ParagraphStyle(
+        "Bodyc", fontName="Times-Roman", fontSize=9.5, leading=17,
+        alignment=TA_JUSTIFY, spaceBefore=2, spaceAfter=6,
+    ))
+    styles.add(ParagraphStyle(
+        "Bulletc", fontName="Times-Roman", fontSize=9.5, leading=17, alignment=TA_JUSTIFY,
+    ))
+    styles.add(ParagraphStyle(
+        "TitleC", fontName="Times-Bold", fontSize=20, leading=24, alignment=TA_CENTER, spaceAfter=10,
+    ))
+    styles.add(ParagraphStyle(
+        "SubtitleC", fontName="Times-Italic", fontSize=13, leading=17, alignment=TA_CENTER, spaceAfter=14,
+    ))
+    styles.add(ParagraphStyle(
+        "AbstractC", fontName="Times-Roman", fontSize=9.5, leading=17, alignment=TA_JUSTIFY,
+        leftIndent=24, rightIndent=24, spaceBefore=6, spaceAfter=6,
+    ))
+    styles.add(ParagraphStyle(
+        "CaptionC", fontName="Times-Italic", fontSize=8.3, leading=10.5, alignment=TA_CENTER,
+        spaceBefore=4, spaceAfter=10,
+    ))
     return styles
 
 
-def markdown_to_flowables(md_text: str, images: _ImageCache, styles) -> list:
+def markdown_to_flowables(md_text: str, images: _ImageCache, styles, max_width_pt: float = 6.0 * inch) -> list:
     flowables: list = []
     lines = md_text.splitlines()
     i = 0
@@ -292,8 +393,8 @@ def markdown_to_flowables(md_text: str, images: _ImageCache, styles) -> list:
                 body = line.strip()[2:-2]
                 i += 1
             try:
-                path, w_pt, h_pt = images.get(body, _DISPLAY_FONTSIZE)
-                max_w = 6.0 * inch
+                path, w_pt, h_pt, _depth_pt = images.get(body, _DISPLAY_FONTSIZE)
+                max_w = max_width_pt
                 if w_pt > max_w:
                     scale = max_w / w_pt
                     w_pt, h_pt = w_pt * scale, h_pt * scale
@@ -337,10 +438,21 @@ def markdown_to_flowables(md_text: str, images: _ImageCache, styles) -> list:
 METRIC_COLUMNS = ["variant", "accuracy", "precision", "recall", "f1", "mean_iou", "mean_inference_ms", "p95_inference_ms"]
 
 
-def results_table(rows: list[dict], styles, title: Optional[str] = None) -> list:
+_TABLE_FONT = "Times-Roman"
+_TABLE_HEADER_FONT = "Times-Bold"
+
+
+def results_table(
+    rows: list[dict], styles, title: Optional[str] = None, *, table_num: Optional[int] = None,
+) -> list:
+    """Renders a "booktabs"-style table (horizontal rules only, no grid
+    lines, no shaded header/striped rows) -- the standard academic-paper
+    table convention CVPR/IEEE use, and a deliberate departure from the
+    filled-header/striped-row look used elsewhere in this codebase's own
+    report scripts, which reads as a web dashboard, not a paper table.
+    """
     flowables = []
-    if title:
-        flowables.append(Paragraph(title, styles["H3c"]))
+    caption_text = f"Table{f' {table_num}' if table_num else ''}. {title}" if title else None
 
     header = ["Variant", "Acc", "Prec", "Rec", "F1", "IoU", "Mean ms", "p95 ms"]
     data = [header]
@@ -362,35 +474,50 @@ def results_table(rows: list[dict], styles, title: Optional[str] = None) -> list
             fmt_ms(r.get("p95_inference_ms")),
         ])
 
-    table = Table(data, hAlign="LEFT", repeatRows=1)
+    n_rows = len(data)
+    table = Table(data, hAlign="CENTER", repeatRows=1)
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2b2f38")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTSIZE", (0, 0), (-1, -1), 8.5),
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f2f3f5")]),
+        ("FONTNAME", (0, 0), (-1, 0), _TABLE_HEADER_FONT),
+        ("FONTNAME", (0, 1), (-1, -1), _TABLE_FONT),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("ALIGN", (1, 0), (-1, -1), "CENTER"),
+        ("ALIGN", (0, 0), (0, -1), "LEFT"),
+        # Booktabs rule weights: a heavier line above/below the whole table
+        # and under the header row, no other lines at all.
+        ("LINEABOVE", (0, 0), (-1, 0), 1.0, colors.black),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.6, colors.black),
+        ("LINEBELOW", (0, n_rows - 1), (-1, n_rows - 1), 1.0, colors.black),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING", (0, 0), (-1, -1), 3),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]))
     flowables.append(table)
-    flowables.append(Spacer(1, 10))
+    if caption_text:
+        flowables.append(Paragraph(caption_text, styles["CaptionC"]))
+    else:
+        flowables.append(Spacer(1, 10))
     return flowables
 
 
 def bar_chart_image(
     labels: list[str], values: list[float], *, ylabel: str, title: str, out_path: Path,
+    figsize: tuple[float, float] = (3.2, 2.2),
 ) -> Path:
-    fig, ax = plt.subplots(figsize=(5.5, 3))
-    bars = ax.bar(labels, values, color="#3d6fd1")
-    ax.set_ylabel(ylabel)
-    ax.set_title(title, fontsize=10)
-    ax.tick_params(axis="x", labelsize=8, rotation=20)
+    """Sized to fit one paper column (default ~3.2in) by default; pass a
+    wider figsize for a full-width figure."""
+    fig, ax = plt.subplots(figsize=figsize)
+    bars = ax.bar(labels, values, color="#5b5b5b", edgecolor="black", linewidth=0.6)
+    ax.set_ylabel(ylabel, fontsize=8)
+    ax.set_title(title, fontsize=8.5)
+    ax.tick_params(axis="x", labelsize=7, rotation=20)
+    ax.tick_params(axis="y", labelsize=7)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     for b, v in zip(bars, values):
         ax.annotate(f"{v:.2g}", (b.get_x() + b.get_width() / 2, b.get_height()),
-                     ha="center", va="bottom", fontsize=7)
+                     ha="center", va="bottom", fontsize=6.5)
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path, dpi=200)
+    fig.savefig(out_path, dpi=220)
     plt.close(fig)
     return out_path

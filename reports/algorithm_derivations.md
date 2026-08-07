@@ -43,7 +43,7 @@ The code computes these via running cumulative sums (`w0 = cumsum(p)`, `mu_k = c
 
 $$
 \omega_0(k) = \sum_{i\le k} p_i, \qquad
-\underbrace{\sum_{i\le k} i\,p_i}_{\texttt{mu\_k}} = \omega_0(k)\,\mu_0(k).
+\sum_{i\le k} i\,p_i \;=\; \omega_0(k)\,\mu_0(k) \quad (\text{the code's } \texttt{mu\_k}).
 $$
 
 The total (frame-wide) mean is $\mu_T = \sum_i i\,p_i = \texttt{mu\_k}[-1]$, and it decomposes as a weighted average of the class means for *any* threshold $k$:
@@ -55,7 +55,17 @@ $$
 **Total variance decomposition.** The total intensity variance of the histogram can always be split into a *within-class* term and a *between-class* term:
 
 $$
-\sigma_T^2 = \underbrace{\omega_0\sigma_0^2 + \omega_1\sigma_1^2}_{\sigma_W^2(k)\ \text{(within-class)}} + \underbrace{\omega_0(\mu_0-\mu_T)^2 + \omega_1(\mu_1-\mu_T)^2}_{\sigma_B^2(k)\ \text{(between-class)}}. \tag{2}
+\sigma_T^2 = \sigma_W^2(k) + \sigma_B^2(k). \tag{2}
+$$
+
+with the within-class and between-class terms
+
+$$
+\sigma_W^2(k) = \omega_0\sigma_0^2 + \omega_1\sigma_1^2,
+$$
+
+$$
+\sigma_B^2(k) = \omega_0(\mu_0-\mu_T)^2 + \omega_1(\mu_1-\mu_T)^2.
 $$
 
 Since $\sigma_T^2$ does not depend on $k$ (it is a property of the whole histogram, fixed once the frame is fixed), **maximizing $\sigma_B^2(k)$ over $k$ is exactly equivalent to minimizing $\sigma_W^2(k)$** — Otsu's criterion simultaneously makes the two classes as internally homogeneous as possible *and* as mutually separated as possible, because those are the same objective viewed from opposite sides of Eq. (2).
@@ -127,11 +137,7 @@ Before classification, features are z-scored using `StandardScaler` fit on the t
 
 $$
 \min_{w,\,b,\,\xi} \quad \frac{1}{2}\|w\|^2 + C\sum_{i=1}^{n}\xi_i
-\qquad \text{s.t.} \quad
-\begin{cases}
-y_i\bigl(w^\top\phi(x_i)+b\bigr) \ge 1-\xi_i, & i=1,\dots,n\\
-\xi_i \ge 0, & i=1,\dots,n .
-\end{cases} \tag{4}
+\qquad \text{s.t.}\quad y_i\bigl(w^\top\phi(x_i)+b\bigr) \ge 1-\xi_i, \ \ \xi_i \ge 0, \quad i=1,\dots,n. \tag{4}
 $$
 
 $\xi_i=0$ means point $i$ is correctly classified and outside the margin corridor; $0<\xi_i<1$ means it is correctly classified but inside the corridor; $\xi_i>1$ means it is misclassified. $C$ (the constructor's `svm_C`, default $1.0$) is the unit price of a margin violation: it is the single knob trading margin width against training-set fit, and is exactly the inverse of an $L_2$ weight-decay coefficient when Eq. (4) is rewritten in unconstrained hinge-loss form,
@@ -175,12 +181,19 @@ This is the **dual problem**, adapted from `reports/checkpoint_report.tex` ("The
 
 For a general constrained optimization $\min_x f(x)$ s.t. $g_i(x)\le 0$, $h_j(x)=0$, the **Karush–Kuhn–Tucker (KKT) conditions** at a candidate optimum $(x^\*,\lambda^\*,\nu^\*)$ are:
 
-1. **Stationarity**: $\nabla f(x^\*) + \sum_i \lambda_i^\* \nabla g_i(x^\*) + \sum_j \nu_j^\* \nabla h_j(x^\*) = 0$.
+1. **Stationarity**:
+$$
+\nabla f(x^\*) + \sum_i \lambda_i^\* \nabla g_i(x^\*) + \sum_j \nu_j^\* \nabla h_j(x^\*) = 0.
+$$
 2. **Primal feasibility**: $g_i(x^\*)\le 0$, $h_j(x^\*)=0$ for all $i,j$.
 3. **Dual feasibility**: $\lambda_i^\* \ge 0$ for all $i$.
 4. **Complementary slackness**: $\lambda_i^\* g_i(x^\*) = 0$ for all $i$.
 
-Mapping this template onto the soft-margin SVM of Eq. (4), with inequality constraints $g_i^{(1)}(w,b,\xi) = 1-\xi_i-y_i(w^\top\phi(x_i)+b) \le 0$ and $g_i^{(2)}(\xi)=-\xi_i\le 0$, and multipliers $\alpha_i \ge 0$, $\mu_i \ge 0$ respectively:
+Mapping this template onto the soft-margin SVM of Eq. (4), with multipliers $\alpha_i \ge 0$, $\mu_i \ge 0$ for the two inequality constraint families respectively:
+
+$$
+g_i^{(1)}(w,b,\xi) = 1-\xi_i-y_i(w^\top\phi(x_i)+b) \le 0, \qquad g_i^{(2)}(\xi)=-\xi_i\le 0.
+$$
 
 * **Stationarity** — exactly Eqs. (6)–(8) above: $w=\sum_i\alpha_i y_i\phi(x_i)$, $\sum_i\alpha_i y_i = 0$, $\mu_i = C-\alpha_i$.
 * **Primal feasibility** — $y_i(w^\top\phi(x_i)+b) \ge 1-\xi_i$ and $\xi_i \ge 0$ for every training point.
@@ -201,7 +214,7 @@ In the fitted `SVC` object, `_svm.n_support_`/`support_vectors_` are exactly the
 
 KKT conditions are, in general, only **necessary** for optimality (for arbitrary smooth constrained problems), and are of little use if strong duality does not hold — a solution to the dual need not then equal the primal optimum, and the multipliers found need not certify anything about the primal solution. The reason the soft-margin SVM training procedure can *rely* on KKT — treat it as a two-way equivalence used both to derive the dual (§2.3) and to certify convergence during SMO — is a specific, checkable chain of facts about problem (4):
 
-1. **The primal is a convex program.** The objective $\tfrac12\|w\|^2 + C\sum_i\xi_i$ is a positive-semidefinite quadratic form in $w$ plus a linear function of $\xi$ — jointly convex in $(w,b,\xi)$. Every constraint, $y_i(w^\top\phi(x_i)+b)\ge 1-\xi_i$ and $\xi_i\ge0$, is **affine (linear)** in $(w,b,\xi)$ — hence both the feasible region is convex (an intersection of halfspaces) and the constraint functions are convex, satisfying the hypotheses required for KKT to be more than "necessary-only."
+1. **The primal is a convex program.** The objective $(1/2)\|w\|^2 + C\sum_i\xi_i$ (Eq. 4) is a positive-semidefinite quadratic form in $w$ plus a linear function of $\xi$ — jointly convex in $(w,b,\xi)$. Every constraint, $y_i(w^\top\phi(x_i)+b)\ge 1-\xi_i$ and $\xi_i\ge0$, is **affine (linear)** in $(w,b,\xi)$ — hence both the feasible region is convex (an intersection of halfspaces) and the constraint functions are convex, satisfying the hypotheses required for KKT to be more than "necessary-only."
 2. **Slater's condition holds trivially.** Slater's constraint qualification requires a point that is *strictly* feasible for every inequality constraint. Any $(w,b)$ (e.g. $w=0,b=0$) combined with $\xi_i$ chosen large enough — e.g. $\xi_i = 2$ for every $i$ — satisfies $y_i(w^\top\phi(x_i)+b)=0 \ge 1-\xi_i = -1$ and $\xi_i=2>0$ **strictly**, for *every* training set, with no assumption of linear separability. Soft-margin SVM training is feasible by construction (unlike the hard-margin SVM, whose feasible set can be empty for non-separable data) — this is precisely why the slack variables were introduced in the first place, and it is what guarantees Slater's condition holds for this problem regardless of the input data.
 3. **Convexity + Slater ⟹ strong duality.** By convex-optimization theory (Slater's theorem), a convex problem satisfying Slater's condition has **zero duality gap**: the primal optimal value equals the dual optimal value, and — critically — a primal-dual pair $(w^\*,b^\*,\xi^\*,\alpha^\*,\mu^\*)$ is optimal for both problems **if and only if** it satisfies the KKT conditions. This "if and only if" is exactly the upgrade from "KKT is necessary" to **"KKT is both necessary and sufficient"** that licenses the derivation in §2.3–2.4: we are not merely hoping a KKT point is the optimum, we have a theorem guaranteeing it is.
 4. **Consequence for SMO.** Because KKT is sufficient here, SMO's stopping rule — "no training example violates the KKT conditions by more than a numerical tolerance" — is a valid certificate of (near-)global optimality, not a heuristic. This is also why FireSVM training has no notion of local minima, random restarts, or optimizer instability: the feasible set is convex, the objective is convex, and any KKT point is *the* global optimum.
@@ -335,7 +348,7 @@ $$
 \text{pointwise: } z_{c'}(x,y) = \sum_c u_{c',c}\, y_c(x,y) \quad \text{(1×1 conv, channel mixing only).}
 $$
 
-A standard $3\times3$ convolution from $C_{\text{in}}$ to $C_{\text{out}}$ channels costs $3\cdot3\cdot C_{\text{in}}\cdot C_{\text{out}}$ multiply-accumulates per output pixel; the depthwise+pointwise factorization costs $3\cdot3\cdot C_{\text{in}} + C_{\text{in}}\cdot C_{\text{out}}$, a ratio of $\tfrac{1}{C_{\text{out}}}+\tfrac{1}{9}$ — roughly an order of magnitude cheaper for the channel counts used here (adapted from `reports/checkpoint_report.tex`, "Why depthwise-separable convolutions"). This is what keeps `MicroMobileNet` cheap enough to run per-frame at the target frame rate.
+A standard $3\times3$ convolution from $C_{\text{in}}$ to $C_{\text{out}}$ channels costs $3\cdot3\cdot C_{\text{in}}\cdot C_{\text{out}}$ multiply-accumulates per output pixel; the depthwise+pointwise factorization costs $3\cdot3\cdot C_{\text{in}} + C_{\text{in}}\cdot C_{\text{out}}$, a ratio of $(1/C_{\text{out}})+(1/9)$ — roughly an order of magnitude cheaper for the channel counts used here (adapted from `reports/checkpoint_report.tex`, "Why depthwise-separable convolutions"). This is what keeps `MicroMobileNet` cheap enough to run per-frame at the target frame rate.
 
 ### 4.3 Anchor generation
 
@@ -379,8 +392,8 @@ $$
 with the standard SSD variance scales $v_{xy}=0.1$, $v_{wh}=0.2$ (`BBOX_VARIANCE_XY`, `BBOX_VARIANCE_WH`) rescaling the raw offsets so all four regression targets have comparable magnitude/gradient scale during training — the network's box head predicts these four numbers directly, and `decode_boxes` is the exact algebraic inverse used at inference (§4.7). The loss on these offsets is **Smooth-L1** (Huber),
 
 $$
-\mathrm{SmoothL1}(e) = \begin{cases} \tfrac12 e^2, & |e|<1 \\ |e|-\tfrac12, & |e|\ge 1,\end{cases}
-\qquad \mathcal{L}_{\text{loc}} = \sum_{m\,\text{positive}} \mathrm{SmoothL1}\bigl(\text{pred}_m - \Delta(g^\*(m),a_m)\bigr),
+\mathrm{SmoothL1}(e) = \tfrac12 e^2 \ \text{ if } |e|<1, \quad \text{else } |e|-\tfrac12,
+\qquad \mathcal{L}_{\text{loc}} = \sum_{m\,\text{positive}} \mathrm{SmoothL1}\bigl(\text{pred}_m - \Delta(g^*(m),a_m)\bigr),
 $$
 
 implemented as `F.smooth_l1_loss(..., reduction="sum")`. Smooth-L1 is quadratic (like squared error) for small residuals — precise fine-tuning near the target — but linear for large residuals, so a handful of badly-matched anchors early in training cannot produce the exploding gradients that pure squared error would (adapted from `reports/checkpoint_report.tex`).
@@ -435,7 +448,7 @@ At inference, `decode_predictions` inverts the encoding of §4.5 (`decode_boxes`
 **Setup.** A planar homography $H_k \in \mathbb{R}^{3\times3}$ maps a camera-$k$ image point $(u,v)$ (homogeneous $[u,v,1]^\top$) to a floor-plane world point $(X_w,Y_w)$ (homogeneous $[X_w,Y_w,1]^\top$, up to scale) whenever the imaged points lie on a single plane (here, $Z=0$, the floor):
 
 $$
-w\begin{bmatrix}X_w\\Y_w\\1\end{bmatrix} \cong H_k\begin{bmatrix}u\\v\\1\end{bmatrix}. \tag{12}
+w\,[X_w,\,Y_w,\,1]^\top \cong H_k\,[u,\,v,\,1]^\top. \tag{12}
 $$
 
 **Deriving the DLT linear system.** Write $H_k$ row-wise as $h_1^\top,h_2^\top,h_3^\top$ (rows of $H_k$) so that $X_w = (h_1^\top p)/(h_3^\top p)$, $Y_w = (h_2^\top p)/(h_3^\top p)$ with $p=[u,v,1]^\top$. Clearing denominators,
@@ -475,7 +488,7 @@ $$
    - $N=2$: accepted iff the pairwise distance is $<\varepsilon$ (consistency check).
    - $N=3$: **outlier removal** — if exactly one point is $>\varepsilon$ from *both* others while the remaining pair is mutually $<\varepsilon$, that point is dropped and the consistent pair is kept; if all three are mutually consistent, all three are kept; otherwise (no consistent pair) the cluster is discarded entirely.
    - $N>3$: all points kept (already enforced to be within $\varepsilon$ pairwise-transitively by the clustering step).
-3. Each validated cluster's centroid $(\bar X,\bar Y) = \bigl(\tfrac1n\sum x_i,\ \tfrac1n\sum y_i\bigr)$ becomes one `ActorPosition`, with `confidence` the mean of its members' detector confidences and `source_camera_ids` recording which cameras contributed.
+3. Each validated cluster's centroid $(\bar X,\bar Y) = ((1/n)\sum x_i,\ (1/n)\sum y_i)$ becomes one `ActorPosition`, with `confidence` the mean of its members' detector confidences and `source_camera_ids` recording which cameras contributed.
 
 ### 5.5 The Euclidean-distance contact rule
 
