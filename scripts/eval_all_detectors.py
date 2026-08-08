@@ -130,6 +130,19 @@ def main() -> int:
              "on CPU -- run it as its own job in parallel with the fast detectors "
              "rather than serializing everything behind it.",
     )
+    ap.add_argument(
+        "--extra-human-test-scenes", nargs="*", default=[],
+        help="Additional waveshare_work scenes to union into the human-detection "
+             "test set on top of build_task_split's normal held-out draw -- e.g. "
+             "'empty_room', to add real negative (no-person) frames. The normal "
+             "random split for 'human' never happens to draw an all-negative scene "
+             "into test, so precision/FAR were previously untestable (tn=0 "
+             "structurally). Safe re: leakage even though such scenes are nominally "
+             "in human_train_scenes: train_human() in train_full_corpus.py builds "
+             "its FrameLevelDataset with include_negative_frames=False (the "
+             "default), so an all-negative scene contributes zero actual training "
+             "examples regardless of its train/test-split membership.",
+    )
     args = ap.parse_args()
     only = set(args.only) if args.only else None
 
@@ -138,6 +151,8 @@ def main() -> int:
     fire_train_scenes, fire_test_scenes = build_waveshare_test_split(waveshare_index, "fire")
     human_train_scenes, human_test_scenes = build_waveshare_test_split(waveshare_index, "human")
     contact_train_scenes, contact_test_scenes = build_waveshare_test_split(waveshare_index, "contact")
+    if args.extra_human_test_scenes:
+        human_test_scenes = human_test_scenes | set(args.extra_human_test_scenes)
     print(f"Fire test scenes: {sorted(fire_test_scenes)}")
     print(f"Human test scenes: {sorted(human_test_scenes)}")
     print(f"Contact test scenes: {sorted(contact_test_scenes)}")
@@ -214,6 +229,16 @@ def main() -> int:
         "fire_train_scenes": sorted(fire_train_scenes),
         "human_test_scenes": sorted(human_test_scenes),
         "human_train_scenes": sorted(human_train_scenes),
+        "human_test_scenes_note": (
+            f"Augmented with {sorted(args.extra_human_test_scenes)} on top of the normal "
+            "build_task_split draw, to include real negative (no-person) frames -- the "
+            "unaugmented split never happens to hold out an all-negative scene, so "
+            "precision/false-alarm-rate were structurally untestable (tn=0) before this. "
+            "No train/test leakage: these scenes are nominally in human_train_scenes too, "
+            "but train_human() only trains on labeled-positive frames (include_negative_"
+            "frames=False), so an all-negative scene contributes zero real training "
+            "examples regardless."
+        ) if args.extra_human_test_scenes else None,
         "contact_test_scenes": sorted(contact_test_scenes),
         "contact_train_scenes": sorted(contact_train_scenes),
         "results": [r.to_dict() for r in results],

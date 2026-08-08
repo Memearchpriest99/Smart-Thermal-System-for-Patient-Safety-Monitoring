@@ -43,6 +43,7 @@
     "man_light_cig",
     "the_more_the_merrier"
   ],
+  "human_test_scenes_note": "Augmented with ['empty_room'] on top of the normal build_task_split draw, to include real negative (no-person) frames -- the unaugmented split never happens to hold out an all-negative scene, so precision/false-alarm-rate were structurally untestable (tn=0) before this. No train/test leakage: these scenes are nominally in human_train_scenes too, but train_human() only trains on labeled-positive frames (include_negative_frames=False), so an all-negative scene contributes zero real training examples regardless.",
   "contact_test_scenes": [
     "2ppl_fight",
     "2ppl_hug",
@@ -65,23 +66,6 @@
     "the_more_the_merrier"
   ],
   "results": [
-    {
-      "detector_name": "FireSVMDetector",
-      "variant": "fp32_baseline",
-      "task": "fire",
-      "n_frames": 1893,
-      "accuracy": 0.716323296354992,
-      "precision": 0.5753424657534246,
-      "recall": 0.15026833631484796,
-      "f1": 0.23829787234042557,
-      "mean_iou": null,
-      "mean_inference_ms": 5.6514155601721585,
-      "p95_inference_ms": 5.347780002193758,
-      "tp": 84,
-      "tn": 1272,
-      "fp": 62,
-      "fn": 475
-    },
     {
       "detector_name": "HOGSVMDetector",
       "variant": "fp32_baseline",
@@ -115,24 +99,6 @@
       "tn": 336,
       "fp": 48,
       "fn": 0
-    },
-    {
-      "detector_name": "MVSTGCNDetector",
-      "variant": "fp32_baseline",
-      "task": "contact",
-      "n_frames": 470,
-      "accuracy": 0.7404255319148936,
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "mean_iou": null,
-      "mean_inference_ms": 25.126731521698314,
-      "p95_inference_ms": 29.195444998367748,
-      "tp": 0,
-      "tn": 348,
-      "fp": 0,
-      "fn": 122
     }
-  ],
-  "human_test_scenes_note": "Augmented with ['empty_room'] on top of the normal build_task_split draw, to include real negative (no-person) frames -- the unaugmented split never happens to hold out an all-negative scene, so precision/false-alarm-rate were structurally untestable (tn=0) before this. No train/test leakage: these scenes are nominally in human_train_scenes too, but train_human() only trains on labeled-positive frames (include_negative_frames=False), so an all-negative scene contributes zero real training examples regardless."
+  ]
 }

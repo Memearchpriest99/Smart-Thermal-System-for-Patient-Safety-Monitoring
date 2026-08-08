@@ -108,6 +108,13 @@ def main() -> int:
         help="Restrict to these detector class names (e.g. --only HOGSVMDetector), "
              "to run the slow ones as separate parallel jobs.",
     )
+    ap.add_argument(
+        "--extra-human-test-scenes", nargs="*", default=[],
+        help="Additional waveshare_work scenes to union into the human-detection test "
+             "set on top of build_task_split's normal draw -- e.g. 'empty_room', to "
+             "include real negative frames. Mirrors eval_all_detectors.py's flag of the "
+             "same name -- keep both in sync if this is used for the fp32 baseline.",
+    )
     args = ap.parse_args()
     prefer_gpu = not args.no_gpu
     only = set(args.only) if args.only else None
@@ -122,6 +129,8 @@ def main() -> int:
     _, fire_test_scenes = build_waveshare_test_split(waveshare_index, "fire")
     _, human_test_scenes = build_waveshare_test_split(waveshare_index, "human")
     _, contact_test_scenes = build_waveshare_test_split(waveshare_index, "contact")
+    if args.extra_human_test_scenes:
+        human_test_scenes = human_test_scenes | set(args.extra_human_test_scenes)
     print(f"Fire test scenes: {sorted(fire_test_scenes)}")
     print(f"Human test scenes: {sorted(human_test_scenes)}")
     print(f"Contact test scenes: {sorted(contact_test_scenes)}")

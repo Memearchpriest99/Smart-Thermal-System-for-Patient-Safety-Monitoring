@@ -68,6 +68,12 @@ from thermal_algorithms.training.split import (
     build_task_split,
     session_train_test_split,
 )
+from thermal_algorithms.training.balance import (
+    balance_examples,
+    build_balanced_fire_pool,
+    build_balanced_human_pool,
+    iter_balanced_contact_runs,
+)
 from thermal_algorithms.training.trainer import Trainer
 from thermal_algorithms.training.eval_report import (
     TimedEvalResult,
@@ -146,6 +152,11 @@ __all__ = [
     "CONTACT_TEST_SCENES",
     "build_task_split",
     "session_train_test_split",
+    # balance
+    "balance_examples",
+    "build_balanced_fire_pool",
+    "build_balanced_human_pool",
+    "iter_balanced_contact_runs",
     # trainer
     "Trainer",
     # eval_report

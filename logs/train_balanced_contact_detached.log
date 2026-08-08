@@ -1,0 +1,81 @@
+Diagnostics (crash/signal/hang traces) -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\logs\train_balanced_corpus_diag_20260808_230803.log
+Checkpoints -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_balanced
+
+=== Training ThermoX3DDetector on balanced (50/50) contact runs ===
+  chunk 1 (waveshare_train): 81 examples (66 contact-positive), pos_total=66 neg_total=15, 0.5s elapsed
+  chunk 2 (waveshare_train): 913 examples (0 contact-positive), pos_total=66 neg_total=928, 6.8s elapsed
+  chunk 3 (waveshare_train): 1304 examples (0 contact-positive), pos_total=66 neg_total=2232, 47.2s elapsed
+  chunk 4 (synth_room_1/2026-06-02): 151 examples (136 contact-positive), pos_total=202 neg_total=2247, 112.0s elapsed
+  chunk 5 (synth_room_1/2026-06-02): 1012 examples (1011 contact-positive), pos_total=1213 neg_total=2248, 119.1s elapsed
+  chunk 6 (synth_room_1/2026-06-02): 1461 examples (1446 contact-positive), pos_total=2659 neg_total=2263, 166.4s elapsed
+  chunk 7 (synth_room_1/2026-06-02): 318 examples (317 contact-positive), pos_total=2976 neg_total=2264, 238.8s elapsed
+  chunk 8 (synth_room_1/2026-06-02): 1636 examples (1635 contact-positive), pos_total=4611 neg_total=2265, 254.3s elapsed
+  chunk 9 (synth_room_1/2026-06-02): 1661 examples (1660 contact-positive), pos_total=6271 neg_total=2266, 327.4s elapsed
+  chunk 10 (synth_room_1/2026-06-02): 793 examples (778 contact-positive), pos_total=7049 neg_total=2281, 410.3s elapsed
+  [checkpoint] saved after 10 chunks -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_balanced\thermo_x3d_detector\Waveshare_26984.thalg
+  chunk 11 (synth_room_1/2026-06-02): 1423 examples (1422 contact-positive), pos_total=8471 neg_total=2282, 448.5s elapsed
+  chunk 12 (synth_room_1/2026-06-02): 1005 examples (1004 contact-positive), pos_total=9475 neg_total=2283, 516.9s elapsed
+  chunk 13 (synth_room_1/2026-06-02): 983 examples (982 contact-positive), pos_total=10457 neg_total=2284, 564.5s elapsed
+  chunk 14 (synth_room_1/2026-06-02): 164 examples (149 contact-positive), pos_total=10606 neg_total=2299, 611.3s elapsed
+  chunk 15 (synth_room_1/2026-06-02): 78 examples (77 contact-positive), pos_total=10683 neg_total=2300, 618.3s elapsed
+  chunk 16 (synth_room_1/2026-06-02): 362 examples (361 contact-positive), pos_total=11044 neg_total=2301, 621.9s elapsed
+  chunk 17 (synth_room_1/2026-06-02): 2806 examples (2805 contact-positive), pos_total=13849 neg_total=2302, 638.6s elapsed
+  chunk 18 (synth_room_1/2026-06-02): 1751 examples (1750 contact-positive), pos_total=15599 neg_total=2303, 773.6s elapsed
+  chunk 19 (synth_room_1/2026-06-02): 2337 examples (2336 contact-positive), pos_total=17935 neg_total=2304, 856.0s elapsed
+  chunk 20 (synth_room_1/2026-06-02): 103 examples (102 contact-positive), pos_total=18037 neg_total=2305, 966.8s elapsed
+  [checkpoint] saved after 20 chunks -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_balanced\thermo_x3d_detector\Waveshare_26984.thalg
+  chunk 21 (synth_room_1/2026-06-02): 969 examples (954 contact-positive), pos_total=18991 neg_total=2320, 971.9s elapsed
+  chunk 22 (synth_room_1/2026-06-02): 582 examples (581 contact-positive), pos_total=19572 neg_total=2321, 1017.0s elapsed
+  chunk 23 (synth_room_1/2026-06-02): 2565 examples (2550 contact-positive), pos_total=22122 neg_total=2336, 1044.5s elapsed
+  chunk 24 (synth_room_1/2026-06-02): 782 examples (767 contact-positive), pos_total=22889 neg_total=2351, 1166.0s elapsed
+  chunk 25 (synth_room_1/2026-06-02): 1901 examples (1886 contact-positive), pos_total=24775 neg_total=2366, 1202.8s elapsed
+  chunk 26 (synth_room_1/2026-06-02): 317 examples (316 contact-positive), pos_total=25091 neg_total=2367, 1292.5s elapsed
+  chunk 27 (synth_room_1/2026-06-02): 1160 examples (1159 contact-positive), pos_total=26250 neg_total=2368, 1306.6s elapsed
+  chunk 28 (synth_room_1/2026-06-02): 966 examples (965 contact-positive), pos_total=27215 neg_total=2369, 1360.7s elapsed
+  chunk 29 (synth_room_1/2026-06-02): 766 examples (751 contact-positive), pos_total=27966 neg_total=2384, 1405.8s elapsed
+  chunk 30 (synth_room_1/2026-06-02): 1358 examples (1357 contact-positive), pos_total=29323 neg_total=2385, 1440.8s elapsed
+  [checkpoint] saved after 30 chunks -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_balanced\thermo_x3d_detector\Waveshare_26984.thalg
+  chunk 31 (synth_room_1/2026-06-02): 572 examples (571 contact-positive), pos_total=29894 neg_total=2386, 1504.1s elapsed
+  chunk 32 (synth_room_1/2026-06-02): 1082 examples (1067 contact-positive), pos_total=30961 neg_total=2401, 1530.9s elapsed
+  chunk 33 (synth_room_1/2026-06-02): 2076 examples (2075 contact-positive), pos_total=33036 neg_total=2402, 1580.9s elapsed
+  chunk 34 (synth_room_1/2026-06-02): 228 examples (213 contact-positive), pos_total=33249 neg_total=2417, 1678.4s elapsed
+  chunk 35 (synth_room_1/2026-06-02): 504 examples (503 contact-positive), pos_total=33752 neg_total=2418, 1689.0s elapsed
+  chunk 36 (synth_room_1/2026-06-02): 2470 examples (2469 contact-positive), pos_total=36221 neg_total=2419, 1712.1s elapsed
+  chunk 37 (synth_room_1/2026-06-02): 987 examples (972 contact-positive), pos_total=37193 neg_total=2434, 1828.0s elapsed
+  chunk 38 (synth_room_1/2026-06-02): 376 examples (375 contact-positive), pos_total=37568 neg_total=2435, 1873.5s elapsed
+  chunk 39 (synth_room_1/2026-06-02): 81 examples (66 contact-positive), pos_total=37634 neg_total=2450, 1890.4s elapsed
+  chunk 40 (synth_room_1/2026-06-02): 2010 examples (1995 contact-positive), pos_total=39629 neg_total=2465, 1894.2s elapsed
+  [checkpoint] saved after 40 chunks -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_balanced\thermo_x3d_detector\Waveshare_26984.thalg
+  chunk 41 (synth_room_1/2026-06-02): 1766 examples (1765 contact-positive), pos_total=41394 neg_total=2466, 1987.9s elapsed
+  chunk 42 (synth_room_1/2026-06-02): 29 examples (14 contact-positive), pos_total=41408 neg_total=2481, 2070.6s elapsed
+  chunk 43 (synth_room_1/2026-06-02): 1310 examples (1309 contact-positive), pos_total=42717 neg_total=2482, 2071.0s elapsed
+  chunk 44 (synth_room_1/2026-06-02): 1217 examples (1202 contact-positive), pos_total=43919 neg_total=2497, 2132.3s elapsed
+  chunk 45 (synth_room_1/2026-06-02): 37 examples (36 contact-positive), pos_total=43955 neg_total=2498, 2188.3s elapsed
+  chunk 46 (synth_room_1/2026-06-02): 2128 examples (2127 contact-positive), pos_total=46082 neg_total=2499, 2189.6s elapsed
+  chunk 47 (synth_room_1/2026-06-02): 488 examples (487 contact-positive), pos_total=46569 neg_total=2500, 2277.9s elapsed
+  chunk 48 (synth_room_1/2026-06-02): 153 examples (138 contact-positive), pos_total=46707 neg_total=2515, 2298.2s elapsed
+  chunk 49 (synth_room_1/2026-06-02): 1653 examples (1652 contact-positive), pos_total=48359 neg_total=2516, 2304.0s elapsed
+  chunk 50 (synth_room_1/2026-06-02): 1735 examples (1734 contact-positive), pos_total=50093 neg_total=2517, 2373.3s elapsed
+  [checkpoint] saved after 50 chunks -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_balanced\thermo_x3d_detector\Waveshare_26984.thalg
+  chunk 51 (synth_room_1/2026-06-02): 1683 examples (1682 contact-positive), pos_total=51775 neg_total=2518, 2445.2s elapsed
+  chunk 52 (synth_room_1/2026-06-02): 309 examples (308 contact-positive), pos_total=52083 neg_total=2519, 2514.1s elapsed
+  chunk 53 (synth_room_1/2026-06-02): 312 examples (311 contact-positive), pos_total=52394 neg_total=2520, 2526.2s elapsed
+  chunk 54 (synth_room_1/2026-06-02): 691 examples (676 contact-positive), pos_total=53070 neg_total=2535, 2539.0s elapsed
+  chunk 55 (synth_room_1/2026-06-02): 946 examples (945 contact-positive), pos_total=54015 neg_total=2536, 2567.5s elapsed
+  chunk 56 (synth_room_1/2026-06-02): 1736 examples (1735 contact-positive), pos_total=55750 neg_total=2537, 2605.9s elapsed
+  chunk 57 (synth_room_1/2026-06-02): 1073 examples (1072 contact-positive), pos_total=56822 neg_total=2538, 2677.1s elapsed
+Traceback (most recent call last):
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\train_balanced_corpus.py", line 310, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\train_balanced_corpus.py", line 256, in main
+    return _run(args)
+           ^^^^^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\train_balanced_corpus.py", line 292, in _run
+    train_contact_balanced(
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\train_balanced_corpus.py", line 197, in train_contact_balanced
+    det.fit(proc_chunk, events_chunk)
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\thermal_algorithms\contact_detection\thermo_x3d.py", line 325, in fit
+    raise ValueError(
+ValueError: fit() produced no windows (need ≥ T=16 frames).
+DONE_EXIT_1 

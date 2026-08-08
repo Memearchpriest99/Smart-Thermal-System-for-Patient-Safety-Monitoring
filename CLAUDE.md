@@ -250,8 +250,10 @@ human/contact). `scripts/train_full_corpus.py` is the entrypoint that fits all o
   ≥4 heated targets at known floor coordinates per camera. Synthetic homographies are still used
   in demos; `image_annotator`'s Homography Calibration dialog produces a real one per session but
   no real H matrices have been wired into the full-corpus training run yet.
-- **OtsuFireDetector** and **GeometricContactDetector** are rule-based — no training needed, but
-  thresholds (`t_ign`, `t_fire`, `delta_m`) haven't been validated against the full dataset yet.
+- **OtsuFireDetector**'s `t_ign` is now data-calibrated (`scripts/calibrate_otsu_thresholds.py`,
+  2026-08-08 — see item 6 below); `t_fire`/`a_limit` remain EDA guesses (calibration found them
+  empirically inert on this corpus, see the script's grid). **GeometricContactDetector** is still
+  rule-based with `delta_m` unvalidated against the full dataset.
 
 ---
 
@@ -277,8 +279,17 @@ human/contact). `scripts/train_full_corpus.py` is the entrypoint that fits all o
 5. **Homography for contact detection** — synthetic homographies are used in all demos/training;
    real H matrices require the on-site Hot-Point Calibration procedure (`image_annotator` can
    produce one per session, but none is wired into `train_full_corpus.py` yet).
-6. **Threshold calibration** — `OtsuFireDetector` defaults: `t_ign=45°C`, `t_fire=60°C`,
-   `a_limit≈3%` of frame. These were derived from initial EDA and haven't been validated against
-   the full dataset.
-7. **Restricted area zones** — the pipeline supports `restricted=True/False` globally; per-camera
-   restriction or floor-polygon containment checks are not yet implemented.
+6. **Threshold calibration — DONE for `OtsuFireDetector.t_ign` (2026-08-08).**
+   `scripts/calibrate_otsu_thresholds.py` grid-searches t_ign/t_fire/a_limit against ~51k frames
+   sampled the same way as `FireSVMDetector`'s full-corpus training, restricted to precision>=0.8
+   (an unconstrained F1-only search degenerates to predicting fire on nearly every frame — F1 never
+   penalizes false positives via true negatives — rejected as operationally useless; see
+   `reports/otsu_threshold_calibration.json`). New default `t_ign=41.5°C` (was `45°C`, never
+   validated); held-out result on `fire_test_scenes`: 79.7% acc / 83.0% prec / 39.2% rec / 53.2% F1
+   / 7.0% mean IoU, vs. the uncalibrated default's 78.4% / 100% / 26.8% / 42.3% / 4.5% — a real
+   improvement (+12.3pp F1/recall for -17pp precision, still only ~3.4% false-alarm rate). `t_fire`
+   (`60°C`) and `a_limit` (`≈3%` of frame) are UNCHANGED — calibration found both empirically inert
+   across their whole tested range at the validated `t_ign` (every real hot blob in this corpus is
+   small, <0.5% of frame, so the two-tier ignition/potential-fire split barely engages its second
+   branch here) — not re-validated in the sense of "confirmed optimal", just "no data-driven reason
+   to move them". `GeometricContactDetector`'s `delta_m` remains unvalidated.

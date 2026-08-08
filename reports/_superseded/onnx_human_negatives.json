@@ -16,57 +16,15 @@
     "3pplhedroncolider"
   ],
   "onnxruntime_providers": {
-    "FireSVMDetector": [
-      "CPUExecutionProvider"
-    ],
     "HOGSVMDetector": [
-      "CUDAExecutionProvider",
       "CPUExecutionProvider"
     ],
     "MobileNetSSDDetector": [
       "CUDAExecutionProvider",
       "CPUExecutionProvider"
-    ],
-    "MVSTGCNDetector": [
-      "CUDAExecutionProvider",
-      "CPUExecutionProvider"
     ]
   },
   "results": [
-    {
-      "detector_name": "FireSVMDetector",
-      "variant": "onnx_fp32",
-      "task": "fire",
-      "n_frames": 1893,
-      "accuracy": 0.716323296354992,
-      "precision": 0.5753424657534246,
-      "recall": 0.15026833631484796,
-      "f1": 0.23829787234042557,
-      "mean_iou": null,
-      "mean_inference_ms": 1.8173039299197271,
-      "p95_inference_ms": 1.6480099988257277,
-      "tp": 84,
-      "tn": 1272,
-      "fp": 62,
-      "fn": 475
-    },
-    {
-      "detector_name": "MVSTGCNDetector",
-      "variant": "onnx_fp32",
-      "task": "contact",
-      "n_frames": 470,
-      "accuracy": 0.7404255319148936,
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "mean_iou": null,
-      "mean_inference_ms": 23.032408260777352,
-      "p95_inference_ms": 25.913045000561393,
-      "tp": 0,
-      "tn": 348,
-      "fp": 0,
-      "fn": 122
-    },
     {
       "detector_name": "HOGSVMDetector",
       "variant": "onnx_fp32",

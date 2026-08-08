@@ -31,15 +31,33 @@ sequences (e.g., when switching rooms or resuming after a gap).
 
 Default thresholds
 ------------------
-Based on §4.4.4 and the EDA in §5.2:
-  t_ign   = 45 °C   (lower bound for concentrated ignition sources)
-  t_fire  = 60 °C   (higher cutoff for larger heat sources)
-  a_limit = auto    (≈3% of frame pixels; ~23 px for MLX, ~149 px for Waveshare)
+t_ign is data-calibrated (scripts/calibrate_otsu_thresholds.py, 2026-08-08); t_fire/
+a_limit are the original EDA guesses from §4.4.4/§5.2, kept because calibration found
+them empirically INERT across their whole tested range at the validated t_ign — every
+genuine hot blob in this corpus is small (<0.5% of frame), so the two-tier ignition/
+potential-fire split barely engages its second branch here; there is no data-driven
+reason to move t_fire/a_limit from their original values.
+  t_ign   = 41.5 °C  (grid-searched: 40 data-driven candidates x 7 a_limit fractions,
+                      restricted to precision>=0.8, ranked by F1, against ~51k frames
+                      sampled the same way FireSVMDetector's full-corpus training is
+                      sampled — see reports/otsu_threshold_calibration.json for the
+                      full grid, including the rejected unconstrained-F1 optimum, which
+                      degenerates to predicting fire on nearly every frame since F1 alone
+                      never penalizes false positives via true negatives)
+  t_fire  = 60 °C    (higher cutoff for larger heat sources — EDA guess, unchanged)
+  a_limit = auto     (≈3% of frame pixels; ~23 px for MLX, ~149 px for Waveshare — EDA
+                      guess, unchanged)
   delta_t = 1.0 s
   k       = ⌊1.0 × 8⌋ = 8 frames  (for MLX90640 at 8 Hz)
   tau_step = 4 frames
   T_measure = 8.0 s
   S_threshold = 3
+
+Held-out result on fire_test_scenes (real stateful predict(), evaluate_fire_timed):
+calibrated t_ign=41.5 reaches 79.7% accuracy / 83.0% precision / 39.2% recall / 53.2% F1
+/ 7.0% mean IoU, vs. the previously-never-measured uncalibrated t_ign=45.0's 78.4% / 100%
+/ 26.8% / 42.3% / 4.5% — calibration recovered +12.3pp F1 and +12.3pp recall for -17pp
+precision (still only a ~3.4% false-alarm rate: 45/1334 negative frames).
 
 All temporal parameters remain user-tunable as the project moves to field testing.
 """
@@ -156,7 +174,7 @@ class OtsuFireDetector(FireDetector):
         sensor_profile: SensorProfile,
         *,
         # Stage 2 thresholds
-        t_ign: float = 45.0,
+        t_ign: float = 41.5,
         t_fire: float = 60.0,
         a_limit: Optional[int] = None,
         # Stage 3 temporal
@@ -177,7 +195,10 @@ class OtsuFireDetector(FireDetector):
             sensor_profile: REQUIRED. Provides noise_floor_c (ΔT_nom) and
                 sample_rate_hz (used to convert Δt → frame lag k).
             t_ign: T_ign in °C — lower threshold for a small concentrated
-                heat source (ignition source). Default 45 °C per report.
+                heat source (ignition source). Default 41.5 °C, data-calibrated
+                (see scripts/calibrate_otsu_thresholds.py and the module
+                docstring's "Default thresholds" section) — supersedes the
+                original never-validated 45 °C EDA guess.
             t_fire: T_fire in °C — upper threshold for a large heat source
                 (Potential Fire). Default 60 °C per report.
             a_limit: A_limit in pixels — spatial cutoff between Ignition Source

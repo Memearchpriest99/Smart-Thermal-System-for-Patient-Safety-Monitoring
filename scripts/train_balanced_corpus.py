@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+"""Balanced (50/50) training driver for the 5 detectors that get an actual
+fit()/chunked-fit() retrain in the balanced-training pass (the other 2 in
+scope, OtsuFireDetector/AdaptiveThresholdDetector, are is_trainable=False --
+they get calibrated instead, via scripts/calibrate_otsu_thresholds.py
+--balanced / scripts/calibrate_adaptive_threshold.py --balanced).
+MVSTGCNDetector is out of scope entirely (project owner's call -- "useless,
+leave as is").
+
+Fire:    FireSVMDetector on thermal_algorithms.training.balance.
+         build_balanced_fire_pool (waveshare fire-train scenes in full +
+         a bounded synth draw, then resampled 50/50).
+Human:   HOGSVMDetector + MobileNetSSDDetector on the SAME
+         build_balanced_human_pool output (waveshare-only -- synth has no
+         bounding boxes, ever; this pool is capped by the scarce negative
+         class, ~800-900 frames total, so it is MUCH smaller than the
+         natural-ratio training set -- a real, disclosed trade-off, not a
+         bug, see thermal_algorithms/training/balance.py's docstring).
+Contact: ThermoX3DDetector via thermal_algorithms.training.balance.
+         iter_balanced_contact_runs -- a chunked fit() loop over curated
+         contact-positive-containing runs + matching negative-only runs
+         (frame-level resampling would corrupt this detector's T-frame
+         sliding-window contiguity -- see that function's docstring).
+         By far the most expensive part of this script; time-boxed with a
+         hard --contact-time-budget-hours cutoff, same pattern as
+         scripts/train_thermox3d_subset.py, and checkpointed incrementally
+         (ThermoX3DDetector.fit() itself only saves once, at the end).
+
+All checkpoints register to a NEW root (--out, default checkpoints_balanced/)
+-- never the same root as checkpoints_full_corpus/, so this can never
+overwrite the natural-ratio weights the existing report is built on.
+
+Usage::
+
+    python scripts/train_balanced_corpus.py --skip-contact   # fire+human only
+    python scripts/train_balanced_corpus.py --only-contact
+"""
+from __future__ import annotations
+
+import argparse
+import faulthandler
+import logging
+import signal
+import sys
+import time
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
+LOG_DIR = _REPO_ROOT / "logs"
+logger = logging.getLogger("train_balanced_corpus")
+
+
+def _setup_diagnostics() -> Path:
+    """Mirrors train_full_corpus.py's _setup_diagnostics -- faulthandler for
+    native/silent crashes, signal logging for external stops."""
+    LOG_DIR.mkdir(exist_ok=True)
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    diag_path = LOG_DIR / f"train_balanced_corpus_diag_{ts}.log"
+    diag_fh = open(diag_path, "a", buffering=1, encoding="utf-8")
+    faulthandler.enable(file=diag_fh, all_threads=True)
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler(diag_fh)
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    logger.addHandler(handler)
+    logger.propagate = False
+
+    def _on_signal(signum, _frame):
+        logger.warning(f"received signal {signum} ({signal.Signals(signum).name}) -- exiting")
+        diag_fh.flush()
+        raise SystemExit(128 + signum)
+
+    for sig_name in ("SIGINT", "SIGTERM", "SIGBREAK"):
+        sig = getattr(signal, sig_name, None)
+        if sig is not None:
+            try:
+                signal.signal(sig, _on_signal)
+            except (ValueError, OSError):
+                pass
+
+    print(f"Diagnostics (crash/signal/hang traces) -> {diag_path}", flush=True)
+    return diag_path
+
+
+from thermal_algorithms.core.checkpoints import CheckpointRegistry  # noqa: E402
+from thermal_algorithms.core.sensor_profile import WAVESHARE_26984  # noqa: E402
+from thermal_algorithms.preprocessing.global_norm_pipeline import GlobalNormPreprocessor  # noqa: E402
+from thermal_algorithms.fire_detection.fire_svm import FireSVMDetector  # noqa: E402
+from thermal_algorithms.human_detection.hog_svm import HOGSVMDetector  # noqa: E402
+from thermal_algorithms.human_detection.mobilenet_ssd import MobileNetSSDDetector  # noqa: E402
+from thermal_algorithms.contact_detection.thermo_x3d import ThermoX3DDetector  # noqa: E402
+from thermal_algorithms.training import DatasetIndex, build_task_split  # noqa: E402
+from thermal_algorithms.training.balance import (  # noqa: E402
+    build_balanced_fire_pool,
+    build_balanced_human_pool,
+    iter_balanced_contact_runs,
+)
+
+DATA_ROOT = _REPO_ROOT.parent / "data"
+DEFAULT_OUT = _REPO_ROOT / "checkpoints_balanced"
+
+
+# ---------------------------------------------------------------------------
+# Fire
+# ---------------------------------------------------------------------------
+
+def train_fire_balanced(data_root: Path, waveshare_index: DatasetIndex, train_scenes: set[str],
+                         preprocessor: GlobalNormPreprocessor, registry: CheckpointRegistry,
+                         *, synth_per_camera_samples: int, max_total, seed: int) -> FireSVMDetector:
+    print("\n=== Training FireSVMDetector on a balanced (50/50) pool ===")
+    pool, counts = build_balanced_fire_pool(
+        data_root, waveshare_index, train_scenes,
+        synth_per_camera_samples=synth_per_camera_samples, max_total=max_total, seed=seed,
+    )
+    print(f"  balanced fire pool: {counts}")
+    X = [preprocessor.predict(frame) for frame, _alert in pool]
+    y = [alert for _frame, alert in pool]
+
+    # class_weight left at None (not "balanced") -- balance_examples() already
+    # resampled to exactly 50/50 at the sample level, so sklearn's loss
+    # reweighting would just compute weight=1.0 for both classes anyway.
+    det = FireSVMDetector(sensor_profile=WAVESHARE_26984, class_weight=None)
+    t0 = time.time()
+    logger.info("FireSVMDetector.fit() starting (balanced)")
+    det.fit(X, y)
+    logger.info("FireSVMDetector.fit() returned")
+    print(f"  fit() done in {time.time() - t0:.1f}s")
+    print(f"  saved -> {registry.register(det)}")
+    return det
+
+
+# ---------------------------------------------------------------------------
+# Human
+# ---------------------------------------------------------------------------
+
+def train_human_balanced(waveshare_index: DatasetIndex, train_scenes: set[str],
+                          preprocessor: GlobalNormPreprocessor, registry: CheckpointRegistry,
+                          *, max_total, seed: int, mobilenet_epochs) -> dict:
+    print("\n=== Training human detectors on a balanced (50/50) pool ===")
+    pool, counts = build_balanced_human_pool(waveshare_index, train_scenes, max_total=max_total, seed=seed)
+    print(f"  balanced human pool: {counts}")
+    examples = [(preprocessor.predict(frame), dets) for frame, dets in pool]
+
+    detectors = {}
+
+    hog = HOGSVMDetector(sensor_profile=WAVESHARE_26984, class_weight=None)
+    t0 = time.time()
+    hog.fit(examples)
+    print(f"  HOGSVMDetector fit() done in {time.time() - t0:.1f}s -- saved -> {registry.register(hog)}")
+    detectors["hog_svm"] = hog
+
+    mnet = MobileNetSSDDetector(sensor_profile=WAVESHARE_26984)
+    t0 = time.time()
+    mnet.fit(examples, n_epochs=mobilenet_epochs)
+    print(f"  MobileNetSSDDetector fit() done in {time.time() - t0:.1f}s -- saved -> {registry.register(mnet)}")
+    detectors["mobilenet_ssd"] = mnet
+
+    return detectors
+
+
+# ---------------------------------------------------------------------------
+# Contact -- balanced chunked training (ThermoX3D only)
+# ---------------------------------------------------------------------------
+
+def train_contact_balanced(data_root: Path, waveshare_index: DatasetIndex, train_scenes: set[str],
+                            preprocessor: GlobalNormPreprocessor, registry: CheckpointRegistry,
+                            *, target_positive_frames: int, target_negative_frames: int,
+                            time_budget_hours: float, checkpoint_every: int,
+                            class_weight, seed: int) -> ThermoX3DDetector:
+    print("\n=== Training ThermoX3DDetector on balanced (50/50) contact runs ===")
+    det = ThermoX3DDetector(sensor_profile=WAVESHARE_26984, class_weight=class_weight, n_epochs=1)
+
+    time_budget_s = time_budget_hours * 3600.0
+    t0 = time.time()
+    n_chunks = n_pos_frames = n_neg_frames = 0
+    stopped_reason = "target reached"
+
+    for source, frames_chunk, events_chunk in iter_balanced_contact_runs(
+        data_root, waveshare_index, train_scenes,
+        target_positive_frames=target_positive_frames,
+        target_negative_frames=target_negative_frames,
+        seed=seed,
+    ):
+        elapsed = time.time() - t0
+        if elapsed > time_budget_s:
+            stopped_reason = f"time budget exceeded ({elapsed:.0f}s > {time_budget_s:.0f}s)"
+            break
+
+        proc_chunk = [tuple(preprocessor.predict(f) for f in triplet) for triplet in frames_chunk]
+        det.fit(proc_chunk, events_chunk)
+        n_chunks += 1
+        n_pos = sum(1 for e in events_chunk if e.any_contact)
+        n_pos_frames += n_pos
+        n_neg_frames += (len(events_chunk) - n_pos)
+        print(f"  chunk {n_chunks} ({source}): {len(frames_chunk)} examples "
+              f"({n_pos} contact-positive), pos_total={n_pos_frames} neg_total={n_neg_frames}, "
+              f"{elapsed:.1f}s elapsed", flush=True)
+
+        if n_chunks % checkpoint_every == 0:
+            path = registry.register(det)
+            print(f"  [checkpoint] saved after {n_chunks} chunks -> {path}", flush=True)
+
+    path = registry.register(det)
+    print(f"\nThermoX3DDetector done ({stopped_reason}) -- {n_chunks} chunks, "
+          f"{n_pos_frames} positive / {n_neg_frames} negative frames -- saved -> {path}")
+    return det
+
+
+# ---------------------------------------------------------------------------
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--data-root", default=str(DATA_ROOT))
+    ap.add_argument("--out", default=str(DEFAULT_OUT))
+    ap.add_argument("--seed", type=int, default=0)
+
+    ap.add_argument("--fire-synth-per-camera-samples", type=int, default=1500,
+                     help="Mirrors train_full_corpus.py's FireSVMDetector default, applied "
+                          "BEFORE balancing (so the pre-balance pool has the same scale).")
+    ap.add_argument("--fire-max-total", type=int, default=None)
+    ap.add_argument("--human-max-total", type=int, default=None,
+                     help="Cap on the balanced human pool. None = use everything available "
+                          "(capped by the scarce negative class regardless, ~800-900 frames "
+                          "total -- see build_balanced_human_pool).")
+    ap.add_argument("--mobilenet-epochs", type=int, default=None,
+                     help="None = MobileNetSSDDetector's own default (50).")
+
+    ap.add_argument("--contact-target-positive-frames", type=int, default=25000)
+    ap.add_argument("--contact-target-negative-frames", type=int, default=25000)
+    ap.add_argument("--contact-time-budget-hours", type=float, default=5.0)
+    ap.add_argument("--contact-checkpoint-every", type=int, default=5)
+    ap.add_argument("--contact-class-weight", nargs=2, type=float, default=None,
+                     metavar=("NO_CONTACT", "CONTACT"),
+                     help="Fixed (w_no_contact, w_contact) pair. Balanced data means this "
+                          "should usually be left at the default (1.0, 1.0) -- unlike the "
+                          "natural-ratio run, there's no severe imbalance left to correct for.")
+
+    ap.add_argument("--skip-fire", action="store_true")
+    ap.add_argument("--skip-human", action="store_true")
+    ap.add_argument("--skip-contact", action="store_true")
+    ap.add_argument("--only-contact", action="store_true", help="Shorthand for --skip-fire --skip-human.")
+    args = ap.parse_args()
+    if args.only_contact:
+        args.skip_fire = True
+        args.skip_human = True
+
+    _setup_diagnostics()
+    try:
+        return _run(args)
+    except BaseException:
+        logger.exception("main() crashed")
+        raise
+
+
+def _run(args) -> int:
+    data_root = Path(args.data_root)
+    if not data_root.is_dir():
+        raise SystemExit(f"data root not found: {data_root}")
+
+    waveshare_index = DatasetIndex(data_root / "waveshare_work", sensor_profile=WAVESHARE_26984, fps=8.0)
+    fire_train_scenes, _ = build_task_split(waveshare_index.labeled_sessions(), task="fire")
+    human_train_scenes, _ = build_task_split(waveshare_index.labeled_sessions(), task="human")
+    contact_train_scenes, _ = build_task_split(waveshare_index.labeled_sessions(), task="contact")
+
+    preprocessor = GlobalNormPreprocessor(WAVESHARE_26984)
+    preprocessor.fit([])
+    registry = CheckpointRegistry(root=args.out)
+    print(f"Checkpoints -> {registry.root}")
+
+    if not args.skip_fire:
+        train_fire_balanced(
+            data_root, waveshare_index, fire_train_scenes, preprocessor, registry,
+            synth_per_camera_samples=args.fire_synth_per_camera_samples,
+            max_total=args.fire_max_total, seed=args.seed,
+        )
+
+    if not args.skip_human:
+        train_human_balanced(
+            waveshare_index, human_train_scenes, preprocessor, registry,
+            max_total=args.human_max_total, seed=args.seed, mobilenet_epochs=args.mobilenet_epochs,
+        )
+
+    if not args.skip_contact:
+        class_weight = tuple(args.contact_class_weight) if args.contact_class_weight else None
+        train_contact_balanced(
+            data_root, waveshare_index, contact_train_scenes, preprocessor, registry,
+            target_positive_frames=args.contact_target_positive_frames,
+            target_negative_frames=args.contact_target_negative_frames,
+            time_budget_hours=args.contact_time_budget_hours,
+            checkpoint_every=args.contact_checkpoint_every,
+            class_weight=class_weight, seed=args.seed,
+        )
+
+    print("\nAvailable checkpoints:")
+    for algo, profile in registry.list_available():
+        print(f"  {algo} / {profile or 'invariant'}")
+
+    logger.info("main() completed normally")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

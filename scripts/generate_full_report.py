@@ -92,27 +92,37 @@ DETECTOR_CAVEATS = {
         "recall level should be weighed before relying on FireSVMDetector alone."
     ),
     "HOGSVMDetector": (
-        "Reads as a perfect 100% across accuracy/precision/recall/F1 -- but the "
-        "held-out human-detection test scenes (2ppl_hug, 3pplhedroncolider, "
-        "man_light_cig_1) contain zero ground-truth-negative frames (confirmed: "
-        "tp=1344, tn=0, fp=0, fn=0 in the raw counts). With no negative frame in "
-        "the test set, precision/accuracy are mathematically forced toward 100% "
-        "regardless of model quality -- these numbers validate only \"did it ever "
-        "miss a person during continuous multi-person scenes,\" not false-positive "
-        "suppression in an empty room. Mean IoU (0.57) is the more informative "
-        "localization-quality number here. Also the slowest detector in this "
-        "report by far (~1.6-1.8s/frame): its multi-scale, per-pixel-stride "
-        "sliding-window search is inherently CPU-heavy and does not benefit from "
-        "a GPU."
+        "UPDATED 2026-08-08: the original held-out human-detection test scenes "
+        "(2ppl_hug, 3pplhedroncolider, man_light_cig_1) contained zero "
+        "ground-truth-negative frames, so an earlier version of this report read "
+        "as a mathematically-forced 100% across accuracy/precision/recall/F1 -- "
+        "not a real measurement of false-positive suppression. Re-evaluated with "
+        "empty_room added to the test set (real negative frames): recall stays "
+        "100% (never misses a person), but precision drops to 78.0% and accuracy "
+        "to 78.1% -- raw counts tp=1344, tn=5, fp=379, fn=0 mean **HOGSVM false-"
+        "alarms on 379/384 (98.7%) of truly empty frames**. Its dense, "
+        "per-pixel-stride multi-scale sliding window produces some candidate box "
+        "on nearly every frame regardless of content -- this was a real, "
+        "previously-invisible weakness, not a new regression. Mean IoU (0.57) is "
+        "still the more informative localization-quality number. Also the "
+        "slowest detector in this report by far (~1.6-2.3s/frame, CPU-only, does "
+        "not benefit from a GPU)."
     ),
     "MobileNetSSDDetector": (
-        "Same test-set caveat as HOGSVMDetector above applies here too (tp=1344, "
-        "tn=0, fp=0, fn=0 -- zero negative frames in the held-out scenes, so "
-        "100% accuracy/precision/recall does not by itself demonstrate "
-        "false-positive robustness). Its mean IoU (0.76) is meaningfully better "
-        "than HOGSVMDetector's (0.57), and its native-PyTorch GPU inference "
-        "(~3.7ms/frame) is roughly 475x faster -- the stronger of the two human "
-        "detectors on every axis this report can actually measure."
+        "UPDATED 2026-08-08: same test-set fix as HOGSVMDetector above. "
+        "Re-evaluated with empty_room added: recall stays 100%, but precision is "
+        "96.6% and accuracy 97.2% -- raw counts tp=1344, tn=336, fp=48, fn=0, "
+        "i.e. it false-alarms on 48/384 (12.5%) of truly empty frames -- far "
+        "better than HOGSVMDetector's 98.7% but not the false-positive-proof "
+        "detector the old zero-negative test set implied. Mean IoU (0.76) "
+        "remains meaningfully better than HOGSVMDetector's (0.57), and native-"
+        "PyTorch GPU inference (~3.9ms/frame) is roughly 580x faster -- still "
+        "the stronger of the two human detectors on every axis this report can "
+        "measure, just not literally flawless. The ONNX and fp16/bf16/int8 "
+        "tables below now reflect this same corrected test set too (re-run with "
+        "--extra-human-test-scenes empty_room) -- false-alarm rate holds in the "
+        "12-15% range across every precision/format variant, so this isn't an "
+        "artifact of fp32 specifically."
     ),
     "MVSTGCNDetector": (
         "Precision/recall/F1 are all 0% (raw counts: tp=0, tn=348, fp=0, "
@@ -149,10 +159,32 @@ DETECTOR_CAVEATS = {
         "be added once training and its held-out evaluation complete; they are "
         "intentionally not fabricated or estimated here."
     ),
+    "OtsuFireDetector": (
+        "is_trainable=False and fit() is a documented no-op -- t_ign/t_fire/"
+        "a_limit were never anything but EDA guesses until this report: "
+        "scripts/calibrate_otsu_thresholds.py grid-searches them against ~51k "
+        "frames sampled the same way as FireSVMDetector's full-corpus training, "
+        "restricted to precision>=0.8 before ranking by F1 (an unconstrained "
+        "F1-only search degenerates to predicting fire on nearly every frame -- "
+        "F1 never penalizes false positives via true negatives -- rejected as "
+        "operationally useless; see reports/otsu_threshold_calibration.json for "
+        "the full grid). Only t_ign moved (45->41.5C): t_fire/a_limit are "
+        "empirically INERT across their whole tested range at the validated "
+        "t_ign, because every genuine hot blob in this corpus is small (<0.5% "
+        "of frame) -- the two-tier ignition/potential-fire split barely "
+        "engages its second branch here, so calibration provides no evidence "
+        "to move them from their original values. Held-out result below is "
+        "the calibrated t_ign; for reference the never-validated original "
+        "default reached 78.4% acc / 100% prec / 26.8% rec / 42.3% F1 on the "
+        "identical split -- calibration recovered +12.3pp F1/recall for -17pp "
+        "precision (still only ~3.4% false-alarm rate, 45/1334 negatives). "
+        "Unlike FireSVMDetector, this detector's predict() carries a real "
+        "bbox, so mean IoU here is genuinely measured, not N/A."
+    ),
 }
 
 DETECTOR_ORDER = [
-    "FireSVMDetector", "HOGSVMDetector", "MobileNetSSDDetector",
+    "FireSVMDetector", "OtsuFireDetector", "HOGSVMDetector", "MobileNetSSDDetector",
     "MVSTGCNDetector", "ThermoX3DDetector",
 ]
 VARIANT_ORDER = ["fp32_baseline", "onnx_fp32", "fp16", "bf16", "int8"]
