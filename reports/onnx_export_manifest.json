@@ -66,20 +66,5 @@
       "logits (2-class, softmax for probability)"
     ],
     "scope": "Graph-conv body only, at a FIXED representative actor count (max_actors=5, mask-padded exactly as real inference does). Detection + Kalman tracking + homography projection + graph construction (thermal_algorithms.contact_detection.mv_stgcn / multi_view/*) stay in Python -- not neural-net ops."
-  },
-  "ThermoX3DDetector": {
-    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\thermo_x3d_detector.onnx",
-    "input_shape": [
-      1,
-      3,
-      16,
-      62,
-      80
-    ],
-    "input_dtype": "float32",
-    "outputs": [
-      "logits (2-class, softmax for probability)"
-    ],
-    "scope": "Full 3D-CNN body. Per-camera frame buffering + global normalization stay in Python."
   }
 }

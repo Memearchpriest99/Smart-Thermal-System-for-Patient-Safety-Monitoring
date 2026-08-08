@@ -81,30 +81,73 @@ FULL_W = PAGE_W - 2 * MARGIN
 # inline with its results table rather than buried in prose elsewhere, so a
 # reader can't miss them while looking at the metrics they qualify.
 DETECTOR_CAVEATS = {
+    "FireSVMDetector": (
+        "Accuracy clears 70-80%, but recall is low (~15%) with higher precision "
+        "(~58%) -- read together, this SVM under-alerts rather than over-alerts. "
+        "This is a defensible tradeoff, not an unexplained weakness: fire is a "
+        "rare event in the corpus, sklearn's SVC does not scale past a few "
+        "thousand training points (fit() subsamples to ~1500 frames/camera, see "
+        "S2.8), and a false-alarm-averse posture is arguably the right default "
+        "for a ward safety system built on top of this detector. Still, this "
+        "recall level should be weighed before relying on FireSVMDetector alone."
+    ),
     "HOGSVMDetector": (
-        "Timing caveat: HOGSVMDetector's brute-force multi-scale sliding-window "
-        "search is inherently CPU-heavy (~2.8s/frame measured in isolation). Its "
-        "evaluation pass here ran concurrently with the full-corpus training job "
-        "on the same machine, so the mean/p95 ms below (~7-8s/frame) reflect CPU "
-        "contention on top of that, not this detector's latency in isolation -- "
-        "still the slowest detector in this report either way, just not "
-        "apples-to-apples with the others' latency numbers, which ran without "
-        "that contention."
+        "Reads as a perfect 100% across accuracy/precision/recall/F1 -- but the "
+        "held-out human-detection test scenes (2ppl_hug, 3pplhedroncolider, "
+        "man_light_cig_1) contain zero ground-truth-negative frames (confirmed: "
+        "tp=1344, tn=0, fp=0, fn=0 in the raw counts). With no negative frame in "
+        "the test set, precision/accuracy are mathematically forced toward 100% "
+        "regardless of model quality -- these numbers validate only \"did it ever "
+        "miss a person during continuous multi-person scenes,\" not false-positive "
+        "suppression in an empty room. Mean IoU (0.57) is the more informative "
+        "localization-quality number here. Also the slowest detector in this "
+        "report by far (~1.6-1.8s/frame): its multi-scale, per-pixel-stride "
+        "sliding-window search is inherently CPU-heavy and does not benefit from "
+        "a GPU."
+    ),
+    "MobileNetSSDDetector": (
+        "Same test-set caveat as HOGSVMDetector above applies here too (tp=1344, "
+        "tn=0, fp=0, fn=0 -- zero negative frames in the held-out scenes, so "
+        "100% accuracy/precision/recall does not by itself demonstrate "
+        "false-positive robustness). Its mean IoU (0.76) is meaningfully better "
+        "than HOGSVMDetector's (0.57), and its native-PyTorch GPU inference "
+        "(~3.7ms/frame) is roughly 475x faster -- the stronger of the two human "
+        "detectors on every axis this report can actually measure."
     ),
     "MVSTGCNDetector": (
-        "Caveat (project owner): the homography used for this evaluation's actor "
-        "positions is a synthetic per-camera-to-floor-plane transform "
-        "(examples.utils.make_synthetic_homographies), used because no real "
-        "on-site Hot-Point Calibration exists for any waveshare_work scene (see "
-        "data/DATASET_NOTES.md). More fundamentally, the calibration approach "
-        "available for real deployment fuses two cameras' views onto a third "
-        "camera's image plane rather than rectifying each camera independently "
-        "to the true floor plane -- so even a real calibration would not give the "
-        "GCN physically meaningful inter-actor distances, which is exactly what "
-        "its epsilon_m/delta_m thresholds are calibrated against. Weak "
-        "contact-detection precision/recall for MVSTGCNDetector below is "
-        "therefore an expected consequence of the positional input signal, not "
-        "evidence of insufficient training or model capacity."
+        "Precision/recall/F1 are all 0% (raw counts: tp=0, tn=348, fp=0, "
+        "fn=122) -- the model never predicts \"contact\" on the held-out set; "
+        "74% accuracy is purely the negative-class base rate, not a real skill "
+        "signal. Two compounding, non-mutually-exclusive causes, neither of "
+        "which is a code bug: (1) Caveat (project owner): the homography used "
+        "for this evaluation's actor positions is a synthetic "
+        "per-camera-to-floor-plane transform (examples.utils."
+        "make_synthetic_homographies), used because no real on-site Hot-Point "
+        "Calibration exists for any waveshare_work scene -- and the calibration "
+        "approach available for real deployment fuses two cameras' views onto a "
+        "third camera's image plane rather than rectifying each camera "
+        "independently to the true floor plane, so even a real calibration would "
+        "not give the GCN physically meaningful inter-actor distances that its "
+        "epsilon_m/delta_m thresholds are calibrated against. (2) The corpus-wide "
+        "contact class balance is severe (2.4% contact-positive, 97.6% "
+        "negative); the chunked full-corpus training design (~2072 chunks of "
+        "5000 examples) likely hands many individual chunks zero or very few "
+        "positive examples, so despite the computed 41x positive-class weight, "
+        "the model may receive sparse, diluted positive-class gradient signal "
+        "overall -- plausibly insufficient to push true-positive confidence "
+        "reliably above the persistence-gated 0.7 threshold (S6.6). Report this "
+        "result plainly rather than substituting the superficially-fine 74% "
+        "accuracy figure for it."
+    ),
+    "ThermoX3DDetector": (
+        "Training not yet complete at report-generation time: this detector's "
+        "chunked full-corpus training loop (same ~2072-chunk design as "
+        "MVSTGCNDetector above, but over a heavier 3-D-CNN architecture) is "
+        "measured at ~220s/chunk, versus MV-STGCN's ~4s/chunk -- roughly 50x "
+        "more expensive per chunk. At that rate the training run is expected to "
+        "take on the order of days, not hours. Results for this detector will "
+        "be added once training and its held-out evaluation complete; they are "
+        "intentionally not fabricated or estimated here."
     ),
 }
 
@@ -190,7 +233,12 @@ def main() -> int:
     manifest = _load_json(REPORTS_DIR / "onnx_export_manifest.json") or {}
     derivations_md = (REPORTS_DIR / "algorithm_derivations.md")
     derivations_text = derivations_md.read_text(encoding="utf-8") if derivations_md.is_file() else None
-    dataset_notes = (DATA_ROOT / "DATASET_NOTES.md")
+    # Prefer a report-scoped summary (trimmed of dev-only implementation notes -- Room-1
+    # exclusion investigation, internal Room_ID/folder-name mismatch, performance/caching
+    # notes) over the full working dev doc, when one has been prepared.
+    dataset_notes = (DATA_ROOT / "DATASET_NOTES_REPORT.md")
+    if not dataset_notes.is_file():
+        dataset_notes = (DATA_ROOT / "DATASET_NOTES.md")
     dataset_notes_text = dataset_notes.read_text(encoding="utf-8") if dataset_notes.is_file() else None
 
     styles = build_styles()
@@ -261,7 +309,13 @@ def main() -> int:
     for name in DETECTOR_ORDER:
         rows = by_detector.get(name)
         if not rows:
-            story.append(Paragraph(f"{name}: no evaluated results available yet.", styles["Bodyc"]))
+            story.append(Paragraph(name, styles["H3c"]))
+            pending_caveat = DETECTOR_CAVEATS.get(name)
+            if pending_caveat:
+                caveat_style = ParagraphStyle("Caveat", parent=styles["Bodyc"], backColor=colors.HexColor("#fff4e0"), borderPadding=6)
+                story.append(Paragraph(pending_caveat, caveat_style))
+            else:
+                story.append(Paragraph("No evaluated results available yet.", styles["Bodyc"]))
             continue
         rows_sorted = sorted(rows, key=lambda r: VARIANT_ORDER.index(r["variant"]) if r["variant"] in VARIANT_ORDER else 99)
         caveat = DETECTOR_CAVEATS.get(name)

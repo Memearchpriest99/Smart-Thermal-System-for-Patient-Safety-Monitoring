@@ -1,0 +1,9 @@
+Diagnostics (crash/signal/hang traces) -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\logs\train_thermox3d_subset_diag_20260808_112752.log
+waveshare contact split: 14 train scenes / 3 test scenes = ['2ppl_fight', '2ppl_hug', '3pplhedroncolider']
+Checkpoints -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_full_corpus
+  reusing class_weight = (no_contact=0.512, contact=21.164) -- NOT recomputed this run, see script docstring
+  chunk 1/~188 (seen #1, waveshare_train): 2283 examples, 2283 total, 108.7s elapsed
+  chunk 2/~188 (seen #12, synth_room_1/2026-06-02): 5000 examples, 7283 total, 348.2s elapsed
+  chunk 3/~188 (seen #23, synth_room_1/2026-06-02): 5000 examples, 12283 total, 582.5s elapsed
+  chunk 4/~188 (seen #34, synth_room_1/2026-06-02): 5000 examples, 17283 total, 823.6s elapsed
+  chunk 5/~188 (seen #45, synth_room_1/2026-06-02): 5000 examples, 22283 total, 1073.7s elapsed

@@ -61,8 +61,13 @@ from thermal_algorithms.training.full_corpus import (
     iter_synth_sessions,
     stream_contact_examples,
     stream_fire_examples,
+    stream_fire_examples_subsampled,
 )
-from thermal_algorithms.training.split import session_train_test_split
+from thermal_algorithms.training.split import (
+    CONTACT_TEST_SCENES,
+    build_task_split,
+    session_train_test_split,
+)
 from thermal_algorithms.training.trainer import Trainer
 from thermal_algorithms.training.eval_report import (
     TimedEvalResult,
@@ -136,7 +141,10 @@ __all__ = [
     "iter_synth_sessions",
     "stream_contact_examples",
     "stream_fire_examples",
+    "stream_fire_examples_subsampled",
     # split
+    "CONTACT_TEST_SCENES",
+    "build_task_split",
     "session_train_test_split",
     # trainer
     "Trainer",

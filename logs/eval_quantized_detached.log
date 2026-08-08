@@ -1,0 +1,20 @@
+Fire test scenes: ['1person cig', '1ppl_single_forever', 'man_light_cig']
+Human test scenes: ['2ppl_hug', '3pplhedroncolider', 'man_light_cig_1']
+Contact test scenes: ['2ppl_fight', '2ppl_hug', '3pplhedroncolider']
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+{'detector_name': 'FireSVMDetector', 'variant': 'int8', 'task': 'fire', 'n_frames': 1893, 'accuracy': 0.716323296354992, 'precision': 0.5753424657534246, 'recall': 0.15026833631484796, 'f1': 0.23829787234042557, 'mean_iou': None, 'mean_inference_ms': 1.9293089219359658, 'p95_inference_ms': 1.1549600003490919, 'tp': 84, 'tn': 1272, 'fp': 62, 'fn': 475}
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+  FAILED HOGSVMDetector int8: Failed to find proper ai.onnx domain
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+{'detector_name': 'MobileNetSSDDetector', 'variant': 'int8', 'task': 'human', 'n_frames': 1344, 'accuracy': 1.0, 'precision': 1.0, 'recall': 1.0, 'f1': 1.0, 'mean_iou': 0.7592910899779464, 'mean_inference_ms': 18.269453523292224, 'p95_inference_ms': 33.075800000369746, 'tp': 1344, 'tn': 0, 'fp': 0, 'fn': 0}
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+{'detector_name': 'MVSTGCNDetector', 'variant': 'int8', 'task': 'contact', 'n_frames': 470, 'accuracy': 0.7404255319148936, 'precision': 0.0, 'recall': 0.0, 'f1': 0.0, 'mean_iou': None, 'mean_inference_ms': 358.42102847832194, 'p95_inference_ms': 454.57107999845897, 'tp': 0, 'tn': 348, 'fp': 0, 'fn': 122}
+{'detector_name': 'MobileNetSSDDetector', 'variant': 'fp16', 'task': 'human', 'n_frames': 1344, 'accuracy': 1.0, 'precision': 1.0, 'recall': 1.0, 'f1': 1.0, 'mean_iou': 0.7605456776911889, 'mean_inference_ms': 5.365031034491129, 'p95_inference_ms': 6.448405000446655, 'tp': 1344, 'tn': 0, 'fp': 0, 'fn': 0}
+{'detector_name': 'MVSTGCNDetector', 'variant': 'fp16', 'task': 'contact', 'n_frames': 470, 'accuracy': 0.7404255319148936, 'precision': 0.0, 'recall': 0.0, 'f1': 0.0, 'mean_iou': None, 'mean_inference_ms': 28.026476304180306, 'p95_inference_ms': 34.75638999971124, 'tp': 0, 'tn': 348, 'fp': 0, 'fn': 122}
+  FAILED ThermoX3DDetector fp16: No checkpoint found at C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_full_corpus\thermo_x3d_detector\Waveshare_26984.thalg. Have you trained and registered ThermoX3DDetector for profile='Waveshare_26984'?
+{'detector_name': 'MobileNetSSDDetector', 'variant': 'bf16', 'task': 'human', 'n_frames': 1344, 'accuracy': 1.0, 'precision': 1.0, 'recall': 1.0, 'f1': 1.0, 'mean_iou': 0.760137263894277, 'mean_inference_ms': 5.04710344822892, 'p95_inference_ms': 6.1339300009422, 'tp': 1344, 'tn': 0, 'fp': 0, 'fn': 0}
+{'detector_name': 'MVSTGCNDetector', 'variant': 'bf16', 'task': 'contact', 'n_frames': 470, 'accuracy': 0.7404255319148936, 'precision': 0.0, 'recall': 0.0, 'f1': 0.0, 'mean_iou': None, 'mean_inference_ms': 23.53812782607945, 'p95_inference_ms': 26.94963000103598, 'tp': 0, 'tn': 348, 'fp': 0, 'fn': 122}
+  FAILED ThermoX3DDetector bf16: No checkpoint found at C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_full_corpus\thermo_x3d_detector\Waveshare_26984.thalg. Have you trained and registered ThermoX3DDetector for profile='Waveshare_26984'?
+
+Saved -> reports\full_corpus_eval_quantized.json
+DONE_EXIT_0 

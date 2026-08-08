@@ -8,7 +8,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Students: Guy Chen, Yaniv Blau, Roy Lieberman. Supervisor: Or Zilberberg. Advisor: Dr. Oshrit Hoffer (Afeka College of Engineering, Tel-Aviv).
 
-**Current phase:** Full-corpus training (Task 3 of `../current_state_and_tasks.md`). Dataset annotation is done — `waveshare_work` has complete real YOLO/contact labels across all 17 scenarios, and the multi-source training layer for `synth_room_1..5` is built and tested. `GlobalNormPreprocessor` won the Task 2 preprocessing comparison against `TatenoPipeline` (`reports/preprocessing_comparison_results.json`) and is what `scripts/train_full_corpus.py` uses. That script has not been run yet — no `checkpoints_full_corpus/` exists. See `../data/DATASET_NOTES.md` for the full, verified-against-disk dataset writeup (schemas, class ratios, why `room-1` is excluded).
+**Current phase:** Full-corpus training (Task 3 of `../current_state_and_tasks.md`). Dataset annotation is done — `waveshare_work` has complete real YOLO/contact labels across all 17 scenarios, and the multi-source training layer for `synth_room_1..5` is built and tested. `GlobalNormPreprocessor` won the Task 2 preprocessing comparison against `TatenoPipeline` (`reports/preprocessing_comparison_results.json`) and is what `scripts/train_full_corpus.py` uses. See `../data/DATASET_NOTES.md` for the full, verified-against-disk dataset writeup (schemas, class ratios, why `room-1` is excluded).
+
+**Training run status (2026-08-08):** `scripts/train_full_corpus.py` runs via the Windows scheduled
+task `ThermalFullCorpusTraining` (see `run_full_corpus_detached.bat`), not a foreground/Bash
+process — background shell tasks in this environment get killed after a bounded duration
+regardless of process health, and the run takes many hours. A run was killed intentionally before
+reaching the contact stage: `MVSTGCNDetector`/`ThermoX3DDetector` each default to `n_epochs=30`
+*inside a single `fit()` call*, and the chunked full-corpus contact-training loop calls `fit()`
+once per ~5000-frame chunk across ~6200+ chunks — meaning the old default would have run ~30
+epochs redundantly on every chunk (measured: 36.1s/chunk for MVSTGCN alone → ~62.2h extrapolated,
+before ThermoX3D, against the scheduled task's 72h execution limit). Fixed via a new
+`--contact-epochs-per-chunk` CLI arg (default 1, threaded into both detectors' constructors) — the
+chunk count itself now provides corpus coverage instead of multiplying epochs by chunks. Not yet
+re-verified with a full end-to-end run; a reboot was requested before the next attempt. No
+`checkpoints_full_corpus/` with real full-corpus weights exists yet.
 
 ---
 
@@ -243,9 +257,15 @@ human/contact). `scripts/train_full_corpus.py` is the entrypoint that fits all o
 
 ## Key open items
 
-1. **Task 3 (full-corpus retrain) hasn't been run** — `scripts/train_full_corpus.py` exists and
-   is tested (`tests/test_full_corpus.py`) but no `checkpoints_full_corpus/` has been produced
-   yet. This is the immediate next step.
+1. **Task 3 (full-corpus retrain) hasn't completed successfully yet** — `scripts/
+   train_full_corpus.py` exists and is tested (`tests/test_full_corpus.py`); a real run was killed
+   partway through (during human-detector training) on 2026-08-08 after finding and fixing a
+   contact-training scalability bug (see "Training run status" above and `--contact-epochs-per-chunk`).
+   No `checkpoints_full_corpus/` with real full-corpus weights exists yet. Next step: re-launch
+   the `ThermalFullCorpusTraining` scheduled task (after the requested machine reboot) and let it
+   run to completion, then re-run `scripts/eval_all_detectors.py` / `export_onnx_models.py` /
+   `eval_onnx_models.py` / `eval_quantized_models.py` / `generate_full_report.py` against the real
+   checkpoints (currently only validated against `checkpoints_baseline_waveshare` smoke-test data).
 2. **Task 4 (50/50 balanced retrain) has no driver script yet** — re-train each model with a
    non-biased 50% positive/50% negative ratio; not started (`../current_state_and_tasks.md`).
 3. **Task 5 (final consolidated report) not started** — needs results from both Task 3 and

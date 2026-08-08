@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Evaluate every full-corpus-trained detector on the exact same held-out
-waveshare test split, with accuracy/precision/recall/F1/IoU (where
-applicable) and mean per-frame inference latency (GPU for the torch
-detectors, CPU for the sklearn ones -- there is no meaningful way to force
-scikit-learn's SVC decision function onto a GPU).
+"""Evaluate every full-corpus-trained detector, with accuracy/precision/
+recall/F1/IoU (where applicable) and mean per-frame inference latency (GPU
+for the torch detectors, CPU for the sklearn ones -- there is no meaningful
+way to force scikit-learn's SVC decision function onto a GPU).
 
-The held-out split is rebuilt via the exact same function/seed
-train_full_corpus.py used (session_train_test_split, default seed=0) so the
-test scenes here are identical to what training excluded -- this is what
-makes "the same test set for every category" true: fire, human, and contact
-are all evaluated against the SAME 3 waveshare scenes.
+Each TASK (fire / human / contact) gets its own held-out split, rebuilt via
+the exact same thermal_algorithms.training.split.build_task_split
+train_full_corpus.py used -- "the same test set" holds WITHIN a task (every
+fire detector sees the same fire test scenes; every contact detector sees
+the same contact test scenes), not identically across all three tasks.
+Contact's split is curated, not random: only 4 of 17 waveshare_work scenarios
+have any contact-positive frames at all, so a random session split can (and
+on the first attempt, did) draw a held-out set with zero contact-positive
+frames, making contact evaluation on it structurally meaningless regardless
+of model quality.
 
 Writes a JSON file consumed by scripts/generate_full_report.py.
 
@@ -47,10 +51,10 @@ from thermal_algorithms.training import (  # noqa: E402
     FireFrameDataset,
     FrameLevelDataset,
     PERSON_CLASS_ID,
+    build_task_split,
     evaluate_contact_timed,
     evaluate_fire_timed,
     evaluate_human_timed,
-    session_train_test_split,
 )
 
 try:
@@ -62,12 +66,11 @@ except Exception:
 DATA_ROOT = _REPO_ROOT.parent / "data"
 
 
-def build_waveshare_test_split(waveshare_index: DatasetIndex) -> tuple[set[str], set[str]]:
+def build_waveshare_test_split(waveshare_index: DatasetIndex, task: str) -> tuple[set[str], set[str]]:
     """Mirrors scripts/train_full_corpus.py:build_waveshare_split exactly
-    (same function, same default seed=0) -- must never diverge from it, or
-    "same test set" stops being true."""
-    train_sessions, test_sessions = session_train_test_split(waveshare_index.labeled_sessions())
-    return {s.scene for s in train_sessions}, {s.scene for s in test_sessions}
+    (same underlying build_task_split call) -- must never diverge from it,
+    or "same test set per task" stops being true."""
+    return build_task_split(waveshare_index.labeled_sessions(), task=task)
 
 
 def attach_mvstgcn_inference_deps(det: MVSTGCNDetector, registry: CheckpointRegistry) -> None:
@@ -132,8 +135,12 @@ def main() -> int:
 
     data_root = Path(args.data_root)
     waveshare_index = DatasetIndex(data_root / "waveshare_work", sensor_profile=WAVESHARE_26984, fps=8.0)
-    train_scenes, test_scenes = build_waveshare_test_split(waveshare_index)
-    print(f"Test scenes ({len(test_scenes)}): {sorted(test_scenes)}")
+    fire_train_scenes, fire_test_scenes = build_waveshare_test_split(waveshare_index, "fire")
+    human_train_scenes, human_test_scenes = build_waveshare_test_split(waveshare_index, "human")
+    contact_train_scenes, contact_test_scenes = build_waveshare_test_split(waveshare_index, "contact")
+    print(f"Fire test scenes: {sorted(fire_test_scenes)}")
+    print(f"Human test scenes: {sorted(human_test_scenes)}")
+    print(f"Contact test scenes: {sorted(contact_test_scenes)}")
 
     preprocessor = GlobalNormPreprocessor(WAVESHARE_26984)
     preprocessor.fit()
@@ -153,7 +160,7 @@ def main() -> int:
 
     # --- Fire (invariant checkpoint) ---
     if wanted("FireSVMDetector"):
-        fire_ds = FireFrameDataset(waveshare_index, scenes=test_scenes)
+        fire_ds = FireFrameDataset(waveshare_index, scenes=fire_test_scenes)
         det = try_load(FireSVMDetector, None)
         if det is not None:
             r = evaluate_fire_timed(det, fire_ds, preprocessor=preprocessor, variant=args.variant)
@@ -162,7 +169,7 @@ def main() -> int:
 
     # --- Human ---
     human_ds = FrameLevelDataset(
-        waveshare_index, scenes=test_scenes, class_filter=[PERSON_CLASS_ID], include_negative_frames=True,
+        waveshare_index, scenes=human_test_scenes, class_filter=[PERSON_CLASS_ID], include_negative_frames=True,
     )
     if wanted("HOGSVMDetector"):
         det = try_load(HOGSVMDetector, "Waveshare_26984")
@@ -182,7 +189,7 @@ def main() -> int:
             print("  SKIP MobileNetSSDDetector: torch not available")
 
     # --- Contact ---
-    contact_ds = ContactFrameDataset(waveshare_index, scenes=test_scenes)
+    contact_ds = ContactFrameDataset(waveshare_index, scenes=contact_test_scenes)
     for label, cls in (("MVSTGCNDetector", MVSTGCNDetector), ("ThermoX3DDetector", ThermoX3DDetector)):
         if not wanted(label):
             continue
@@ -203,8 +210,12 @@ def main() -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "checkpoints_dir": str(Path(args.checkpoints).resolve()),
-        "test_scenes": sorted(test_scenes),
-        "train_scenes": sorted(train_scenes),
+        "fire_test_scenes": sorted(fire_test_scenes),
+        "fire_train_scenes": sorted(fire_train_scenes),
+        "human_test_scenes": sorted(human_test_scenes),
+        "human_train_scenes": sorted(human_train_scenes),
+        "contact_test_scenes": sorted(contact_test_scenes),
+        "contact_train_scenes": sorted(contact_train_scenes),
         "results": [r.to_dict() for r in results],
     }
     with out_path.open("w", encoding="utf-8") as fh:

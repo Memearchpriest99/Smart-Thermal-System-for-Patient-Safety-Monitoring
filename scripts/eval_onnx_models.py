@@ -43,10 +43,10 @@ from thermal_algorithms.training import (  # noqa: E402
     FireFrameDataset,
     FrameLevelDataset,
     PERSON_CLASS_ID,
+    build_task_split,
     evaluate_contact_timed,
     evaluate_fire_timed,
     evaluate_human_timed,
-    session_train_test_split,
 )
 from thermal_algorithms.training.onnx_shims import (  # noqa: E402
     OnnxFireSvmShim,
@@ -64,10 +64,11 @@ except Exception:
 DATA_ROOT = _REPO_ROOT.parent / "data"
 
 
-def build_waveshare_test_split(waveshare_index: DatasetIndex) -> tuple[set[str], set[str]]:
-    """Must exactly mirror scripts/train_full_corpus.py:build_waveshare_split."""
-    train_sessions, test_sessions = session_train_test_split(waveshare_index.labeled_sessions())
-    return {s.scene for s in train_sessions}, {s.scene for s in test_sessions}
+def build_waveshare_test_split(waveshare_index: DatasetIndex, task: str) -> tuple[set[str], set[str]]:
+    """Must exactly mirror scripts/train_full_corpus.py:build_waveshare_split
+    -- independent per-task split, not one split shared across fire/human/
+    contact. See thermal_algorithms.training.split.build_task_split."""
+    return build_task_split(waveshare_index.labeled_sessions(), task=task)
 
 
 def attach_mvstgcn_inference_deps(det: MVSTGCNDetector, registry: CheckpointRegistry) -> None:
@@ -118,8 +119,12 @@ def main() -> int:
 
     data_root = Path(args.data_root)
     waveshare_index = DatasetIndex(data_root / "waveshare_work", sensor_profile=WAVESHARE_26984, fps=8.0)
-    train_scenes, test_scenes = build_waveshare_test_split(waveshare_index)
-    print(f"Test scenes ({len(test_scenes)}): {sorted(test_scenes)}")
+    _, fire_test_scenes = build_waveshare_test_split(waveshare_index, "fire")
+    _, human_test_scenes = build_waveshare_test_split(waveshare_index, "human")
+    _, contact_test_scenes = build_waveshare_test_split(waveshare_index, "contact")
+    print(f"Fire test scenes: {sorted(fire_test_scenes)}")
+    print(f"Human test scenes: {sorted(human_test_scenes)}")
+    print(f"Contact test scenes: {sorted(contact_test_scenes)}")
 
     preprocessor = GlobalNormPreprocessor(WAVESHARE_26984)
     preprocessor.fit()
@@ -139,13 +144,13 @@ def main() -> int:
         det._scaler = _Identity()
         det._svm = shim
         report_providers("FireSVMDetector", shim)
-        fire_ds = FireFrameDataset(waveshare_index, scenes=test_scenes)
+        fire_ds = FireFrameDataset(waveshare_index, scenes=fire_test_scenes)
         r = evaluate_fire_timed(det, fire_ds, preprocessor=preprocessor, variant="onnx_fp32")
         results.append(r)
         print(r.to_dict())
 
     human_ds = FrameLevelDataset(
-        waveshare_index, scenes=test_scenes, class_filter=[PERSON_CLASS_ID], include_negative_frames=True,
+        waveshare_index, scenes=human_test_scenes, class_filter=[PERSON_CLASS_ID], include_negative_frames=True,
     )
 
     # --- Human: HOG-SVM ---
@@ -172,7 +177,7 @@ def main() -> int:
         print(r.to_dict())
 
     # --- Contact ---
-    contact_ds = ContactFrameDataset(waveshare_index, scenes=test_scenes)
+    contact_ds = ContactFrameDataset(waveshare_index, scenes=contact_test_scenes)
     if wanted("MVSTGCNDetector") and _TORCH_OK and "MVSTGCNDetector" in manifest:
         det = registry.load(MVSTGCNDetector, profile_name="Waveshare_26984")
         attach_mvstgcn_inference_deps(det, registry)
@@ -201,7 +206,9 @@ def main() -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "test_scenes": sorted(test_scenes),
+        "fire_test_scenes": sorted(fire_test_scenes),
+        "human_test_scenes": sorted(human_test_scenes),
+        "contact_test_scenes": sorted(contact_test_scenes),
         "onnxruntime_providers": providers_used,
         "results": [r.to_dict() for r in results],
     }

@@ -53,10 +53,10 @@ from thermal_algorithms.training import (  # noqa: E402
     FireFrameDataset,
     FrameLevelDataset,
     PERSON_CLASS_ID,
+    build_task_split,
     evaluate_contact_timed,
     evaluate_fire_timed,
     evaluate_human_timed,
-    session_train_test_split,
 )
 from thermal_algorithms.training.onnx_shims import (  # noqa: E402
     OnnxFireSvmShim,
@@ -77,9 +77,9 @@ ONNX_DIR = _REPO_ROOT.parent / "Weights" / "onnx"
 INT8_DIR = _REPO_ROOT.parent / "Weights" / "onnx" / "int8"
 
 
-def build_waveshare_test_split(waveshare_index: DatasetIndex) -> tuple[set[str], set[str]]:
-    train_sessions, test_sessions = session_train_test_split(waveshare_index.labeled_sessions())
-    return {s.scene for s in train_sessions}, {s.scene for s in test_sessions}
+def build_waveshare_test_split(waveshare_index: DatasetIndex, task: str) -> tuple[set[str], set[str]]:
+    """Independent per-task split -- see thermal_algorithms.training.split.build_task_split."""
+    return build_task_split(waveshare_index.labeled_sessions(), task=task)
 
 
 def quantize_to_int8(onnx_path: str) -> str:
@@ -148,8 +148,12 @@ def main() -> int:
 
     data_root = Path(args.data_root)
     waveshare_index = DatasetIndex(data_root / "waveshare_work", sensor_profile=WAVESHARE_26984, fps=8.0)
-    train_scenes, test_scenes = build_waveshare_test_split(waveshare_index)
-    print(f"Test scenes ({len(test_scenes)}): {sorted(test_scenes)}")
+    _, fire_test_scenes = build_waveshare_test_split(waveshare_index, "fire")
+    _, human_test_scenes = build_waveshare_test_split(waveshare_index, "human")
+    _, contact_test_scenes = build_waveshare_test_split(waveshare_index, "contact")
+    print(f"Fire test scenes: {sorted(fire_test_scenes)}")
+    print(f"Human test scenes: {sorted(human_test_scenes)}")
+    print(f"Contact test scenes: {sorted(contact_test_scenes)}")
 
     preprocessor = GlobalNormPreprocessor(WAVESHARE_26984)
     preprocessor.fit()
@@ -158,16 +162,21 @@ def main() -> int:
     results = []
 
     human_ds = FrameLevelDataset(
-        waveshare_index, scenes=test_scenes, class_filter=[PERSON_CLASS_ID], include_negative_frames=True,
+        waveshare_index, scenes=human_test_scenes, class_filter=[PERSON_CLASS_ID], include_negative_frames=True,
     )
-    fire_ds = FireFrameDataset(waveshare_index, scenes=test_scenes)
-    contact_ds = ContactFrameDataset(waveshare_index, scenes=test_scenes)
+    fire_ds = FireFrameDataset(waveshare_index, scenes=fire_test_scenes)
+    contact_ds = ContactFrameDataset(waveshare_index, scenes=contact_test_scenes)
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     def save_partial() -> None:
-        payload = {"test_scenes": sorted(test_scenes), "results": [r.to_dict() for r in results]}
+        payload = {
+            "fire_test_scenes": sorted(fire_test_scenes),
+            "human_test_scenes": sorted(human_test_scenes),
+            "contact_test_scenes": sorted(contact_test_scenes),
+            "results": [r.to_dict() for r in results],
+        }
         with out_path.open("w", encoding="utf-8") as fh:
             json.dump(payload, fh, indent=2)
 

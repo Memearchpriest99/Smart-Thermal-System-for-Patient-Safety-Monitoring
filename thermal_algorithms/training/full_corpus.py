@@ -15,6 +15,7 @@ ground truth, ever — only frame-level presence labels. It can feed
 
 from __future__ import annotations
 
+import random
 from pathlib import Path
 from typing import Iterator
 
@@ -50,6 +51,36 @@ def stream_fire_examples(
     yield from FireFrameDataset(waveshare_index)
     for session in iter_synth_sessions(data_root):
         yield from session.fire_examples()
+
+
+def stream_fire_examples_subsampled(
+    data_root: str | Path,
+    waveshare_index: DatasetIndex,
+    *,
+    per_camera_samples: int,
+    seed: int = 0,
+    scenes: "set[str] | None" = None,
+) -> Iterator[tuple[Frame, FireAlert]]:
+    """Like stream_fire_examples, but random-samples at most
+    `per_camera_samples` frames per camera per synthetic session (via
+    HDF5Session.sample_fire_examples_random -- direct index access, not a
+    full scan) instead of visiting the entire ~31M-frame corpus.
+
+    All of waveshare_work's real-bbox examples are kept in full (it's a few
+    thousand frames, not the problem, and it's real annotated data).
+    FireSVMDetector's sklearn SVC is more-than-quadratic in sample count and
+    explicitly unsuited to datasets much past "a couple of 10,000" samples
+    (sklearn's own docs) -- training it on the full corpus is not "slow", it
+    is algorithmically infeasible (confirmed: 11.6 CPU-hours into one fit()
+    call with no path to completion and 22-28GB of paged memory against 16GB
+    physical RAM). This is the fix, not a workaround: same detector, same
+    RBF kernel, same class_weight="balanced" handling of the natural class
+    ratio, just a tractable training-set size.
+    """
+    yield from FireFrameDataset(waveshare_index, scenes=scenes)
+    rng = random.Random(seed)
+    for session in iter_synth_sessions(data_root):
+        yield from session.sample_fire_examples_random(per_camera_samples, rng)
 
 
 def stream_contact_examples(

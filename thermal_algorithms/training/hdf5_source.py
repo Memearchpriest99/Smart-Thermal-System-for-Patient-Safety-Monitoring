@@ -377,6 +377,15 @@ class HDF5CameraSession:
         (the room-1 acquisition bug) rather than its own recorded timestamps."""
         return self._used_fallback
 
+    def chunk_frame_range(self, chunk_i: int) -> tuple[int, int]:
+        """(start, stop) global frame indices covered by chunk `chunk_i`
+        (half-open, like range()) -- lets callers sample at chunk
+        granularity (decode cost is per-chunk, not per-frame) without
+        reaching into the private _chunk_offsets array directly."""
+        if not 0 <= chunk_i < self.n_chunks:
+            raise IndexError(f"chunk_i {chunk_i} out of range [0, {self.n_chunks})")
+        return int(self._chunk_offsets[chunk_i]), int(self._chunk_offsets[chunk_i + 1])
+
     def _chunk_for_frame(self, frame_idx: int) -> tuple[int, int]:
         if not 0 <= frame_idx < self.n_frames:
             raise IndexError(f"frame_idx {frame_idx} out of range [0, {self.n_frames})")

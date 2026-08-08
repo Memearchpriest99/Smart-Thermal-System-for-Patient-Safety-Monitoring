@@ -40,15 +40,39 @@ context init / cuDNN autotune / first-call JIT are not representative of
 steady-state per-frame latency)."""
 
 
+_torch_usable: "Optional[bool]" = None
+
+
 def _maybe_cuda_sync() -> None:
     """Best-effort torch.cuda.synchronize() -- no-op if torch or CUDA aren't
-    available, so this module works unmodified for the sklearn detectors."""
+    available, so this module works unmodified for the sklearn detectors.
+
+    Catches Exception broadly, not just ImportError: a blocked/missing DLL
+    during torch's own import raises OSError (confirmed: a Windows
+    Application Control policy actively blocking torch/lib/shm.dll did
+    exactly this), which is not an ImportError subclass and would otherwise
+    crash every detector's timed eval, including the pure-sklearn ones that
+    never touch torch at all.
+
+    Caches the outcome at module level after the first attempt: a *failed*
+    import is not cached by Python itself, so without this, a persistently
+    blocked torch would re-attempt (and re-fail) the same DLL load on every
+    single frame -- confirmed to cost tens of milliseconds per attempt,
+    which is both wasted work and, worse, silently inflates the very latency
+    numbers this module exists to measure accurately for any torch-backed
+    detector still able to import torch (this helper's own overhead would be
+    counted inside their timed region).
+    """
+    global _torch_usable
+    if _torch_usable is False:
+        return
     try:
         import torch
         if torch.cuda.is_available():
             torch.cuda.synchronize()
-    except ImportError:
-        pass
+        _torch_usable = True
+    except Exception:
+        _torch_usable = False
 
 
 @dataclass

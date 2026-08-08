@@ -155,6 +155,48 @@ class HDF5Session:
                 level = FireLevel.ACTIVE_COMBUSTION if labels["fire"] else FireLevel.SAFE
                 yield frame, FireAlert(level=level, timestamp=frame.timestamp, confidence=1.0)
 
+    def sample_fire_examples_random(
+        self, per_camera_samples: int, rng: "random.Random", *, chunks_per_camera: int = 8,
+    ) -> Iterator[tuple[Frame, FireAlert]]:
+        """Like fire_examples(), but visits only a bounded number of chunks
+        per camera instead of the whole session, sampling `per_camera_samples`
+        frames from within those chunks.
+
+        Exists because sklearn's SVC is more-than-quadratic in sample count
+        and explicitly unsuited to datasets much past "a couple of 10,000"
+        samples (its own docs) -- the full synthetic corpus is ~31M
+        frame-instances, so FireSVMDetector's full-corpus training needs a
+        subsample.
+
+        The decode cost here is per-CHUNK, not per-frame (each chunk is a
+        compressed ~7200-frame block that must be fully decompressed before
+        any single frame in it is readable) -- sampling `per_camera_samples`
+        individual frame INDICES uniformly at random over the whole session
+        does NOT save time at any sample size that matters: with ~150-200
+        chunks per session, a few thousand random frame indices will, by the
+        pigeonhole/coupon-collector effect, land in nearly every chunk
+        anyway, degenerating to a full scan (confirmed: an earlier version of
+        this function did exactly that and was not meaningfully faster).
+        Sampling a small, FIXED number of chunks first (chunks_per_camera),
+        then drawing many frames from each chosen chunk (near-free once that
+        chunk is already decoded), is what actually bounds decode cost.
+        """
+        for cam_id in self.cameras:
+            cam = self._cams[cam_id]
+            n_chunks = cam.n_chunks
+            chosen_chunks = sorted(rng.sample(range(n_chunks), min(chunks_per_camera, n_chunks)))
+            per_chunk_budget = max(1, -(-per_camera_samples // len(chosen_chunks)))  # ceil div
+            for chunk_i in chosen_chunks:
+                start, stop = cam.chunk_frame_range(chunk_i)
+                k = min(per_chunk_budget, stop - start)
+                for idx in sorted(rng.sample(range(start, stop), k)):
+                    frame = cam.load_frame(idx)
+                    labels = self._joiner.labels_for(frame.timestamp)
+                    if labels is None:
+                        continue
+                    level = FireLevel.ACTIVE_COMBUSTION if labels["fire"] else FireLevel.SAFE
+                    yield frame, FireAlert(level=level, timestamp=frame.timestamp, confidence=1.0)
+
     def human_presence_examples(self) -> Iterator[tuple[Frame, bool]]:
         """Yields ``(Frame, is_human_present)`` across every available
         camera. Explicitly presence-only — NOT a ``(Frame, list[Detection])``

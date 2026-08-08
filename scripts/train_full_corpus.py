@@ -26,6 +26,16 @@ instance each time (weights persist across `fit()` calls; only the
 optimizer and this chunk's global-normalization stats are rebuilt each
 call — see the class docstrings).
 
+Both detectors default to ``n_epochs=30`` *inside a single fit() call*,
+meant for a one-shot fit() on a whole (small) dataset. Reused verbatim
+across ~6200+ chunks that would mean 30 full epochs repeated on every
+chunk (~186k epoch-equivalents per model) -- the epoch-count knob and the
+chunking knob both independently control "how many times does the model
+see the data", and multiplying them is not what the streaming design
+intends. `--contact-epochs-per-chunk` (default 1) decouples them: one
+gradient pass per chunk, with ~6200+ chunks (plus every synth session)
+already providing broad coverage of the corpus.
+
 `class_weight` for MVSTGCNDetector/ThermoX3DDetector must be a fixed
 ``(w_no_contact, w_contact)`` pair supplied at construction (unlike
 sklearn's ``'balanced'`` string, it can't be computed lazily inside `fit()`
@@ -148,7 +158,8 @@ from thermal_algorithms.training import (  # noqa: E402
     Trainer,
     format_scenario_table,
     iter_synth_sessions,
-    session_train_test_split,
+    build_task_split,
+    stream_fire_examples_subsampled,
 )
 
 try:
@@ -165,13 +176,17 @@ DEFAULT_OUT = _REPO_ROOT / "checkpoints_full_corpus"
 # Waveshare session split
 # ---------------------------------------------------------------------------
 
-def build_waveshare_split(waveshare_index: DatasetIndex) -> tuple[set[str], set[str]]:
-    train_sessions, test_sessions = session_train_test_split(waveshare_index.labeled_sessions())
-    train_scenes = {s.scene for s in train_sessions}
-    test_scenes = {s.scene for s in test_sessions}
-    print(f"waveshare split: {len(train_scenes)} train scenes / {len(test_scenes)} test scenes")
+def build_waveshare_split(waveshare_index: DatasetIndex, task: str) -> tuple[set[str], set[str]]:
+    """Independent per-task split (see thermal_algorithms.training.split.
+    build_task_split) -- fire, human, and contact each get their OWN train/
+    test scenes, not one split shared across all three. Contact's is
+    curated (CONTACT_TEST_SCENES), not random, since a random split can (and
+    on the first attempt, did) draw a held-out set with zero contact-positive
+    frames."""
+    train_scenes, test_scenes = build_task_split(waveshare_index.labeled_sessions(), task=task)
+    print(f"waveshare {task} split: {len(train_scenes)} train scenes / {len(test_scenes)} test scenes = {sorted(test_scenes)}")
     if not test_scenes:
-        print("  WARNING: no held-out waveshare scenes -- eval step will be skipped.")
+        print(f"  WARNING: no held-out waveshare scenes for {task} -- eval step will be skipped.")
     return train_scenes, test_scenes
 
 
@@ -180,13 +195,20 @@ def build_waveshare_split(waveshare_index: DatasetIndex) -> tuple[set[str], set[
 # ---------------------------------------------------------------------------
 
 def train_fire(data_root: Path, waveshare_index: DatasetIndex, train_scenes: set[str],
-                preprocessor: GlobalNormPreprocessor, registry: CheckpointRegistry) -> FireSVMDetector:
-    print("\n=== Training FireSVMDetector on the full corpus ===")
+                preprocessor: GlobalNormPreprocessor, registry: CheckpointRegistry,
+                fire_per_camera_samples: int) -> FireSVMDetector:
+    print("\n=== Training FireSVMDetector on the full corpus (subsampled) ===")
+    print(f"  fire_per_camera_samples={fire_per_camera_samples} "
+          f"(sklearn's SVC is more-than-quadratic in sample count and explicitly "
+          f"unsuited past a couple of 10,000 samples -- the full ~31M-frame corpus "
+          f"is not tractable for it; see thermal_algorithms/training/full_corpus.py:"
+          f"stream_fire_examples_subsampled)")
 
     def examples():
-        yield from FireFrameDataset(waveshare_index, scenes=train_scenes)
-        for session in iter_synth_sessions(data_root):
-            yield from session.fire_examples()
+        yield from stream_fire_examples_subsampled(
+            data_root, waveshare_index, per_camera_samples=fire_per_camera_samples,
+            scenes=train_scenes,
+        )
 
     ex_for_x, ex_for_y = tee(examples(), 2)
     ex_for_x = _log_every(ex_for_x, "fire-train frames")
@@ -312,14 +334,14 @@ def compute_contact_class_weight(data_root: Path, waveshare_index: DatasetIndex,
 
 def train_contact(data_root: Path, waveshare_index: DatasetIndex, train_scenes: set[str],
                    preprocessor: GlobalNormPreprocessor, registry: CheckpointRegistry,
-                   chunk_size: int) -> dict:
+                   chunk_size: int, epochs_per_chunk: int = 1) -> dict:
     print("\n=== Training contact detectors on the full corpus (chunked) ===")
     class_weight = compute_contact_class_weight(data_root, waveshare_index, train_scenes)
 
     detectors = {}
     for label, cls in (("mv_stgcn", MVSTGCNDetector), ("thermo_x3d", ThermoX3DDetector)):
         print(f"\n--- {cls.__name__} ---")
-        det = cls(sensor_profile=WAVESHARE_26984, class_weight=class_weight)
+        det = cls(sensor_profile=WAVESHARE_26984, class_weight=class_weight, n_epochs=epochs_per_chunk)
         t0 = time.time()
         n_chunks = n_examples = 0
         for source, frames_chunk, events_chunk in contact_chunks(data_root, waveshare_index, train_scenes, chunk_size):
@@ -373,6 +395,21 @@ def main() -> int:
     ap.add_argument("--data-root", default=str(DATA_ROOT))
     ap.add_argument("--out", default=str(DEFAULT_OUT))
     ap.add_argument("--contact-chunk-size", type=int, default=5000)
+    ap.add_argument(
+        "--contact-epochs-per-chunk", type=int, default=1,
+        help="n_epochs passed to MVSTGCNDetector/ThermoX3DDetector's constructor for the "
+             "chunked full-corpus training loop -- NOT the same knob as a normal one-shot "
+             "fit() epoch count. With ~6200+ chunks, this multiplies directly into total "
+             "training time (epochs_per_chunk x n_chunks epoch-equivalents per model), so "
+             "keep this low (1-3) and rely on chunk count for corpus coverage.",
+    )
+    ap.add_argument(
+        "--fire-per-camera-samples", type=int, default=1500,
+        help="Max random frames sampled per camera per synth session for FireSVMDetector "
+             "training (sklearn's SVC does not scale to the full ~31M-frame corpus). "
+             "~10 sessions x 3 cameras x default 1500 ~= 45k synthetic samples, plus all "
+             "of waveshare_work's train-scene frames.",
+    )
     ap.add_argument("--skip-fire", action="store_true")
     ap.add_argument("--skip-human", action="store_true")
     ap.add_argument("--skip-contact", action="store_true")
@@ -393,7 +430,12 @@ def _run(args) -> int:
         raise SystemExit(f"data root not found: {data_root}")
 
     waveshare_index = DatasetIndex(data_root / "waveshare_work", sensor_profile=WAVESHARE_26984, fps=8.0)
-    train_scenes, test_scenes = build_waveshare_split(waveshare_index)
+    # Independent per-task splits -- NOT one split shared across fire/human/
+    # contact (see build_waveshare_split's docstring and
+    # thermal_algorithms.training.split.build_task_split).
+    fire_train_scenes, fire_test_scenes = build_waveshare_split(waveshare_index, "fire")
+    human_train_scenes, human_test_scenes = build_waveshare_split(waveshare_index, "human")
+    contact_train_scenes, contact_test_scenes = build_waveshare_split(waveshare_index, "contact")
 
     preprocessor = GlobalNormPreprocessor(WAVESHARE_26984)
     preprocessor.fit()
@@ -403,21 +445,23 @@ def _run(args) -> int:
 
     if not args.skip_fire:
         logger.info("stage: fire")
-        det = train_fire(data_root, waveshare_index, train_scenes, preprocessor, registry)
+        det = train_fire(data_root, waveshare_index, fire_train_scenes, preprocessor, registry,
+                          args.fire_per_camera_samples)
         if not args.skip_eval:
-            eval_fire(det, waveshare_index, test_scenes, preprocessor)
+            eval_fire(det, waveshare_index, fire_test_scenes, preprocessor)
 
     if not args.skip_human:
         logger.info("stage: human")
-        detectors = train_human(waveshare_index, train_scenes, preprocessor, registry)
+        detectors = train_human(waveshare_index, human_train_scenes, preprocessor, registry)
         if not args.skip_eval:
-            eval_human(detectors, waveshare_index, test_scenes, preprocessor)
+            eval_human(detectors, waveshare_index, human_test_scenes, preprocessor)
 
     if not args.skip_contact:
         logger.info("stage: contact")
-        detectors = train_contact(data_root, waveshare_index, train_scenes, preprocessor, registry, args.contact_chunk_size)
+        detectors = train_contact(data_root, waveshare_index, contact_train_scenes, preprocessor, registry,
+                                   args.contact_chunk_size, args.contact_epochs_per_chunk)
         if not args.skip_eval:
-            eval_contact(detectors, waveshare_index, test_scenes, preprocessor)
+            eval_contact(detectors, waveshare_index, contact_test_scenes, preprocessor)
 
     print("\nAvailable checkpoints:")
     for algo, profile in registry.list_available():

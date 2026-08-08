@@ -133,7 +133,7 @@ Before classification, features are z-scored using `StandardScaler` fit on the t
 
 ### 2.2 The primal soft-margin QP
 
-`FireSVMDetector` trains an `sklearn.svm.SVC` — a soft-margin kernel SVM. For labeled training pairs $(x_i,y_i)$, $y_i \in \{-1,+1\}$, and a feature map $\phi(\cdot)$ (identity for the linear kernel, the implicit RBF map for `kernel="rbf"`, the code's default), the classifier seeks a hyperplane $w^\top\phi(x)+b=0$ that separates the classes with maximum margin while tolerating some misclassification. Introducing one slack variable $\xi_i \ge 0$ per training point to allow margin violations, the **primal problem** is the convex quadratic program
+`FireSVMDetector` trains an `sklearn.svm.SVC` — a soft-margin kernel SVM (support vector machine: a classifier that finds the hyperplane separating the two classes with the largest possible margin to the nearest training points, rather than just any separating hyperplane). For labeled training pairs $(x_i,y_i)$, $y_i \in \{-1,+1\}$, and a feature map $\phi(\cdot)$ (identity for the linear kernel, the implicit RBF map for `kernel="rbf"`, the code's default), the classifier seeks a hyperplane $w^\top\phi(x)+b=0$ that separates the classes with maximum margin while tolerating some misclassification. Introducing one slack variable $\xi_i \ge 0$ per training point to allow margin violations, the **primal problem** is the convex quadratic program (QP — a *quadratic program* minimizes a quadratic objective subject to linear constraints; convex QPs like this one can be solved to global optimality efficiently, which is exactly what makes the derivation below possible)
 
 $$
 \min_{w,\,b,\,\xi} \quad \frac{1}{2}\|w\|^2 + C\sum_{i=1}^{n}\xi_i
@@ -229,7 +229,7 @@ $$
 k(x,x') = \exp\bigl(-\gamma\|x-x'\|^2\bigr), \qquad \gamma = \texttt{gamma="scale"} \Rightarrow \gamma = \frac{1}{d\cdot\mathrm{Var}(X)},
 $$
 
-the RBF (Gaussian) kernel used by `FireSVMDetector(kernel="rbf")` (its default, though `kernel="linear"` is also exposed as a constructor option). This substitution is valid — i.e. the resulting optimization is still exactly the dual of *some* legitimate linear-in-feature-space SVM — precisely because of **Mercer's theorem**: any symmetric function $k(x,x')$ that is positive semi-definite (i.e. for any finite set of points $\{x_i\}$, the Gram matrix $K_{ij}=k(x_i,x_j)$ is PSD) can be written as $k(x,x')=\langle\phi(x),\phi(x')\rangle$ for *some* feature map $\phi$ into a (possibly infinite-dimensional) Hilbert space. The RBF kernel satisfies this PSD requirement (it is a Gaussian, whose Fourier transform — its spectral density — is non-negative everywhere, which is the Bochner-theorem condition for positive-definiteness). Consequently:
+the RBF (radial basis function — a kernel that scores two points as similar exactly when they are geometrically close, with similarity decaying smoothly/exponentially as distance grows; also called the Gaussian kernel) kernel used by `FireSVMDetector(kernel="rbf")` (its default, though `kernel="linear"` is also exposed as a constructor option). This substitution is valid — i.e. the resulting optimization is still exactly the dual of *some* legitimate linear-in-feature-space SVM — precisely because of **Mercer's theorem**: any symmetric function $k(x,x')$ that is positive semi-definite (i.e. for any finite set of points $\{x_i\}$, the Gram matrix $K_{ij}=k(x_i,x_j)$ is PSD) can be written as $k(x,x')=\langle\phi(x),\phi(x')\rangle$ for *some* feature map $\phi$ into a (possibly infinite-dimensional) Hilbert space. The RBF kernel satisfies this PSD requirement (it is a Gaussian, whose Fourier transform — its spectral density — is non-negative everywhere, which is the Bochner-theorem condition for positive-definiteness). Consequently:
 
 * We never need to compute or store $\phi(x)$ — every place $\langle\phi(x_i),\phi(x_j)\rangle$ appears in training (Eq. 9) or in the decision function (§2.7), it is replaced by $k(x_i,x_j)$, computed in $O(d)$ time on the original 6-D features.
 * Taylor-expanding $e^{-\gamma\|x-x'\|^2}$ shows the implicit feature space contains monomials of *every* degree simultaneously — the RBF-SVM is a universal approximator over the 6-D feature space, able to express nonlinear decision boundaries (e.g. "hot AND small OR moderately-hot AND heavy-tailed") that a linear hyperplane over the raw 6 features cannot, without ever paying for the infinite dimensionality explicitly (adapted from `reports/checkpoint_report.tex`, "The dual and the kernel trick" / "The RBF kernel").
@@ -249,6 +249,7 @@ a similarity-weighted vote of the stored support vectors — only points with $\
 - Feature order and NaN handling: `_frame_to_feature_vector` uses the *hottest* blob (`max(blobs, key=lambda b: b["max_temp"])`) among all connected components from `otsu_segment`+`extract_blobs`; a degenerate zero-variance blob produces NaN skew/kurtosis (matching scipy's convention) which is mapped to `0.0` via `np.nan_to_num` before scaling, since the scaler/SVM cannot accept non-finite input.
 - `class_weight` is a constructor-time parameter (not a `fit()` argument) because sklearn fixes it at estimator construction; `'balanced'` reweights the dual's box constraint per-class ($\alpha_i \le C_{y_i}$ with class-dependent $C$) to counteract the fire-class rarity noted in `data/DATASET_NOTES.md`.
 - `resolution_behavior = "invariant"`: because the feature vector is 6 scalar statistics rather than raw pixels, one checkpoint transfers across the MLX90640 and Waveshare sensor profiles without retraining.
+- **CPU vs. GPU**: training and inference both run on CPU only. scikit-learn's `SVC` (and the SMO solver behind it, §2.3) has no GPU implementation, and even if it did, a 6-dimensional feature vector is far too low-dimensional for GPU parallelism to offer any benefit — the entire training set for this detector is subsampled to a few thousand examples per camera specifically because kernel-SVM training cost grows worse than linearly in the number of points (§2.8), not because of any per-example compute cost that a GPU would help with.
 
 ---
 
@@ -256,7 +257,7 @@ a similarity-weighted vote of the stored support vectors — only points with $\
 
 ### 3.1 Formulation
 
-`HOGSVMDetector` treats human detection as **shape classification over a sliding window**: at every window position (and every scale in a pyramid), a Histogram-of-Oriented-Gradients (HOG) descriptor is computed and scored by a trained **linear** SVM (`sklearn.svm.LinearSVC`); windows scoring above `score_threshold` become candidate detections, and greedy NMS collapses overlapping candidates.
+`HOGSVMDetector` treats human detection as **shape classification over a sliding window**: at every window position (and every scale in a pyramid), a Histogram-of-Oriented-Gradients (HOG) descriptor is computed and scored by a trained **linear** SVM (`sklearn.svm.LinearSVC`); windows scoring above `score_threshold` become candidate detections, and greedy NMS (non-maximum suppression — repeatedly keep the highest-scoring remaining box and discard every other box that overlaps it too much, until none are left) collapses overlapping candidates.
 
 ### 3.2 Derivation: the HOG descriptor
 
@@ -324,6 +325,7 @@ Three factors favor the linear model over the RBF approach used for fire (§2):
 
 - `_resolve_window_size` derives the pixel window from a *physical* target size (`physical_person_size_m`, default $(0.9\,\text{m}, 0.45\,\text{m})$) and an assumed viewing distance via `SensorProfile.physical_pixel_size_m(distance_m)`, then `_snap_to_multiple` rounds down to an integer multiple of `cell_size` (required so HOG receives an integer cell grid) with a floor of $2\times$ cell size per axis (so a $2\times2$-cell block fits). This is why `resolution_behavior = "parameterized"`: the window/cell geometry auto-scales per sensor profile, but a checkpoint's learned $(w,b)$ does not transfer between profiles because the feature dimensionality differs.
 - `_normalize_patch` zero-means and unit-variances every window (both training patches and inference windows) before HOG is computed — this is what makes the detector insensitive to the *ambient* temperature of the room without needing to know it, complementing HOG's own block-level contrast normalization (§3.2).
+- **CPU vs. GPU**: training and inference both run on CPU only. `LinearSVC`'s `liblinear` coordinate-descent solver (§3.3), like `SVC`'s SMO solver above, is a CPU-only implementation with no GPU code path — and the exhaustive multi-scale sliding-window search (§3.6) that dominates this detector's inference cost is itself a per-window Python/NumPy loop, not a batched tensor operation, so it would not benefit from a GPU even if the underlying linear-SVM scoring did.
 
 ### 3.6 Sliding-window multi-scale pyramid
 
@@ -335,7 +337,7 @@ Three factors favor the linear model over the RBF approach used for fire (§2):
 
 ### 4.1 Formulation
 
-`MobileNetSSDDetector` is a single-stage, anchor-based deep detector (SSD — Liu et al., 2016 — style) built on a small MobileNet backbone (`MicroMobileNet`), run directly on the native sensor resolution (no upsampling to 300×300). Two feature maps F1 (fine) and F2 (coarse) are tapped from the backbone; each spatial cell of each map predicts, for a fixed set of $K$ anchor boxes anchored at that cell, 4 box-regression offsets and `num_classes = 2` (background/person) class logits.
+`MobileNetSSDDetector` is a single-stage, anchor-based deep detector (SSD — Single Shot (multibox) Detector, Liu et al., 2016: predict boxes and classes directly from feature-map cells in one forward pass, with no separate region-proposal stage before classification — style) built on a small MobileNet backbone (`MicroMobileNet`), run directly on the native sensor resolution (no upsampling to 300×300). Two feature maps F1 (fine) and F2 (coarse) are tapped from the backbone; each spatial cell of each map predicts, for a fixed set of $K$ anchor boxes anchored at that cell, 4 box-regression offsets and `num_classes = 2` (background/person) class logits.
 
 ### 4.2 Depthwise-separable convolutions (backbone)
 
@@ -368,6 +370,8 @@ For a ground-truth box set $\{g_k\}$ and anchor set $\{a_m\}$, `pairwise_iou` co
 $$
 \mathrm{IoU}(a,g) = \frac{|\,a\cap g\,|}{|\,a\cup g\,|} = \frac{\max(0,\min(x_2^a,x_2^g)-\max(x_1^a,x_1^g))\cdot\max(0,\min(y_2^a,y_2^g)-\max(y_1^a,y_1^g))}{|a|+|g|-|\,a\cap g\,|}.
 $$
+
+$\mathrm{IoU}$ (Intersection over Union — the shared area of two boxes divided by their combined area; $1.0$ for identical boxes, $0$ for non-overlapping ones) is the standard measure of how well one box matches another.
 
 `match_anchors_to_targets` then assigns, for each anchor $m$, a label via the standard SSD rule implemented exactly as follows:
 
@@ -404,6 +408,8 @@ $$
 \mathcal{L}_{\text{cls}} = \sum_{m\,\in\,\text{keep}} \mathrm{CE}(\text{cls\_preds}_m,\ c_m), \qquad \mathrm{CE}(\ell,c) = -\log\operatorname{softmax}(\ell)_c,
 $$
 
+$\mathrm{CE}$ (cross-entropy — how "surprised" the model's predicted probability distribution is by the true label; near zero when confident and correct, large when confident and wrong) is the standard loss for classification.
+
 implemented as `F.cross_entropy(..., reduction="sum")` over the anchors selected by hard-negative mining (§4.6).
 
 **Total loss**, normalized by the number of positive anchors in the batch (so the loss scale is independent of how many people are in a given frame):
@@ -434,6 +440,7 @@ At inference, `decode_predictions` inverts the encoding of §4.5 (`decode_boxes`
 - `resolution_behavior = "fixed"`: because the backbone's channel/stride schedule and the anchor grid's absolute pixel geometry are baked into `BackboneConfig`/`SSDConfig` per profile (`MLX90640_BACKBONE`/`_SSD` vs. `WAVESHARE_BACKBONE`/`_SSD`), a checkpoint trained for one sensor's $(H,W)$ cannot be loaded for the other — two independent checkpoints are required, unlike the resolution-invariant `FireSVMDetector` (§2) or the parameterized `HOGSVMDetector` (§3).
 - Training uses per-frame z-score normalization (`_augment`/`_normalize`: $(x-\mu)/(\sigma+10^{-6})$) plus random horizontal flip and small translation augmentation (with box coordinates transformed accordingly) — see `MobileNetSSDDetector._augment`.
 - `Adam` optimizer with gradient-norm clipping (`clip_grad_norm_(max_norm=5.0)`) is used for the (non-convex) network training, in sharp contrast to the convex QP of §2 — this is a fundamentally different optimization regime (stochastic gradient descent on a non-convex loss surface, no KKT/global-optimality guarantee) than the SVM sections.
+- **CPU vs. GPU**: training and inference run on GPU when one is available (`torch.cuda.is_available()`), falling back to CPU otherwise. Unlike the two SVM-based detectors above, this is a batched neural network with many small convolutions over a full feature map — exactly the kind of workload that benefits from a GPU's parallel matrix/tensor units, so device choice has a real, measurable effect on this detector's inference latency (see the report's ONNX/quantization results for a concrete before/after comparison).
 
 ---
 
@@ -443,7 +450,7 @@ At inference, `decode_predictions` inverts the encoding of §4.5 (`decode_boxes`
 
 `GeometricContactDetector` is a deterministic, non-learned pipeline: it projects each camera's 2-D bounding-box detections onto a shared floor plane via a calibrated homography, fuses cross-camera projections into unique "actor" nodes, and flags contact when two actors' floor-plane positions fall within a fixed distance $\delta$.
 
-### 5.2 Homography via DLT + SVD
+### 5.2 Homography via DLT (Direct Linear Transform — solve for an unknown transformation by writing its defining equations as one big linear system and solving that system directly, rather than iterating) + SVD (Singular Value Decomposition — factor a matrix into rotate/scale/rotate pieces that expose exactly which directions the matrix stretches most and least; used below to find the least-stretched direction)
 
 **Setup.** A planar homography $H_k \in \mathbb{R}^{3\times3}$ maps a camera-$k$ image point $(u,v)$ (homogeneous $[u,v,1]^\top$) to a floor-plane world point $(X_w,Y_w)$ (homogeneous $[X_w,Y_w,1]^\top$, up to scale) whenever the imaged points lie on a single plane (here, $Z=0$, the floor):
 
@@ -569,6 +576,7 @@ which the classifier head (`Linear(hidden_dim,32) → ReLU → Linear(32,2)`) ma
 - `resolution_behavior = "invariant"`: all graph computation operates on world-space (metric) coordinates from the homographic front-end (§5), so — like `GeometricContactDetector` — the same trained model works across sensor profiles.
 - The persistence gate (`conf_threshold`, `persistence_frames`) requires the softmax contact probability to exceed threshold for `persistence_frames` *consecutive* predict() calls before actually alerting, suppressing single-frame noise in the GCN's output — a rule applied on top of, not inside, the network.
 - Training minimizes `nn.CrossEntropyLoss` (optionally class-weighted for the contact-minority imbalance, per `data/DATASET_NOTES.md`) via `Adam`, i.e. ordinary non-convex SGD-family training — the KKT/duality framework of §2 does not apply to this model for the same reason it does not apply to §4's SSD network: the objective is a non-convex function of the network weights.
+- **CPU vs. GPU**: as with `MobileNetSSDDetector` (§4.8), training and inference run on GPU when available for the same reason — batched tensor operations through the GCN layers benefit from parallel hardware — falling back to CPU otherwise.
 
 ---
 
@@ -605,11 +613,13 @@ $$
 \text{temporal: } \texttt{Conv3d}(k_t{=}3, k_h{=}1, k_w{=}1,\ \text{stride}=1) \;\to\; \text{BN} \;\to\; \text{ReLU},
 $$
 
+BN (batch normalization — rescale each channel's activations to roughly zero mean/unit variance using the current mini-batch's own statistics) stabilizes and speeds up training of deep stacks like this one.
+
 i.e. $w(dt,dy,dx) \approx w_{\text{sp}}(dy,dx)\cdot w_{\text{temp}}(dt)$ — a rank-1-like separable approximation of the full 3-D kernel. This factorization: (i) reduces parameters/FLOPs from $O(k_t k_h k_w)$ to $O(k_h k_w + k_t)$ per channel pair, (ii) inserts an extra BN+ReLU nonlinearity between the spatial and temporal steps (more expressive than one linear 3-D conv for the same or lower parameter count), and (iii) — since every individual op is now either a plain 2-D-shaped convolution ($1\times3\times3$) or a plain 1-D-shaped convolution ($3\times1\times1$) — maps well onto CPU inference kernels that are heavily optimized for 2-D convolution, which matters for the edge (Raspberry Pi CPU) deployment target (adapted from `reports/checkpoint_report.tex`, "(2+1)D-factorized"). Note the current implementation's window is $T=16$ (`ThermoX3DDetector.__init__(T=16)`) with per-corpus global normalization (§7.5), differing from the $T=5$/rolling-p25-background configuration documented for the deployed "T5v2" checkpoint variant in `reports/checkpoint_report.tex` — the derivation above is architecture-level and applies to either $T$.
 
 Each residual block also applies a **skip connection** — identity if channel count and stride are unchanged, else a $1\times1\times1$ projection conv + BN — added after the (attention-gated) spatial+temporal path and before a final ReLU: $\text{out} = \operatorname{ReLU}(\text{skip}(x) + \text{attention}(\text{temporal}(\text{spatial}(x))))$, the standard ResNet-style residual formulation lifted to 3-D, which keeps gradients well-behaved through the three stacked blocks (24→48→96 channels, spatial stride 2 at blocks 2 and 3).
 
-### 7.4 CBAM-style thermal attention
+### 7.4 CBAM (Convolutional Block Attention Module — learn two small, cheap gates, one over channels and one over space, that reweight a feature map by how relevant each part is, rather than treating every channel/pixel as equally important)-style thermal attention
 
 Before the residual sum, `_ThermalAttention` reweights the block's output feature map using channel and spatial gates, matching the code:
 
@@ -647,6 +657,7 @@ matching `self.head = Sequential(Linear(384,64), ReLU(), Linear(64,2))` followed
 - `resolution_behavior = "fixed"`: the spatial dimensions $(H,W)$ of every `Conv3d` layer's receptive field interact with the sensor's native resolution through the two spatial-stride-2 blocks, so — as with `MobileNetSSDDetector` — one checkpoint per sensor profile is required (`sensor_profile.resolution` fixes `self._input_h`, `self._input_w` at construction).
 - The rolling per-camera buffer (`deque(maxlen=T)`) implements the "fixed-step sampling" described in the module docstring: `predict()` is called once per incoming frame and always evaluates the network on the most recent $T$ buffered frames, decoupling the network's temporal window from the capture frame rate.
 - Training minimizes `nn.CrossEntropyLoss` (optionally class-weighted) via `Adam` — ordinary non-convex network training, as in §4 and §6; there is no KKT/duality argument for this model, only the standard (heuristic, not globally-guaranteed) convergence behavior of gradient descent on a non-convex loss surface.
+- **CPU vs. GPU**: training and inference run on GPU when available, falling back to CPU otherwise. Of the three neural detectors in this report, this is the one where GPU acceleration matters most in practice: 3-D convolutions over full $(T,H,W)$ volumes are substantially more compute-intensive per forward pass than MobileNet-SSD's 2-D backbone or MV-STGCN's small per-timestep graph, so this detector's chunked full-corpus training run is the most sensitive of the five to compute-device throughput.
 
 ---
 

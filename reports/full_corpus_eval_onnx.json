@@ -1,0 +1,104 @@
+{
+  "fire_test_scenes": [
+    "1person cig",
+    "1ppl_single_forever",
+    "man_light_cig"
+  ],
+  "human_test_scenes": [
+    "2ppl_hug",
+    "3pplhedroncolider",
+    "man_light_cig_1"
+  ],
+  "contact_test_scenes": [
+    "2ppl_fight",
+    "2ppl_hug",
+    "3pplhedroncolider"
+  ],
+  "onnxruntime_providers": {
+    "FireSVMDetector": [
+      "CPUExecutionProvider"
+    ],
+    "HOGSVMDetector": [
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "MobileNetSSDDetector": [
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "MVSTGCNDetector": [
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ]
+  },
+  "results": [
+    {
+      "detector_name": "FireSVMDetector",
+      "variant": "onnx_fp32",
+      "task": "fire",
+      "n_frames": 1893,
+      "accuracy": 0.716323296354992,
+      "precision": 0.5753424657534246,
+      "recall": 0.15026833631484796,
+      "f1": 0.23829787234042557,
+      "mean_iou": null,
+      "mean_inference_ms": 1.8173039299197271,
+      "p95_inference_ms": 1.6480099988257277,
+      "tp": 84,
+      "tn": 1272,
+      "fp": 62,
+      "fn": 475
+    },
+    {
+      "detector_name": "HOGSVMDetector",
+      "variant": "onnx_fp32",
+      "task": "human",
+      "n_frames": 1344,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "mean_iou": 0.5703156787190532,
+      "mean_inference_ms": 1595.6091668666022,
+      "p95_inference_ms": 1755.1227799993285,
+      "tp": 1344,
+      "tn": 0,
+      "fp": 0,
+      "fn": 0
+    },
+    {
+      "detector_name": "MobileNetSSDDetector",
+      "variant": "onnx_fp32",
+      "task": "human",
+      "n_frames": 1344,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "mean_iou": 0.7603601603520048,
+      "mean_inference_ms": 12.380137856080987,
+      "p95_inference_ms": 14.957129998947494,
+      "tp": 1344,
+      "tn": 0,
+      "fp": 0,
+      "fn": 0
+    },
+    {
+      "detector_name": "MVSTGCNDetector",
+      "variant": "onnx_fp32",
+      "task": "contact",
+      "n_frames": 470,
+      "accuracy": 0.7404255319148936,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "mean_iou": null,
+      "mean_inference_ms": 23.032408260777352,
+      "p95_inference_ms": 25.913045000561393,
+      "tp": 0,
+      "tn": 348,
+      "fp": 0,
+      "fn": 122
+    }
+  ]
+}
