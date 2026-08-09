@@ -11,7 +11,7 @@ Architecture (Micro-X3D)
 ------------------------
 Each camera stream is processed by a small (2+1)D factorised X3D encoder:
 
-    Input  : (B, 1, T=16, H, W)   — 1-channel thermal volume
+    Input  : (B, 1, T=5, H, W)   — 1-channel thermal volume
 
     Stem   : Conv3D (1×3×3, stride 1, 24 filters)
     Block1 : Factorised (2+1)D ResBlock, 24 filters
@@ -213,10 +213,10 @@ class ThermoX3DDetector(ContactDetector):
         sensor_profile: SensorProfile,
         *,
         homography: Optional[HomographyMatrices] = None,
-        T: int = 16,
+        T: int = 5,
         conf_threshold: float = 0.7,
         persistence_frames: int = 3,
-        learning_rate: float = 1e-3,
+        learning_rate: float = 1e-4,
         weight_decay: float = 1e-4,
         n_epochs: int = 30,
         batch_size: int = 8,
@@ -268,13 +268,20 @@ class ThermoX3DDetector(ContactDetector):
         # Global normalisation statistics (learned during fit)
         self._global_mean: float = 0.0
         self._global_std: float = 1.0
+        # Once frozen (via set_normalization()), fit() no longer recomputes
+        # these from whatever chunk it's currently handed -- see fit()'s
+        # docstring for why per-chunk recomputation is a bug for chunked
+        # training. Callers that never opt in keep the old (broken) behaviour.
+        self._norm_frozen: bool = False
 
         # Persistence counter
         self._persistence_count: int = 0
 
-        # Model (built lazily)
+        # Model + optimizer (built lazily, persist across fit() calls)
         self._model = None
         self._device = None
+        self._optimizer = None
+        self._last_fit_loss: Optional[float] = None
 
     # ---- Model construction -------------------------------------------------
 
@@ -286,6 +293,30 @@ class ThermoX3DDetector(ContactDetector):
             self._device = torch.device(dev_str)
             self._model = self._model.to(self._device)
         return self._model, self._device
+
+    def _get_optimizer(self, model):
+        """Lazily build and cache a single AdamW instance so its momentum/
+        adaptive-LR state persists across chunked fit() calls -- constructing
+        a fresh optimizer per chunk (the old behaviour) discards that state
+        every time, which is one of the confirmed causes of the degenerate
+        constant-classifier bug documented in thermox3d_training_bug.md."""
+        if self._optimizer is None:
+            import torch
+            self._optimizer = torch.optim.AdamW(
+                model.parameters(), lr=self._lr, weight_decay=self._wd
+            )
+        return self._optimizer
+
+    def set_normalization(self, mean: float, std: float) -> None:
+        """Freeze global normalisation stats (e.g. computed once from a
+        train-only sample) so fit() stops recomputing mean/std from whatever
+        chunk it's currently handed. Must be called before ANY call that
+        builds windows (fit(), or a caller building windows itself via
+        _build_training_windows) -- windows built before this call bake in
+        whatever stats were active at that time."""
+        self._global_mean = float(mean)
+        self._global_std = float(std) if std else 1.0
+        self._norm_frozen = True
 
     # ---- Fit ----------------------------------------------------------------
 
@@ -300,9 +331,6 @@ class ThermoX3DDetector(ContactDetector):
             X: Iterable of (Frame0, Frame1, Frame2) in temporal order.
             y: Parallel ContactEvents; ``event.any_contact`` is the label.
         """
-        import torch
-        import torch.nn as nn
-
         if y is None:
             raise ValueError("ThermoX3DDetector.fit() requires labelled ContactEvents (y=...).")
 
@@ -310,14 +338,21 @@ class ThermoX3DDetector(ContactDetector):
         if not examples:
             raise ValueError("fit() received an empty dataset.")
 
-        # Compute global normalisation statistics
-        all_temps = []
-        for triplet, _ in examples:
-            for f in triplet:
-                all_temps.append(f.data.ravel())
-        all_arr = np.concatenate(all_temps).astype(np.float32)
-        self._global_mean = float(all_arr.mean())
-        self._global_std = float(all_arr.std()) + 1e-6
+        # Global normalisation statistics: recomputed from THIS chunk only if
+        # never frozen via set_normalization(). Recomputing per chunk is the
+        # historical (buggy) behaviour for chunked training -- kept as the
+        # default so callers that don't opt in are unaffected -- but any
+        # caller doing real chunked/incremental training should call
+        # set_normalization() once, up front, with corpus-representative
+        # stats (see thermox3d_training_bug.md).
+        if not self._norm_frozen:
+            all_temps = []
+            for triplet, _ in examples:
+                for f in triplet:
+                    all_temps.append(f.data.ravel())
+            all_arr = np.concatenate(all_temps).astype(np.float32)
+            self._global_mean = float(all_arr.mean())
+            self._global_std = float(all_arr.std()) + 1e-6
 
         # Build sliding-window training samples
         windows = self._build_training_windows(examples)
@@ -326,8 +361,27 @@ class ThermoX3DDetector(ContactDetector):
                 f"fit() produced no windows (need ≥ T={self._T} frames)."
             )
 
+        self._fit_windows(windows)
+        return self
+
+    def _fit_windows(self, windows) -> float:
+        """Run self._n_epochs epochs of training over an already-built list
+        of (volume, label) windows, using the lazily-cached, PERSISTENT
+        optimizer (see _get_optimizer) so momentum/adaptive-LR state carries
+        over across calls -- this is what actually makes chunked training
+        continue rather than restart from scratch on every chunk. Callers
+        that build windows themselves (e.g. concatenating per-run window
+        lists to avoid cross-run "seam" windows) can call this directly,
+        bypassing fit()'s own windowing. Returns the mean loss over every
+        optimizer step in this call (also stored as self._last_fit_loss)."""
+        import torch
+        import torch.nn as nn
+
+        if not windows:
+            raise ValueError("_fit_windows() received no windows.")
+
         model, device = self._get_model()
-        optimizer = torch.optim.Adam(model.parameters(), lr=self._lr, weight_decay=self._wd)
+        optimizer = self._get_optimizer(model)
         weight = (
             torch.tensor(self._class_weight, dtype=torch.float32, device=device)
             if self._class_weight is not None else None
@@ -335,6 +389,7 @@ class ThermoX3DDetector(ContactDetector):
         criterion = nn.CrossEntropyLoss(weight=weight)
 
         model.train()
+        total_loss, n_steps = 0.0, 0
         for epoch in range(self._n_epochs):
             order = self._rng.permutation(len(windows))
             for start in range(0, len(windows), self._batch_size):
@@ -347,9 +402,46 @@ class ThermoX3DDetector(ContactDetector):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+                total_loss += float(loss.item())
+                n_steps += 1
 
         self._is_fitted = True
-        return self
+        self._last_fit_loss = total_loss / max(1, n_steps)
+        return self._last_fit_loss
+
+    def _eval_windows_loss(self, windows) -> float:
+        """No-grad mean CrossEntropy loss over a fixed window list (e.g. a
+        held-out validation set) -- used for early-stopping checks. Does not
+        touch the optimizer or model.train()/eval() state permanently beyond
+        this call (model is switched back to train() before returning, since
+        every caller of this method is expected to resume training after)."""
+        import torch
+        import torch.nn as nn
+
+        if not windows:
+            raise ValueError("_eval_windows_loss() received no windows.")
+
+        model, device = self._get_model()
+        weight = (
+            torch.tensor(self._class_weight, dtype=torch.float32, device=device)
+            if self._class_weight is not None else None
+        )
+        criterion = nn.CrossEntropyLoss(weight=weight)
+
+        model.eval()
+        total_loss, n_steps = 0.0, 0
+        with torch.no_grad():
+            for start in range(0, len(windows), self._batch_size):
+                batch = windows[start:start + self._batch_size]
+                vol_b, label_b = self._collate(batch)
+                vol_b = vol_b.to(device)
+                label_b = label_b.to(device)
+                logits = model(vol_b)
+                loss = criterion(logits, label_b)
+                total_loss += float(loss.item())
+                n_steps += 1
+        model.train()
+        return total_loss / max(1, n_steps)
 
     # ---- Predict ------------------------------------------------------------
 

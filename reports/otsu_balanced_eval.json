@@ -1,0 +1,50 @@
+{
+  "checkpoints_dir": null,
+  "balanced": true,
+  "fire_test_scenes": [
+    "1person cig",
+    "1ppl_single_forever",
+    "man_light_cig"
+  ],
+  "fire_train_scenes": [
+    "1_man_run",
+    "1person",
+    "2ppl_fight",
+    "2ppl_hug",
+    "2ppl_walk",
+    "3pp_standing_still",
+    "3pp_surprise",
+    "3ppl_dance",
+    "3pplhedroncolider",
+    "calibrate_room",
+    "empty_room",
+    "heater_in_middle",
+    "man_light_cig_1",
+    "the_more_the_merrier"
+  ],
+  "otsu_calibrated_thresholds": {
+    "t_ign": 39.2,
+    "t_fire": 39.2,
+    "a_limit": 25
+  },
+  "otsu_calibration_note": "t_ign/t_fire/a_limit grid-searched (score=f1) against 28896 frames (14448 positive) sampled from the 50/50 BALANCED (thermal_algorithms.training.balance.build_balanced_fire_pool) subset of the full corpus the same way FireSVMDetector's full-corpus training is sampled (waveshare fire-train scenes in full + 1500/camera/session from every synth room, before balancing). Held-out numbers below are on the SAME natural-ratio fire_test_scenes FireSVMDetector is evaluated against -- only the calibration input changed. See the calibration JSON for the full grid.",
+  "results": [
+    {
+      "detector_name": "OtsuFireDetector",
+      "variant": "fp32_baseline",
+      "task": "fire",
+      "n_frames": 1893,
+      "accuracy": 0.7580559957739038,
+      "precision": 0.5919854280510018,
+      "recall": 0.5813953488372093,
+      "f1": 0.5866425992779783,
+      "mean_iou": 0.09242937972948288,
+      "mean_inference_ms": 1.769112214505481,
+      "p95_inference_ms": 0.18884000310208532,
+      "tp": 325,
+      "tn": 1110,
+      "fp": 224,
+      "fn": 234
+    }
+  ]
+}

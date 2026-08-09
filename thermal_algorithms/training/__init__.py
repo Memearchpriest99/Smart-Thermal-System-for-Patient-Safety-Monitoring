@@ -70,9 +70,12 @@ from thermal_algorithms.training.split import (
 )
 from thermal_algorithms.training.balance import (
     balance_examples,
+    build_balanced_contact_pools,
     build_balanced_fire_pool,
     build_balanced_human_pool,
-    iter_balanced_contact_runs,
+    interleave_chunks,
+    size_and_cap_negative_runs,
+    split_contact_pools_train_val,
 )
 from thermal_algorithms.training.trainer import Trainer
 from thermal_algorithms.training.eval_report import (
@@ -156,7 +159,10 @@ __all__ = [
     "balance_examples",
     "build_balanced_fire_pool",
     "build_balanced_human_pool",
-    "iter_balanced_contact_runs",
+    "build_balanced_contact_pools",
+    "split_contact_pools_train_val",
+    "size_and_cap_negative_runs",
+    "interleave_chunks",
     # trainer
     "Trainer",
     # eval_report

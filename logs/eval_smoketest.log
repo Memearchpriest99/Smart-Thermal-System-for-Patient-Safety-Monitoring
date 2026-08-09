@@ -1,2 +1,0 @@
-Test scenes (3): ['1person cig', '1ppl_single_forever', 'man_light_cig']
-{'detector_name': 'FireSVMDetector', 'variant': 'fp32_baseline_smoketest', 'task': 'fire', 'n_frames': 1893, 'accuracy': 0.2952984680401479, 'precision': 0.2952984680401479, 'recall': 1.0, 'f1': 0.45595432300163136, 'mean_iou': 0.0, 'mean_inference_ms': 2.6192202865736154, 'p95_inference_ms': 2.617059915792197, 'tp': 559, 'tn': 0, 'fp': 1334, 'fn': 0}

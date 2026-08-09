@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Students: Guy Chen, Yaniv Blau, Roy Lieberman. Supervisor: Or Zilberberg. Advisor: Dr. Oshrit Hoffer (Afeka College of Engineering, Tel-Aviv).
 
-**Current phase:** Full-corpus training (Task 3 of `../current_state_and_tasks.md`). Dataset annotation is done — `waveshare_work` has complete real YOLO/contact labels across all 17 scenarios, and the multi-source training layer for `synth_room_1..5` is built and tested. `GlobalNormPreprocessor` won the Task 2 preprocessing comparison against `TatenoPipeline` (`reports/preprocessing_comparison_results.json`) and is what `scripts/train_full_corpus.py` uses. See `../data/DATASET_NOTES.md` for the full, verified-against-disk dataset writeup (schemas, class ratios, why `room-1` is excluded).
+**Current phase:** full-corpus + balanced-regime training and evaluation (see "Key open items" below for live status per task). Dataset annotation is done — `waveshare_work` has complete real YOLO/contact labels across all 17 scenarios, and the multi-source training layer for `synth_room_1..5` is built and tested. `GlobalNormPreprocessor` won the preprocessing comparison against `TatenoPipeline` (`reports/preprocessing_comparison_results.json`) and is what `scripts/train_full_corpus.py` uses. See `../data/DATASET_NOTES.md` for the full, verified-against-disk dataset writeup (schemas, class ratios, why `room-1` is excluded).
 
 **Training run status (2026-08-08):** `scripts/train_full_corpus.py` runs via the Windows scheduled
 task `ThermalFullCorpusTraining` (see `run_full_corpus_detached.bat`), not a foreground/Bash
@@ -259,19 +259,26 @@ human/contact). `scripts/train_full_corpus.py` is the entrypoint that fits all o
 
 ## Key open items
 
-1. **Task 3 (full-corpus retrain) hasn't completed successfully yet** — `scripts/
-   train_full_corpus.py` exists and is tested (`tests/test_full_corpus.py`); a real run was killed
-   partway through (during human-detector training) on 2026-08-08 after finding and fixing a
-   contact-training scalability bug (see "Training run status" above and `--contact-epochs-per-chunk`).
-   No `checkpoints_full_corpus/` with real full-corpus weights exists yet. Next step: re-launch
-   the `ThermalFullCorpusTraining` scheduled task (after the requested machine reboot) and let it
-   run to completion, then re-run `scripts/eval_all_detectors.py` / `export_onnx_models.py` /
-   `eval_onnx_models.py` / `eval_quantized_models.py` / `generate_full_report.py` against the real
-   checkpoints (currently only validated against `checkpoints_baseline_waveshare` smoke-test data).
-2. **Task 4 (50/50 balanced retrain) has no driver script yet** — re-train each model with a
-   non-biased 50% positive/50% negative ratio; not started (`../current_state_and_tasks.md`).
-3. **Task 5 (final consolidated report) not started** — needs results from both Task 3 and
-   Task 4 across all models/scenarios.
+1. **Task 3 (full-corpus retrain) — partially complete.** `scripts/train_full_corpus.py` exists
+   and is tested (`tests/test_full_corpus.py`); fire/human detectors have real full-corpus
+   checkpoints and results (`reports/full_corpus_eval_ready.json`, in `Report_smoketest.pdf`
+   section 2). Contact detection's natural-ratio path is trained on only a ~9% stride-sampled
+   subset (`scripts/train_thermox3d_subset.py`, the `ThermoX3DSubsetTraining` scheduled task) —
+   the full, un-subsampled contact-training run has never completed end-to-end. **That subset
+   checkpoint's chunked-training loop is also confirmed broken** (see item 7 below) — its
+   `tp=0/tn=348/fp=0/fn=122` result in section 2 is invalid, not a real finding.
+2. **Task 4 (50/50 balanced retrain) — DONE.** `scripts/train_balanced_corpus.py` +
+   `thermal_algorithms/training/balance.py` retrain/recalibrate all six in-scope detectors (Otsu,
+   FireSVM, AdaptiveThreshold, HOGSVM, MobileNetSSD, ThermoX3D — MV-STGCN excluded, see item 8)
+   on a genuinely resampled 50/50 pool; checkpoints in `checkpoints_balanced/`, results in
+   `Report_smoketest.pdf` section 4. ThermoX3D's balanced checkpoint specifically was retrained
+   2026-08-09 after fixing the training-loop bug in item 7 — see that item for its real numbers.
+3. **Task 5 (final consolidated report) — DONE, and actively maintained.** `scripts/
+   generate_full_report.py` → `reports/Report_smoketest.pdf` covers both natural-ratio (§2) and
+   balanced (§4) results for every in-scope detector, plus algorithm derivations
+   (`reports/algorithm_derivations.md`) and a consolidated write-up of earlier investigative work
+   (`reports/historical_investigations.md`) that predates this pipeline. Regenerate after any
+   checkpoint/eval change — it is NOT hand-edited.
 4. **Two pre-existing `test_mobilenet_ssd.py` failures** against the currently-installed
    `torch`/`opencv` versions — see the Commands section. Doesn't block training (the detector
    still fits/predicts), but the backbone shape assumption and save/load determinism should be
@@ -293,3 +300,25 @@ human/contact). `scripts/train_full_corpus.py` is the entrypoint that fits all o
    small, <0.5% of frame, so the two-tier ignition/potential-fire split barely engages its second
    branch here) — not re-validated in the sense of "confirmed optimal", just "no data-driven reason
    to move them". `GeometricContactDetector`'s `delta_m` remains unvalidated.
+7. **ThermoX3D's chunked-training loop was broken; FIXED for the balanced regime only
+   (2026-08-09).** A fresh optimizer per chunk + per-chunk-recomputed normalisation stats produced
+   a degenerate constant classifier — both the natural-ratio subset checkpoint (item 1) and the
+   first balanced-retrain checkpoint showed the IDENTICAL `tp=0/tn=348/fp=0/fn=122` result on
+   held-out data, which was originally (wrongly) reported as evidence against class imbalance
+   being the cause. Fixed in `thermal_algorithms/contact_detection/thermo_x3d.py` (persistent
+   AdamW, opt-in frozen normalisation via `set_normalization()`, `T` 16→5) +
+   `thermal_algorithms/training/balance.py` (parent-run-safe train/val split) +
+   `scripts/train_balanced_corpus.py` (early stopping, threshold recalibration) — **balanced
+   regime only**; retrained and verified non-degenerate: recall 0%→100%, F1 42.1% (precision
+   26.6%, still poor — a genuine data-scarcity limitation, only ~188 real positive contact frames
+   exist total, not a remaining bug). The natural-ratio path (item 1's subset checkpoint) is
+   **not** fixed by this — it still feeds single-class chunks. See memory/report caveats for
+   `ThermoX3DDetector` in both section 2 and section 4 for the full writeup.
+8. **MVSTGCNDetector excluded from further work (project-owner decision, 2026-08-08).** Confirmed
+   by an earlier, independent investigation (now in `reports/historical_investigations.md` §5.2–
+   5.3): a checkpoint-persistence bug (constructor-time `homography` stored outside the persisted
+   `_params`, so it silently reset to `None` on load) was found and fixed once already, and even
+   with that fixed, MV-STGCN remained the worst of the three contact detectors (~25-30% false-alarm
+   rate) for structural reasons — it inherits the Geometric detector's homography-noise problem and
+   loses its defining contact evidence to blob-merge exactly when two people touch. Not retrained
+   in the balanced pass; left as a documented negative result.

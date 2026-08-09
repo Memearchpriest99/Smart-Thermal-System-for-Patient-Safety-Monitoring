@@ -132,7 +132,25 @@
       "tn": 348,
       "fp": 0,
       "fn": 122
+    },
+    {
+      "detector_name": "ThermoX3DDetector",
+      "variant": "fp32_baseline",
+      "task": "contact",
+      "n_frames": 470,
+      "accuracy": 0.7404255319148936,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "mean_iou": null,
+      "mean_inference_ms": 8.792858695596806,
+      "p95_inference_ms": 12.150824998752793,
+      "tp": 0,
+      "tn": 348,
+      "fp": 0,
+      "fn": 122
     }
   ],
-  "human_test_scenes_note": "Augmented with ['empty_room'] on top of the normal build_task_split draw, to include real negative (no-person) frames -- the unaugmented split never happens to hold out an all-negative scene, so precision/false-alarm-rate were structurally untestable (tn=0) before this. No train/test leakage: these scenes are nominally in human_train_scenes too, but train_human() only trains on labeled-positive frames (include_negative_frames=False), so an all-negative scene contributes zero real training examples regardless."
+  "human_test_scenes_note": "Augmented with ['empty_room'] on top of the normal build_task_split draw, to include real negative (no-person) frames -- the unaugmented split never happens to hold out an all-negative scene, so precision/false-alarm-rate were structurally untestable (tn=0) before this. No train/test leakage: these scenes are nominally in human_train_scenes too, but train_human() only trains on labeled-positive frames (include_negative_frames=False), so an all-negative scene contributes zero real training examples regardless.",
+  "thermox3d_note": "9%% stride-sampled subset of the corpus (12h deadline, see ThermoX3DSubsetTraining task) -- not the full corpus. tp=0/tn=348/fp=0/fn=122 on held-out contact_test_scenes: identical degenerate zero-recall result to the 50/50-BALANCED retrain (see the Unbiased Results section) -- the same raw counts both ways is a real finding, not a coincidence: it suggests this detector's zero-recall problem on this held-out set is not primarily a training-data class-imbalance issue, since balancing the training data changed nothing."
 }

@@ -23,27 +23,27 @@
     "the_more_the_merrier"
   ],
   "adaptive_threshold_calibrated_params": {
-    "c_offset": 1.276,
-    "min_area_pixels": 16
+    "c_offset": 1.528,
+    "min_area_pixels": 4
   },
-  "calibration_note": "c_offset/min_area_pixels grid-searched (score=f1) against 1676 frames (838 positive) from waveshare_work human-train scenes (50/50 BALANCED subset, thermal_algorithms.training.balance.build_balanced_human_pool). Held-out numbers below are on the SAME natural-ratio human_test_scenes HOGSVMDetector/MobileNetSSDDetector are evaluated against. See the calibration JSON for the full grid.",
+  "calibration_note": "c_offset/min_area_pixels grid-searched (score=f1) against 908 frames (454 positive) from waveshare_work human-train scenes (50/50 BALANCED subset, thermal_algorithms.training.balance.build_balanced_human_pool). Held-out numbers below are on the SAME natural-ratio human_test_scenes HOGSVMDetector/MobileNetSSDDetector are evaluated against. See the calibration JSON for the full grid.",
   "results": [
     {
       "detector_name": "AdaptiveThresholdDetector",
       "variant": "fp32_baseline",
       "task": "human",
       "n_frames": 1728,
-      "accuracy": 0.8767361111111112,
-      "precision": 0.9879206212251941,
-      "recall": 0.8519345238095238,
-      "f1": 0.9149021174590491,
-      "mean_iou": 0.20574833895700856,
-      "mean_inference_ms": 1.7673023864493393,
-      "p95_inference_ms": 0.13283000625960992,
-      "tp": 1145,
-      "tn": 370,
-      "fp": 14,
-      "fn": 199
+      "accuracy": 0.8616898148148148,
+      "precision": 0.8656518861681006,
+      "recall": 0.9732142857142857,
+      "f1": 0.9162872154115587,
+      "mean_iou": 0.1404626077423399,
+      "mean_inference_ms": 0.9716160070336827,
+      "p95_inference_ms": 0.13551499869208783,
+      "tp": 1308,
+      "tn": 181,
+      "fp": 203,
+      "fn": 36
     }
   ]
 }

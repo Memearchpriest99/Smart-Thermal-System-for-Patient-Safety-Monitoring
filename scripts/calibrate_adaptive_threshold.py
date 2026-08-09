@@ -102,8 +102,10 @@ def build_calibration_set(waveshare_index: DatasetIndex, train_scenes: set[str],
 
 
 def build_balanced_calibration_set(waveshare_index: DatasetIndex, train_scenes: set[str],
-                                    preprocessor, max_total, seed: int):
-    pool, counts = build_balanced_human_pool(waveshare_index, train_scenes, max_total=max_total, seed=seed)
+                                    preprocessor, max_total, seed: int, exclude_scenes=None):
+    pool, counts = build_balanced_human_pool(
+        waveshare_index, train_scenes, exclude_scenes=exclude_scenes, max_total=max_total, seed=seed,
+    )
     print(f"  balanced calibration pool: {counts}")
     frames = [preprocessor.predict(frame).data.astype(np.float32) for frame, _dets in pool]
     labels = [1 if dets else 0 for _frame, dets in pool]
@@ -180,6 +182,7 @@ def main() -> int:
     if args.balanced:
         frames, labels = build_balanced_calibration_set(
             waveshare_index, human_train_scenes, preprocessor, args.balanced_max_total, seed=0,
+            exclude_scenes=set(args.extra_human_test_scenes) or None,
         )
     else:
         frames, labels = build_calibration_set(waveshare_index, human_train_scenes, preprocessor)
