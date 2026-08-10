@@ -33,26 +33,18 @@ dependencies = [
     "torchvision>=0.16",
     "h5py>=3.9",
     "hdf5plugin>=4.1",
-    "optuna>=4.0",     # hyperparameter search for contact training (scripts/train_contact_real_optuna.py)
+    "openpyxl>=3.1",   # xlsx engine for thermal_algorithms/training/label_io.py
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4",
-    "pytest-cov>=4.1",
     "ruff>=0.1",
     "mypy>=1.6",
-    "openpyxl>=3.1",   # reading labels.xlsx in scripts/check_label_agreement.py
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["thermal_algorithms*"]
-exclude = ["tests*"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
 
 [tool.ruff]
 line-length = 100

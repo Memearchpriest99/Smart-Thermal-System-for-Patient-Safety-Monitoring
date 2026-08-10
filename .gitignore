@@ -50,26 +50,9 @@ outputs/
 .DS_Store
 Thumbs.db
 
-# pytest / coverage
-.pytest_cache/
-pytest-cache-files-*/
-.coverage
-htmlcov/
-
 # mypy / ruff caches
 .mypy_cache/
 .ruff_cache/
 
 # Local Claude Code config
 .claude/
-
-# LaTeX build artifacts / scratch reports
-*.aux
-*.toc
-*.out
-reports/*.log
-reports/_test*
-reports/_build.log
-
-# X3D backend eval cache (regenerable, ~1.8GB)
-scripts/_x3d_backend_cache/
