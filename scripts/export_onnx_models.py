@@ -52,7 +52,24 @@ DEFAULT_CHECKPOINTS = _REPO_ROOT / "checkpoints_full_corpus"
 ONNX_OUT = _REPO_ROOT.parent / "Weights" / "onnx"
 
 
-def export_fire_svm(registry: CheckpointRegistry) -> dict | None:
+def _onnx_out_dir(checkpoints_dir) -> Path:
+    """Where this export's .onnx files go.
+
+    Exports from the DEFAULT checkpoint root keep the flat historical paths
+    (Weights/onnx/<detector>.onnx) so existing manifests stay valid. Any other
+    root gets its own subdirectory, because the filenames are otherwise
+    identical: exporting checkpoints_balanced would silently overwrite the
+    checkpoints_full_corpus .onnx that the section-2 manifest still points at,
+    and the next section-2 ONNX evaluation would quietly measure the wrong
+    weights while reporting them as natural-ratio results.
+    """
+    name = Path(checkpoints_dir).name
+    if name == DEFAULT_CHECKPOINTS.name:
+        return ONNX_OUT
+    return ONNX_OUT / name
+
+
+def export_fire_svm(registry: CheckpointRegistry, out_dir: Path) -> dict | None:
     det = registry.load(FireSVMDetector, profile_name=None)
     if det._svm is None or det._scaler is None:
         print("  SKIP FireSVMDetector: not fitted")
@@ -71,7 +88,7 @@ def export_fire_svm(registry: CheckpointRegistry) -> dict | None:
         options={id(det._svm): {"zipmap": False}},
         target_opset=17,
     )
-    out_path = ONNX_OUT / "fire_svm_detector.onnx"
+    out_path = out_dir / "fire_svm_detector.onnx"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_bytes(onnx_model.SerializeToString())
     print(f"  FireSVMDetector -> {out_path}")
@@ -85,7 +102,7 @@ def export_fire_svm(registry: CheckpointRegistry) -> dict | None:
     }
 
 
-def export_hog_svm(registry: CheckpointRegistry) -> dict | None:
+def export_hog_svm(registry: CheckpointRegistry, out_dir: Path) -> dict | None:
     det = registry.load(HOGSVMDetector, profile_name="Waveshare_26984")
     if det._svm is None:
         print("  SKIP HOGSVMDetector: not fitted")
@@ -96,7 +113,7 @@ def export_hog_svm(registry: CheckpointRegistry) -> dict | None:
     n_features = det._n_features
     dummy = np.zeros((1, n_features), dtype=np.float32)
     onnx_model = to_onnx(det._svm, dummy, target_opset=17)
-    out_path = ONNX_OUT / "hog_svm_detector.onnx"
+    out_path = out_dir / "hog_svm_detector.onnx"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_bytes(onnx_model.SerializeToString())
     print(f"  HOGSVMDetector -> {out_path}")
@@ -109,7 +126,7 @@ def export_hog_svm(registry: CheckpointRegistry) -> dict | None:
     }
 
 
-def export_mobilenet_ssd(registry: CheckpointRegistry) -> dict | None:
+def export_mobilenet_ssd(registry: CheckpointRegistry, out_dir: Path) -> dict | None:
     import torch
     from thermal_algorithms.human_detection.mobilenet_ssd import MobileNetSSDDetector
 
@@ -122,7 +139,7 @@ def export_mobilenet_ssd(registry: CheckpointRegistry) -> dict | None:
     h, w = det.sensor_profile.resolution[1], det.sensor_profile.resolution[0]
     dummy = torch.zeros(1, 1, h, w, dtype=torch.float32)
 
-    out_path = ONNX_OUT / "mobilenet_ssd_detector.onnx"
+    out_path = out_dir / "mobilenet_ssd_detector.onnx"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     torch.onnx.export(
         model, (dummy,), str(out_path),
@@ -141,7 +158,7 @@ def export_mobilenet_ssd(registry: CheckpointRegistry) -> dict | None:
     }
 
 
-def export_mv_stgcn(registry: CheckpointRegistry) -> dict | None:
+def export_mv_stgcn(registry: CheckpointRegistry, out_dir: Path) -> dict | None:
     import torch
     from thermal_algorithms.contact_detection.mv_stgcn import MVSTGCNDetector
 
@@ -156,7 +173,7 @@ def export_mv_stgcn(registry: CheckpointRegistry) -> dict | None:
     pos = torch.zeros(1, T, N, 2, dtype=torch.float32)
     mask = torch.ones(1, T, N, dtype=torch.float32)
 
-    out_path = ONNX_OUT / "mv_stgcn_detector.onnx"
+    out_path = out_dir / "mv_stgcn_detector.onnx"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     torch.onnx.export(
         model, (feat, pos, mask), str(out_path),
@@ -177,7 +194,7 @@ def export_mv_stgcn(registry: CheckpointRegistry) -> dict | None:
     }
 
 
-def export_thermo_x3d(registry: CheckpointRegistry) -> dict | None:
+def export_thermo_x3d(registry: CheckpointRegistry, out_dir: Path) -> dict | None:
     import torch
     from thermal_algorithms.contact_detection.thermo_x3d import ThermoX3DDetector
 
@@ -191,7 +208,7 @@ def export_thermo_x3d(registry: CheckpointRegistry) -> dict | None:
     h, w = det.sensor_profile.resolution[1], det.sensor_profile.resolution[0]
     dummy = torch.zeros(1, 3, T, h, w, dtype=torch.float32)
 
-    out_path = ONNX_OUT / "thermo_x3d_detector.onnx"
+    out_path = out_dir / "thermo_x3d_detector.onnx"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     torch.onnx.export(
         model, (dummy,), str(out_path),
@@ -216,50 +233,71 @@ def main() -> int:
     args = ap.parse_args()
 
     registry = CheckpointRegistry(root=args.checkpoints)
+    out_dir = _onnx_out_dir(args.checkpoints)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    print(f"ONNX output dir: {out_dir}")
     manifest: dict[str, dict] = {}
+    # Export failures are recorded, not just printed: a detector that cannot be
+    # exported needs to show up in the report as "not convertible, because X"
+    # rather than silently having no ONNX/quantized rows.
+    failures: dict[str, str] = {}
 
     print("=== Exporting FireSVMDetector ===")
     try:
-        r = export_fire_svm(registry)
+        r = export_fire_svm(registry, out_dir)
         if r:
             manifest["FireSVMDetector"] = r
     except Exception as e:
-        print(f"  FAILED FireSVMDetector: {e}")
+        print(f"  FAILED FireSVMDetector: {type(e).__name__}: {e}")
+        failures["FireSVMDetector"] = f"{type(e).__name__}: {e}"
 
     print("=== Exporting HOGSVMDetector ===")
     try:
-        r = export_hog_svm(registry)
+        r = export_hog_svm(registry, out_dir)
         if r:
             manifest["HOGSVMDetector"] = r
     except Exception as e:
-        print(f"  FAILED HOGSVMDetector: {e}")
+        print(f"  FAILED HOGSVMDetector: {type(e).__name__}: {e}")
+        failures["HOGSVMDetector"] = f"{type(e).__name__}: {e}"
 
     print("=== Exporting MobileNetSSDDetector ===")
     try:
-        r = export_mobilenet_ssd(registry)
+        r = export_mobilenet_ssd(registry, out_dir)
         if r:
             manifest["MobileNetSSDDetector"] = r
     except Exception as e:
-        print(f"  FAILED MobileNetSSDDetector: {e}")
+        print(f"  FAILED MobileNetSSDDetector: {type(e).__name__}: {e}")
+        failures["MobileNetSSDDetector"] = f"{type(e).__name__}: {e}"
 
     print("=== Exporting MVSTGCNDetector ===")
     try:
-        r = export_mv_stgcn(registry)
+        r = export_mv_stgcn(registry, out_dir)
         if r:
             manifest["MVSTGCNDetector"] = r
     except Exception as e:
-        print(f"  FAILED MVSTGCNDetector: {e}")
+        print(f"  FAILED MVSTGCNDetector: {type(e).__name__}: {e}")
+        failures["MVSTGCNDetector"] = f"{type(e).__name__}: {e}"
 
     print("=== Exporting ThermoX3DDetector ===")
     try:
-        r = export_thermo_x3d(registry)
+        r = export_thermo_x3d(registry, out_dir)
         if r:
             manifest["ThermoX3DDetector"] = r
     except Exception as e:
-        print(f"  FAILED ThermoX3DDetector: {e}")
+        # Print the full traceback, not just str(e). A bare one-line message
+        # here is how ThermoX3DDetector silently vanished from the manifest
+        # for weeks: every downstream `if "ThermoX3DDetector" in manifest`
+        # guard then skipped it, so the report showed no ONNX/int8 rows for it
+        # and looked like an oversight rather than a failure.
+        import traceback
+        print(f"  FAILED ThermoX3DDetector: {type(e).__name__}: {e}")
+        traceback.print_exc()
+        failures["ThermoX3DDetector"] = f"{type(e).__name__}: {e}"
 
     out_path = Path(args.out_manifest)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    if failures:
+        manifest["_export_failures"] = failures
     with out_path.open("w", encoding="utf-8") as fh:
         json.dump(manifest, fh, indent=2)
     print(f"\nManifest -> {out_path}")

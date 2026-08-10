@@ -33,6 +33,7 @@ dependencies = [
     "torchvision>=0.16",
     "h5py>=3.9",
     "hdf5plugin>=4.1",
+    "optuna>=4.0",     # hyperparameter search for contact training (scripts/train_contact_real_optuna.py)
 ]
 
 [project.optional-dependencies]

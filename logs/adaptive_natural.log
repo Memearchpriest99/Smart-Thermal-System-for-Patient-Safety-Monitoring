@@ -1,0 +1,84 @@
+Human train scenes: ['1_man_run', '1person', '1person cig', '1ppl_single_forever', '2ppl_fight', '2ppl_walk', '3pp_standing_still', '3pp_surprise', '3ppl_dance', 'calibrate_room', 'empty_room', 'heater_in_middle', 'man_light_cig', 'the_more_the_merrier']
+Human test scenes: ['2ppl_hug', '3pplhedroncolider', 'empty_room', 'man_light_cig_1']
+
+=== Building calibration set ===
+  calibration set: 6915 frames, 6077 positive
+  resolved block_size=23
+  positive peak local contrast: min=1.23 median=2.32 max=34.07
+  negative peak local contrast: min=1.15 median=1.79 p99=2.73 max=8.27
+
+  30 data-driven c_offset candidates spanning [1.40, 18.64]
+  min_area_pixels candidates: [1, 2, 4, 8, 16, 32]
+
+=== Grid search (real AdaptiveThresholdDetector.predict() per grid point) ===
+  c_offset=1.40 done [5.3s elapsed]
+  c_offset=1.99 done [8.6s elapsed]
+  c_offset=2.59 done [11.3s elapsed]
+  c_offset=3.18 done [13.8s elapsed]
+  c_offset=3.78 done [16.2s elapsed]
+  c_offset=4.37 done [18.7s elapsed]
+  c_offset=4.97 done [21.5s elapsed]
+  c_offset=5.56 done [23.9s elapsed]
+  c_offset=6.16 done [26.6s elapsed]
+  c_offset=6.75 done [28.9s elapsed]
+  c_offset=7.34 done [31.4s elapsed]
+  c_offset=7.94 done [34.4s elapsed]
+  c_offset=8.53 done [36.8s elapsed]
+  c_offset=9.13 done [39.2s elapsed]
+  c_offset=9.72 done [41.9s elapsed]
+  c_offset=10.32 done [44.5s elapsed]
+  c_offset=10.91 done [46.5s elapsed]
+  c_offset=11.51 done [49.3s elapsed]
+  c_offset=12.10 done [52.2s elapsed]
+  c_offset=12.70 done [55.1s elapsed]
+  c_offset=13.29 done [57.8s elapsed]
+  c_offset=13.88 done [60.9s elapsed]
+  c_offset=14.48 done [63.3s elapsed]
+  c_offset=15.07 done [66.0s elapsed]
+  c_offset=15.67 done [68.7s elapsed]
+  c_offset=16.26 done [71.2s elapsed]
+  c_offset=16.86 done [73.6s elapsed]
+  c_offset=17.45 done [75.9s elapsed]
+  c_offset=18.05 done [78.5s elapsed]
+  c_offset=18.64 done [81.0s elapsed]
+
+149/180 grid points have precision >= 0.8 -- selecting best f1 among those.
+
+=== Best config (precision >= 0.8, ranked by f1) ===
+{
+  "c_offset": 1.398,
+  "min_area_pixels": 4,
+  "score": 0.9557779212395093,
+  "tp": 5922,
+  "tn": 445,
+  "fp": 393,
+  "fn": 155,
+  "accuracy": 0.9207519884309472,
+  "precision": 0.9377672209026128,
+  "recall": 0.9744939937469146,
+  "f1": 0.9557779212395093
+}
+Saved calibration grid -> reports\adaptive_threshold_calibration.json
+
+=== Held-out evaluation on human_test_scenes (real detector, with preprocessor) ===
+{
+  "detector_name": "AdaptiveThresholdDetector",
+  "variant": "fp32_baseline",
+  "task": "human",
+  "n_frames": 1728,
+  "accuracy": 0.8449074074074074,
+  "precision": 0.8358302122347067,
+  "recall": 0.9962797619047619,
+  "f1": 0.9090291921249151,
+  "mean_iou": 0.18389854245337056,
+  "mean_inference_ms": 2.667832421342169,
+  "p95_inference_ms": 0.36223999341018476,
+  "device": "CPU",
+  "device_source": "measured",
+  "tp": 1339,
+  "tn": 121,
+  "fp": 263,
+  "fn": 5
+}
+Saved held-out eval -> reports\adaptive_threshold_eval.json
+DONE_EXIT_0 

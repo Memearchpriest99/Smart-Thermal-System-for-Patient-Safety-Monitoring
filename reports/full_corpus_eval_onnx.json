@@ -48,7 +48,9 @@
       "tp": 84,
       "tn": 1272,
       "fp": 62,
-      "fn": 475
+      "fn": 475,
+      "device": "ONNX Runtime / CPUExecutionProvider",
+      "device_source": "inferred"
     },
     {
       "detector_name": "MVSTGCNDetector",
@@ -65,7 +67,9 @@
       "tp": 0,
       "tn": 348,
       "fp": 0,
-      "fn": 122
+      "fn": 122,
+      "device": "ONNX Runtime / CUDAExecutionProvider (NVIDIA GeForce RTX 5060 Laptop GPU)",
+      "device_source": "inferred"
     },
     {
       "detector_name": "HOGSVMDetector",
@@ -82,7 +86,9 @@
       "tp": 1344,
       "tn": 5,
       "fp": 379,
-      "fn": 0
+      "fn": 0,
+      "device": "ONNX Runtime / CUDAExecutionProvider (NVIDIA GeForce RTX 5060 Laptop GPU)",
+      "device_source": "inferred"
     },
     {
       "detector_name": "MobileNetSSDDetector",
@@ -99,7 +105,9 @@
       "tp": 1344,
       "tn": 335,
       "fp": 49,
-      "fn": 0
+      "fn": 0,
+      "device": "ONNX Runtime / CUDAExecutionProvider (NVIDIA GeForce RTX 5060 Laptop GPU)",
+      "device_source": "inferred"
     }
   ]
 }

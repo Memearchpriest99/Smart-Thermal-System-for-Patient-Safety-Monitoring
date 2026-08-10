@@ -28,18 +28,23 @@ curates whole contiguous RUNS instead: every positive-containing burst (with
 leading context padding) up to a target volume, plus matching-volume
 negative-only runs sampled from elsewhere in the corpus.
 
-Four functions, deliberately kept separate rather than one combined
-generator (as an earlier version of this module had), so that a train/val
-split can happen at the PARENT-RUN level, before any run gets subdivided
-into smaller sub-chunks -- splitting after subdivision risks two sub-chunks
-of the same physical stretch landing on opposite sides of the split, the
-same near-duplicate-across-split leakage failure mode ``training/split.py``
-already documents having been burned by once elsewhere in this project:
+Several small functions, deliberately kept separate rather than one
+combined generator (as an earlier version of this module had), for two
+reasons: (a) a train/val split can then happen at the PARENT-RUN level,
+before any run gets subdivided into smaller sub-chunks -- splitting after
+subdivision risks two sub-chunks of the same physical stretch landing on
+opposite sides of the split, the same near-duplicate-across-split leakage
+failure mode ``training/split.py`` already documents having been burned by
+once elsewhere in this project; and (b) the synthetic and real sources stay
+independently addressable, which the current contact-training regime
+requires (see below):
 
-1. ``build_balanced_contact_pools`` -- Pass 1: collect ``pos_items`` (whole
-   padded positive-burst items -- never sub-chunked) and ``raw_neg_runs``
-   (uncapped ``(source, start, stop, total_len)`` tuples -- deliberately
-   NOT yet sub-chunked).
+1. ``build_synth_contact_pools`` / ``build_waveshare_contact_pools`` --
+   collect ``pos_items`` (whole padded positive-burst items -- never
+   sub-chunked) and ``raw_neg_runs`` (uncapped
+   ``(source, start, stop, total_len)`` tuples -- deliberately NOT yet
+   sub-chunked) from one source each. Same return contract, so their
+   outputs concatenate freely.
 2. ``split_contact_pools_train_val`` -- split both pools, at this
    pre-capping granularity, into train/val.
 3. ``size_and_cap_negative_runs`` -- sub-chunk ONE side's ``raw_neg_runs``
@@ -49,6 +54,17 @@ already documents having been burned by once elsewhere in this project:
 4. ``interleave_chunks`` -- order a train-side pos/neg item stream so no
    more than ``max_ratio`` consecutive items are the same class (while both
    pools still have items left).
+5. ``balance_windows`` -- final exact 50/50 enforcement, applied AFTER
+   windowing (see that function's docstring for why item- or frame-level
+   balancing is not sufficient).
+
+**Current contact-training source regime** (project owner's directive,
+2026-08-09): TRAIN on synthetic data only; VALIDATE on a mix of synthetic
+and real; TEST on real only (``split.CONTACT_TEST_SCENES``). This keeps the
+scarce real contact data out of training entirely, so it can instead be
+spent on the decision-threshold calibration that a synth-only validation
+set was previously too homogeneous to get right -- see
+``scripts/train_balanced_corpus.py``'s ``train_contact_balanced``.
 
 For the synthetic corpus, the positive/negative run scan is done via a
 CHEAP pre-pass (``_session_contact_label_array``): synthetic ``.h5`` chunk
@@ -275,23 +291,89 @@ def _decode_synth_run(session, lo: int, hi: int) -> tuple[list, list]:
     return frames_chunk, events_chunk
 
 
-def build_balanced_contact_pools(
-    data_root: str | Path,
+def build_waveshare_contact_pools(
     waveshare_index: DatasetIndex,
-    train_scenes: set[str],
+    scenes: Optional[set[str]] = None,
+    *,
+    T: int = 5,
+    context_pad: Optional[int] = None,
+    max_negative_frames: Optional[int] = None,
+    seed: int = 0,
+) -> tuple[list[tuple[int, Callable[[], tuple]]], list[tuple]]:
+    """REAL (waveshare_work) contact runs only. See the module docstring for
+    the ``(pos_items, raw_neg_runs)`` contract -- identical to
+    ``build_synth_contact_pools``'s, so the two are freely concatenable.
+
+    Kept separate from the synth builder because the current training regime
+    deliberately assigns the two sources to different SPLITS (synth ->
+    train, real -> validation/test), so a combined builder would make that
+    separation impossible to express. ``source`` in ``raw_neg_runs`` is the
+    materialized waveshare example list (dispatch via
+    ``isinstance(source, list)``).
+
+    ``scenes=None`` means every scene the index exposes a
+    ``contact_labels.csv`` for -- note this is a DIFFERENT notion of
+    "labelled" than ``DatasetIndex.labeled_sessions()`` (which gates on YOLO
+    bbox files): a scene can have per-frame contact labels but no bboxes at
+    all, in which case it is invisible to ``build_task_split`` but perfectly
+    usable here.
+    """
+    context_pad = context_pad if context_pad is not None else T - 1
+    _rng = random.Random(seed)
+    pos_items: list[tuple[int, Callable[[], tuple]]] = []
+    raw_neg_runs: list[tuple] = []
+
+    ws_examples = list(ContactFrameDataset(waveshare_index, scenes=scenes))
+    n_ws = len(ws_examples)
+    if not ws_examples:
+        return pos_items, raw_neg_runs
+
+    neg_budget = max_negative_frames if max_negative_frames is not None else n_ws
+    ws_is_pos = np.array([e[1].any_contact for e in ws_examples])
+
+    for start, stop in _find_runs(ws_is_pos):
+        lo = max(0, start - context_pad)
+        padded = _pad_run_to_min_length(lo, stop, T, n_ws)
+        if padded is None:
+            continue
+        lo, hi = padded
+        pos_items.append((stop - start, _ws_thunk(ws_examples[lo:hi])))
+
+    taken = 0
+    for start, stop in _find_runs(~ws_is_pos):
+        if taken >= neg_budget:
+            break
+        if stop - start < T:
+            # Too short to ever produce a same-run T-frame window (see
+            # size_and_cap_negative_runs' docstring) -- skip rather than let
+            # it occupy a split slot that can only resolve to zero windows.
+            continue
+        take = min(stop - start, neg_budget - taken)
+        if take < T:
+            continue
+        raw_neg_runs.append((ws_examples, start, start + take, n_ws))
+        taken += take
+
+    return pos_items, raw_neg_runs
+
+
+def build_synth_contact_pools(
+    data_root: str | Path,
     *,
     target_positive_frames: int,
     target_negative_frames: int,
     T: int = 5,
     context_pad: Optional[int] = None,
     max_negative_frames_per_session: Optional[int] = None,
+    max_frames_per_negative_run: int = 2000,
+    negative_run_gap: Optional[int] = None,
     seed: int = 0,
 ) -> tuple[list[tuple[int, Callable[[], tuple]]], list[tuple]]:
-    """Pass 1: collect candidate runs up to the requested targets, via the
-    cheap header-peek scan for synth (``_session_contact_label_array`` --
-    zero pixel decode). Synth runs are stored as un-decoded (session, lo, hi)
-    references; waveshare runs are stored decoded (that source is small
-    enough to already be fully materialized).
+    """SYNTHETIC (synth_room_1..5) contact runs only, collected up to the
+    requested targets via the cheap header-peek scan
+    (``_session_contact_label_array`` -- zero pixel decode; runs are stored
+    as un-decoded ``(session, lo, hi)`` references and only decoded when
+    their thunk is called).
 
     Returns ``(pos_items, raw_neg_runs)``:
 
@@ -300,117 +382,126 @@ def build_balanced_contact_pools(
       sub-chunked, so it's safe to split directly at this granularity.
     - ``raw_neg_runs``: ``(source, start, stop, total_len)`` tuples --
       deliberately left UNCAPPED (no ``_cap_run_length`` applied yet). Each
-      synth session contributes at most ``max_negative_frames_per_session``
-      frames (default: 1/4 of the target) so negatives aren't drawn almost
-      entirely from whichever single session happens to be scanned first --
-      real synth sessions run ~1.4M frames each, so one session's negative
-      supply alone can trivially satisfy a 100k-frame target. ``source`` is
-      either the materialized waveshare example list, or a synth
-      ``HDF5Session`` -- dispatch on ``isinstance(source, list)``.
+      session contributes at most ``max_negative_frames_per_session`` frames
+      (default: 1/4 of the target) so negatives aren't drawn almost entirely
+      from whichever session happens to be scanned first -- real synth
+      sessions run ~1.4M frames each, so one session's negative supply alone
+      can trivially satisfy a 100k-frame target.
+
+    A single synthetic session can contain one contiguous negative stretch
+    hundreds of thousands of frames long, which would collapse the whole
+    negative pool into a handful of enormous parent runs -- leaving the
+    train/val split with almost nothing to split, and the training set drawn
+    from only two or three physical stretches. ``max_frames_per_negative_run``
+    therefore chops long stretches into separate parent runs, each followed by
+    a ``negative_run_gap``-frame guard band (default ``T``) of DISCARDED
+    footage. The guard band is what keeps this from reintroducing the leakage
+    the parent-run split exists to prevent: consecutive emitted runs are
+    separated by at least a full window length, so no window built from one
+    can be a near-duplicate of a window built from another, even if they land
+    on opposite sides of the split.
 
     Call ``split_contact_pools_train_val`` on the result BEFORE calling
     ``size_and_cap_negative_runs`` -- splitting after sub-chunking risks two
     sub-chunks of the same physical stretch landing on opposite sides.
-
-    Stops once BOTH targets are met, or the corpus (waveshare train scenes +
-    every synth session) is exhausted -- whichever comes first.
     """
     context_pad = context_pad if context_pad is not None else T - 1
+    negative_run_gap = negative_run_gap if negative_run_gap is not None else T
     max_neg_per_session = (
         max_negative_frames_per_session if max_negative_frames_per_session is not None
         else max(5000, target_negative_frames // 4)
     )
     rng = random.Random(seed)
     pos_yielded = 0
-    # Each item: (n_frames, thunk) where thunk() -> (source_label, frames_chunk, events_chunk).
     pos_items: list[tuple[int, Callable[[], tuple]]] = []
-    # Entries: (source, start, stop, total_len) where source is the
-    # materialized waveshare example list, or a synth HDF5Session.
     raw_neg_runs: list[tuple] = []
     raw_neg_volume = 0
 
     def _synth_thunk(session, lo: int, hi: int):
         return lambda: (session.scene,) + _decode_synth_run(session, lo, hi)
 
-    # Waveshare: small enough to materialize directly.
-    ws_examples = list(ContactFrameDataset(waveshare_index, scenes=train_scenes))
-    n_ws = len(ws_examples)
-    if ws_examples:
-        ws_is_pos = np.array([e[1].any_contact for e in ws_examples])
-        for start, stop in _find_runs(ws_is_pos):
-            if pos_yielded >= target_positive_frames:
-                break
-            lo = max(0, start - context_pad)
-            padded = _pad_run_to_min_length(lo, stop, T, n_ws)
-            if padded is None:
-                continue
-            lo, hi = padded
-            run = ws_examples[lo:hi]
-            pos_items.append((stop - start, _ws_thunk(run)))
-            pos_yielded += (stop - start)
+    for session in iter_synth_sessions(data_root):
+        if pos_yielded >= target_positive_frames and raw_neg_volume >= target_negative_frames:
+            break
+        if not all(c in session._cams for c in (0, 1, 2)):
+            continue
+        timestamps, is_pos = _session_contact_label_array(session)
+        if len(timestamps) == 0:
+            continue
+        # Use the SHORTEST camera's frame count, not just cam_0's -- a
+        # truncated trailing chunk on one camera (the kind of acquisition
+        # artifact documented elsewhere in this corpus) would otherwise let a
+        # run's decode range run past that camera's real length.
+        n_session = min(len(timestamps), *(session._cams[c].n_frames for c in (0, 1, 2)))
 
-        ws_neg_bound = 0
-        for start, stop in _find_runs(~ws_is_pos):
-            if ws_neg_bound >= max_neg_per_session:
-                break
-            if stop - start < T:
-                # Too short to ever produce a same-run T-frame window (see
-                # size_and_cap_negative_runs' docstring) -- skip rather than
-                # let it occupy a train/val split slot that can only ever
-                # resolve to zero usable windows.
-                continue
-            take = min(stop - start, max_neg_per_session - ws_neg_bound)
-            if take < T:
-                continue
-            raw_neg_runs.append((ws_examples, start, start + take, n_ws))
-            ws_neg_bound += take
-            raw_neg_volume += take
+        if pos_yielded < target_positive_frames:
+            for start, stop in _find_runs(is_pos):
+                if pos_yielded >= target_positive_frames:
+                    break
+                lo = max(0, start - context_pad)
+                padded = _pad_run_to_min_length(lo, stop, T, n_session)
+                if padded is None:
+                    continue
+                lo, hi = padded
+                pos_items.append((stop - start, _synth_thunk(session, lo, hi)))
+                pos_yielded += (stop - start)
 
-    # Synth: cheap header-peek scan per session, pixel decode deferred to build time.
-    if pos_yielded < target_positive_frames or raw_neg_volume < target_negative_frames:
-        for session in iter_synth_sessions(data_root):
-            if pos_yielded >= target_positive_frames and raw_neg_volume >= target_negative_frames:
-                break
-            if not all(c in session._cams for c in (0, 1, 2)):
-                continue
-            timestamps, is_pos = _session_contact_label_array(session)
-            if len(timestamps) == 0:
-                continue
-            # Use the SHORTEST camera's frame count, not just cam_0's -- a
-            # truncated trailing chunk on one camera (the kind of acquisition
-            # artifact documented elsewhere in this corpus) would otherwise
-            # let a run's decode range run past that camera's real length.
-            n_session = min(len(timestamps), *(session._cams[c].n_frames for c in (0, 1, 2)))
-
-            if pos_yielded < target_positive_frames:
-                for start, stop in _find_runs(is_pos):
-                    if pos_yielded >= target_positive_frames:
-                        break
-                    lo = max(0, start - context_pad)
-                    padded = _pad_run_to_min_length(lo, stop, T, n_session)
-                    if padded is None:
-                        continue
-                    lo, hi = padded
-                    pos_items.append((stop - start, _synth_thunk(session, lo, hi)))
-                    pos_yielded += (stop - start)
-
-            if raw_neg_volume < target_negative_frames:
-                session_neg_bound = 0
-                neg_runs = _find_runs(~is_pos)
-                rng.shuffle(neg_runs)
-                for start, stop in neg_runs:
-                    if session_neg_bound >= max_neg_per_session:
-                        break
-                    if stop - start < T:
-                        continue
-                    take = min(stop - start, max_neg_per_session - session_neg_bound)
+        if raw_neg_volume < target_negative_frames:
+            session_neg_bound = 0
+            neg_runs = _find_runs(~is_pos)
+            rng.shuffle(neg_runs)
+            for start, stop in neg_runs:
+                if session_neg_bound >= max_neg_per_session:
+                    break
+                if stop - start < T:
+                    continue
+                # Chop this stretch into separate parent runs, each followed
+                # by a discarded guard band (see docstring) so that runs
+                # landing on opposite sides of the train/val split can never
+                # be near-duplicates of each other.
+                cursor = start
+                while cursor + T <= stop and session_neg_bound < max_neg_per_session:
+                    take = min(
+                        max_frames_per_negative_run,
+                        stop - cursor,
+                        max_neg_per_session - session_neg_bound,
+                    )
                     if take < T:
-                        continue
-                    raw_neg_runs.append((session, start, start + take, n_session))
+                        break
+                    raw_neg_runs.append((session, cursor, cursor + take, n_session))
                     session_neg_bound += take
                     raw_neg_volume += take
+                    cursor += take + negative_run_gap
 
     return pos_items, raw_neg_runs
+
+
+def balance_windows(windows, *, seed: int = 0, rng: Optional[random.Random] = None):
+    """Subsample the majority label down to the minority count, giving an
+    EXACT 50/50 positive/negative window split (the project owner's explicit
+    requirement for both the training chunks and the validation set).
+
+    Operates on ``(volume, label)`` windows as produced by
+    ``ThermoX3DDetector._build_training_windows`` -- i.e. AFTER windowing, so
+    the balance is measured in the units the network actually trains on. This
+    matters: a "positive item" (a contact burst plus its leading context
+    padding) yields a MIX of positive- and negative-labelled windows, because
+    a window is labelled by its LAST frame -- so balancing the item pools, or
+    even the frame counts, does not by itself give a balanced window set.
+
+    Returns the windows shuffled. If either label is entirely absent the
+    input is returned unchanged (nothing to balance against) -- callers
+    should log that case rather than assume a 50/50 result.
+    """
+    rng = rng if rng is not None else random.Random(seed)
+    pos = [w for w in windows if w[1] == 1]
+    neg = [w for w in windows if w[1] == 0]
+    if not pos or not neg:
+        return list(windows)
+    n = min(len(pos), len(neg))
+    out = rng.sample(pos, n) + rng.sample(neg, n)
+    rng.shuffle(out)
+    return out
 
 
 def _ws_thunk(run: list):
@@ -424,22 +515,33 @@ def split_contact_pools_train_val(
     val_fraction: float = 0.15,
     seed: int = 0,
 ) -> tuple[list, list, list, list]:
-    """Splits both pools independently, at the PARENT-RUN granularity
-    ``build_balanced_contact_pools`` returns (before any sub-chunking) --
+    """Splits both pools independently, at the PARENT-RUN granularity the
+    ``build_*_contact_pools`` builders return (before any sub-chunking) --
     returns ``(train_pos, val_pos, train_neg_runs, val_neg_runs)``. Splitting
     here, rather than after ``size_and_cap_negative_runs`` sub-divides a run,
     is what prevents two sub-chunks of the same physical stretch from landing
     on opposite sides of the split."""
+    def _split(items: list) -> tuple[list, list]:
+        """-> (train, val). Guarantees the TRAIN side is never starved to
+        empty by the rounding: with a single item the split would otherwise
+        send it to val and leave nothing to train on (a real abort hit during
+        small-scale testing). Training data is the side that cannot be
+        substituted -- validation additionally draws on the real-data pools --
+        so ties go to train."""
+        n = len(items)
+        if n == 0:
+            return [], []
+        n_val = min(max(1, round(n * val_fraction)), n - 1)
+        return items[n_val:], items[:n_val]
+
     rng = random.Random(seed)
     pos = list(pos_items)
     rng.shuffle(pos)
-    n_val_pos = max(1, round(len(pos) * val_fraction)) if pos else 0
-    val_pos, train_pos = pos[:n_val_pos], pos[n_val_pos:]
+    train_pos, val_pos = _split(pos)
 
     neg = list(raw_neg_runs)
     rng.shuffle(neg)
-    n_val_neg = max(1, round(len(neg) * val_fraction)) if neg else 0
-    val_neg_runs, train_neg_runs = neg[:n_val_neg], neg[n_val_neg:]
+    train_neg_runs, val_neg_runs = _split(neg)
 
     return train_pos, val_pos, train_neg_runs, val_neg_runs
 

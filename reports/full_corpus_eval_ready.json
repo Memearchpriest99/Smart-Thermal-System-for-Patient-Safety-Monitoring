@@ -80,7 +80,9 @@
       "tp": 84,
       "tn": 1272,
       "fp": 62,
-      "fn": 475
+      "fn": 475,
+      "device": "CPU",
+      "device_source": "inferred"
     },
     {
       "detector_name": "HOGSVMDetector",
@@ -97,7 +99,9 @@
       "tp": 1344,
       "tn": 5,
       "fp": 379,
-      "fn": 0
+      "fn": 0,
+      "device": "CPU",
+      "device_source": "inferred"
     },
     {
       "detector_name": "MobileNetSSDDetector",
@@ -114,7 +118,9 @@
       "tp": 1344,
       "tn": 336,
       "fp": 48,
-      "fn": 0
+      "fn": 0,
+      "device": "NVIDIA GeForce RTX 5060 Laptop GPU (CUDA)",
+      "device_source": "inferred"
     },
     {
       "detector_name": "MVSTGCNDetector",
@@ -131,7 +137,9 @@
       "tp": 0,
       "tn": 348,
       "fp": 0,
-      "fn": 122
+      "fn": 122,
+      "device": "NVIDIA GeForce RTX 5060 Laptop GPU (CUDA)",
+      "device_source": "inferred"
     },
     {
       "detector_name": "ThermoX3DDetector",
@@ -148,7 +156,9 @@
       "tp": 0,
       "tn": 348,
       "fp": 0,
-      "fn": 122
+      "fn": 122,
+      "device": "NVIDIA GeForce RTX 5060 Laptop GPU (CUDA)",
+      "device_source": "inferred"
     }
   ],
   "human_test_scenes_note": "Augmented with ['empty_room'] on top of the normal build_task_split draw, to include real negative (no-person) frames -- the unaugmented split never happens to hold out an all-negative scene, so precision/false-alarm-rate were structurally untestable (tn=0) before this. No train/test leakage: these scenes are nominally in human_train_scenes too, but train_human() only trains on labeled-positive frames (include_negative_frames=False), so an all-negative scene contributes zero real training examples regardless.",

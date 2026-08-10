@@ -44,6 +44,7 @@ from thermal_algorithms.training import (  # noqa: E402
     FrameLevelDataset,
     PERSON_CLASS_ID,
     build_task_split,
+    describe_device,
     evaluate_contact_timed,
     evaluate_fire_timed,
     evaluate_human_timed,
@@ -154,7 +155,8 @@ def main() -> int:
         det._svm = shim
         report_providers("FireSVMDetector", shim)
         fire_ds = FireFrameDataset(waveshare_index, scenes=fire_test_scenes)
-        r = evaluate_fire_timed(det, fire_ds, preprocessor=preprocessor, variant="onnx_fp32")
+        r = evaluate_fire_timed(det, fire_ds, preprocessor=preprocessor, variant="onnx_fp32",
+                                device=describe_device(onnx_providers=shim.providers))
         results.append(r)
         print(r.to_dict())
 
@@ -168,7 +170,8 @@ def main() -> int:
         shim = OnnxLinearSvcShim(manifest["HOGSVMDetector"]["onnx_path"], prefer_gpu=prefer_gpu)
         det._svm = shim
         report_providers("HOGSVMDetector", shim)
-        r = evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant="onnx_fp32")
+        r = evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant="onnx_fp32",
+                                device=describe_device(onnx_providers=shim.providers))
         results.append(r)
         print(r.to_dict())
 
@@ -181,7 +184,8 @@ def main() -> int:
         )
         det._model = shim
         report_providers("MobileNetSSDDetector", shim)
-        r = evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant="onnx_fp32")
+        r = evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant="onnx_fp32",
+                                device=describe_device(onnx_providers=shim.providers))
         results.append(r)
         print(r.to_dict())
 
@@ -198,7 +202,8 @@ def main() -> int:
         det._model = shim
         report_providers("MVSTGCNDetector", shim)
         wrapped = _PreprocessedContactDetector(det, preprocessor)
-        r = evaluate_contact_timed(wrapped, contact_ds, variant="onnx_fp32", detector_name="MVSTGCNDetector")
+        r = evaluate_contact_timed(wrapped, contact_ds, variant="onnx_fp32", detector_name="MVSTGCNDetector",
+                                   device=describe_device(onnx_providers=shim.providers))
         results.append(r)
         print(r.to_dict())
 
@@ -208,7 +213,8 @@ def main() -> int:
         det._model = shim
         report_providers("ThermoX3DDetector", shim)
         wrapped = _PreprocessedContactDetector(det, preprocessor)
-        r = evaluate_contact_timed(wrapped, contact_ds, variant="onnx_fp32", detector_name="ThermoX3DDetector")
+        r = evaluate_contact_timed(wrapped, contact_ds, variant="onnx_fp32", detector_name="ThermoX3DDetector",
+                                   device=describe_device(onnx_providers=shim.providers))
         results.append(r)
         print(r.to_dict())
 

@@ -223,12 +223,22 @@ class ThermoX3DDetector(ContactDetector):
         device: Optional[str] = None,
         random_state: int = 0,
         class_weight: Optional[tuple[float, float]] = None,
+        min_positive_frames: int = 2,
+        weight_init: str = "identity",
     ) -> None:
         """
         class_weight: Optional ``(weight_no_contact, weight_contact)`` passed
             to ``nn.CrossEntropyLoss(weight=...)`` — contact is a small
             minority class in the natural-ratio dataset (see
             data/DATASET_NOTES.md). ``None`` keeps uniform weighting.
+        min_positive_frames: How many of the ``T`` frames in a training window
+            must be contact-positive for the window to be labelled positive
+            (see ``_build_training_windows``). Default 2.
+        weight_init: ``"identity"`` (default) initialises every conv as a
+            Dirac/identity kernel and every linear layer as a (partial)
+            identity matrix, so the untrained network is close to a
+            pass-through; ``"default"`` keeps PyTorch's standard Kaiming-style
+            init. See ``_apply_identity_init`` for the caveats.
         """
         if sensor_profile is None:
             raise ValueError("ThermoX3DDetector requires a SensorProfile.")
@@ -246,8 +256,12 @@ class ThermoX3DDetector(ContactDetector):
             device=device,
             random_state=random_state,
             class_weight=class_weight,
+            min_positive_frames=min_positive_frames,
+            weight_init=weight_init,
         )
         self._class_weight = class_weight
+        self._min_positive_frames = int(min_positive_frames)
+        self._weight_init = str(weight_init)
         self._T = int(T)
         self._conf_threshold = float(conf_threshold)
         self._persistence_frames = int(persistence_frames)
@@ -289,10 +303,57 @@ class ThermoX3DDetector(ContactDetector):
         if self._model is None:
             import torch
             self._model = _build_x3d_model(self._input_h, self._input_w)
+            if self._weight_init == "identity":
+                self._apply_identity_init(self._model)
             dev_str = self._device_str or ("cuda" if torch.cuda.is_available() else "cpu")
             self._device = torch.device(dev_str)
             self._model = self._model.to(self._device)
         return self._model, self._device
+
+    @staticmethod
+    def _apply_identity_init(model) -> None:
+        """Initialise every conv as a Dirac (identity) kernel and every linear
+        layer as a (partial) identity matrix, so an untrained network is close
+        to a pass-through rather than a random projection.
+
+        Two honest caveats, both inherent to identity init on THIS
+        architecture rather than to the implementation:
+
+        1. ``dirac_`` can only make ``min(out_channels, in_channels)`` output
+           channels pass-through; the rest are left at ZERO. The stem
+           (1 -> 24 channels) therefore starts with 1 live channel and 23 dead
+           ones. Those channels are not permanently dead -- they still receive
+           gradient from downstream layers -- but they do start from zero, so
+           early training spends capacity waking them up.
+        2. Identity init gives every one of the three camera streams the exact
+           same initial weights. They only differentiate through the gradients
+           their (different) inputs produce; with default random init they
+           start differentiated. Whether that matters is empirical, which is
+           why ``weight_init`` is exposed as a searchable hyperparameter rather
+           than hardcoded.
+
+        BatchNorm is left at PyTorch's default (weight=1, bias=0), which is
+        already the identity, and all biases are zeroed.
+        """
+        import torch.nn as nn
+        from torch.nn.init import dirac_, eye_, zeros_
+
+        for m in model.modules():
+            if isinstance(m, (nn.Conv1d, nn.Conv2d, nn.Conv3d)):
+                try:
+                    dirac_(m.weight)
+                except (ValueError, RuntimeError):
+                    # dirac_ refuses some shapes (e.g. more in- than
+                    # out-channels in a way it cannot represent); leaving
+                    # PyTorch's default init for those layers is strictly
+                    # better than crashing or zeroing them.
+                    pass
+                if m.bias is not None:
+                    zeros_(m.bias)
+            elif isinstance(m, nn.Linear):
+                eye_(m.weight)          # non-square -> partial identity
+                if m.bias is not None:
+                    zeros_(m.bias)
 
     def _get_optimizer(self, model):
         """Lazily build and cache a single AdamW instance so its momentum/
@@ -519,7 +580,16 @@ class ThermoX3DDetector(ContactDetector):
         windows = []
         for start in range(len(examples) - self._T + 1):
             window = examples[start:start + self._T]
-            label = 1 if window[-1][1].any_contact else 0
+            # A window is positive when at least ``min_positive_frames`` of its
+            # T frames are contact-positive (project owner's directive: ">=2 of
+            # the 5 triplets"). The historical rule was "label by the LAST
+            # frame alone", which made a single mislabelled or borderline frame
+            # flip an entire window, and gave the network no way to distinguish
+            # a sustained contact from a one-frame segmentation blip.
+            # min_positive_frames=1 recovers an "any frame" rule; it can never
+            # exactly reproduce the old last-frame rule, which is intentional.
+            n_pos = sum(1 for _triplet, ev in window if ev.any_contact)
+            label = 1 if n_pos >= self._min_positive_frames else 0
             # Stack into (3, T, H, W) volume
             vols = [[], [], []]
             for triplet, _ in window:

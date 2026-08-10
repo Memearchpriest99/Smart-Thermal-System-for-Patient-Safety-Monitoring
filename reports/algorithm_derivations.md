@@ -6,6 +6,24 @@ This section derives, from first principles, the seven detection algorithms impl
 
 ---
 
+### Reading index (by task)
+
+Sections are numbered in the order they were written, not by task. By task they read:
+
+| Task | Sections |
+|---|---|
+| **Human detection** | §3 HOG-SVM, §4 MobileNet-SSD, §9 Adaptive Threshold |
+| **Fire detection** | §1 Otsu thresholding, §2 Fire-SVM |
+| **Contact detection** | §5 Geometric fusion, §6 MV-STGCN, §7 Thermo-X3D, §8 RBTCT |
+
+Every detector evaluated in this report has a section here, and every section here corresponds to a
+detector in the codebase. Two asymmetries are deliberate and are explained where they occur:
+§5 (Geometric) is derivation-only — it is not evaluated, because its homography could not be
+calibrated at this sensor's resolution — and §9 is numbered out of task order to avoid breaking
+existing cross-references to §8.
+
+---
+
 ## 1. Otsu Thresholding — `fire_detection/otsu_utils.py::otsu_segment`
 
 ### 1.1 Formulation
@@ -661,9 +679,274 @@ matching `self.head = Sequential(Linear(384,64), ReLU(), Linear(64,2))` followed
 
 ---
 
+## 8. RBTCT — Rule-Based Temporal Contact Tracker — `contact_detection/rbtct.py`
+
+### 8.1 Formulation
+
+RBTCT (historically "config-D") is the strongest *homography-free* contact detector found in this project, and the only one that uses **no contact-specific training whatsoever** — it consumes a person detector (§4) and a thermal residual, and every remaining parameter is a threshold tuned on a validation split. It exists because both homography-based contact detectors (§5, §6) inherit a measurement-noise problem: the self-calibrated homography's accuracy (≈±15 px) is nearly as large as the contact decision threshold itself (δ≈18 px), so inter-actor distance in the floor plane is barely more informative than noise.
+
+RBTCT replaces "project two people onto a floor plane and measure their distance" with a fundamentally different observation: **when two people touch, their thermal signatures merge into a single connected warm region, while the person detector still reports two boxes.** That disagreement — two boxes, one blob — *is* the contact signal, and it is measured entirely in image space.
+
+The pipeline, per frame $t$, is five stages:
+
+$$
+\underbrace{\text{SSD on raw}}_{\text{§8.2}} \rightarrow
+\underbrace{\text{box de-duplication}}_{\text{§8.2}} \rightarrow
+\underbrace{\text{per-camera two-body test}}_{\text{§8.3}} \rightarrow
+\underbrace{\text{cross-camera quorum}}_{\text{§8.4}} \rightarrow
+\underbrace{\text{temporal morphology}}_{\text{§8.5}}
+$$
+
+### 8.2 Stage 1–2: boxes, and merging over-segmented detections
+
+Each camera $c \in \{0,1,2\}$ yields a box set $B_c = \{b_1,\dots,b_{N_c}\}$, $b = (x,y,w,h)$, from the MobileNet-SSD of §4 run on **raw** frames (the reason it is raw and not the residual is derived in §8.6). A single person at this resolution is frequently split into two overlapping boxes, which would fake the "two boxes" half of the contact signal, so boxes are first merged to a fixpoint under
+
+$$
+\mathrm{IoU}(a,b) = \frac{|a\cap b|}{|a\cup b|} \;\ge\; \tau_{\mathrm{IoU}}
+\qquad\text{or}\qquad
+\mathrm{Cont}(a,b) = \frac{|a\cap b|}{\min(|a|,|b|)} \;\ge\; \tau_{\mathrm{cont}},
+$$
+
+with the merged replacement being the union bounding box $a\sqcup b = \bigl(\min x,\ \min y,\ \max(x{+}w)-\min x,\ \max(y{+}h)-\min y\bigr)$. The containment term is the important one: a small box entirely inside a larger one has low IoU (so an IoU-only rule would keep both) but containment $=1$, and it is almost always one person detected twice at two scales. `merge_oversegmented` iterates until no pair satisfies either predicate, which terminates because each merge strictly decreases $|B_c|$.
+
+### 8.3 Stage 3: the two-body blob-merge test (the core signal)
+
+Let $R \in \mathbb{R}^{H\times W}$ be the preprocessed thermal **residual** for that camera. Warm regions are segmented by a per-frame adaptive threshold — the same "no absolute calibration" philosophy as Otsu (§1), but a one-sided $z$-score rather than a between-class variance maximization, because here we want "hotter than this frame's typical pixel" rather than an optimal bipartition:
+
+$$
+\theta = \mu_R + k\,\sigma_R, \qquad \mu_R = \tfrac{1}{HW}\textstyle\sum_{p} R_p, \quad \sigma_R^2 = \tfrac{1}{HW}\textstyle\sum_p (R_p-\mu_R)^2, \qquad k = 1.0 .
+$$
+
+Let $M = [\,R > \theta\,]$ be the resulting binary mask and let $\ell : \Omega \to \{0,1,\dots,C\}$ be its connected-component labelling ($\ell = 0$ for background), computed by `scipy.ndimage.label`. Each surviving box $b$ contributes its **center** $c_b = (x + w/2,\ y + h/2)$, and we count how many box centers land in each component:
+
+$$
+n_j \;=\; \bigl|\{\, b \in B_c \;:\; \ell(c_b) = j \,\}\bigr|, \qquad j = 1,\dots,C .
+$$
+
+Define the two merge predicates
+
+$$
+\textsf{any\_merge} = \exists j:\ n_j \ge 2, \qquad
+\textsf{pair\_merge} = \exists j:\ n_j = 2,
+$$
+
+and the touch decision
+
+$$
+\textsf{touch} =
+\begin{cases}
+\textsf{any\_merge}, & N_c = 2,\\[2pt]
+\textsf{pair\_merge}, & N_c \ge 3 .
+\end{cases}
+$$
+
+The asymmetry is deliberate and is what "two-body" refers to. With exactly two people present, *any* merged component means those two merged. In a crowd, a component absorbing three or more centers is far more likely to be a group standing close together — or a segmentation failure swallowing several bodies at once — than a genuine pairwise contact event, so crowds are required to exhibit a component containing **exactly two** centers. Empirically this single change removed 15 of 19 false positives on the densest test scene.
+
+Each camera then emits one of four states:
+
+$$
+s_c =
+\begin{cases}
+\texttt{C} \ (\text{clear}), & N_c = 0,\\
+\texttt{M} \ (\text{merged/ambiguous}), & N_c = 1,\\
+\texttt{T} \ (\text{touch}), & N_c \ge 2 \ \wedge\ \textsf{touch},\\
+\texttt{N} \ (\text{near}), & N_c \ge 2 \ \wedge\ \neg\textsf{touch} \ \wedge\ \mathrm{gap}_{\min}(B_c) < \tau_2,\\
+\texttt{C} \ (\text{clear}), & \text{otherwise},
+\end{cases}
+$$
+
+where $\mathrm{gap}_{\min}$ is the smallest edge-to-edge separation over all box pairs and $\tau_2 = 8$ px. The $N_c=1$ case is labelled **ambiguous rather than negative** precisely because it is the blob-merge failure mode of §5/§6: one box may be two people whose boxes have already merged, so a single box is *evidence of nothing* — it can neither confirm nor deny contact.
+
+### 8.4 Stage 4: cross-camera quorum with veto
+
+Let $\text{votes} = |\{c: s_c = \texttt{T}\}|$, $\text{merged} = |\{c : s_c = \texttt{M}\}|$, and $\text{clear} = \exists c: s_c = \texttt{C}$. The per-frame decision is
+
+$$
+D_t = \mathbb{1}\Bigl[\ \bigl(\max_c N_c \ge 2\bigr) \ \wedge\ \bigl(\text{votes} \ge 1\bigr) \ \wedge\ \bigl(\text{votes} + \text{merged} \ge 2\bigr) \ \wedge\ \neg\,\text{clear} \ \Bigr].
+$$
+
+This is a **veto-based** quorum, not a majority vote, and each clause earns its place:
+
+- $\max_c N_c \ge 2$ — at least one camera must see two people at all; contact between fewer than two people is not defined.
+- $\text{votes} \ge 1$ — at least one camera must *positively* observe a two-body merge. Ambiguity alone never fires the alarm.
+- $\text{votes} + \text{merged} \ge 2$ — a second camera must at least be *consistent* with contact (either it also sees the merge, or it sees a single ambiguous blob). A lone camera claiming contact while others clearly resolve two separated bodies is treated as a segmentation artifact.
+- $\neg\,\text{clear}$ — **any** camera that cleanly resolves two well-separated bodies vetoes the decision outright.
+
+The veto is the asymmetry that a majority vote cannot express, and it is justified by the geometry: a camera reporting `C` has *positive* evidence of non-contact (it resolved two bodies with a gap $\ge \tau_2$), whereas a camera reporting `T` may simply be the one whose viewing angle happens to place two separated people in line with each other. Occlusion produces false merges; it does not produce false separations. The evidence is therefore fundamentally asymmetric, and the decision rule mirrors that asymmetry.
+
+### 8.5 Stage 5: temporal morphology
+
+Stages 1–4 are memoryless, so the decision stream $D_{1:n}$ inherits every single-frame segmentation glitch. The final stage applies **1-D binary morphology** to that stream, with a structuring element $S_\ell$ equal to a run of $\ell$ consecutive frames. Opening then closing:
+
+$$
+D' = \bigl(D \circ S_{\ell_o}\bigr) \bullet S_{\ell_c},
+\qquad
+D \circ S = (D \ominus S)\oplus S,
+\qquad
+D \bullet S = (D \oplus S)\ominus S .
+$$
+
+For 1-D binary sequences these have an exact run-length characterization, which is what `v8.morph` implements directly:
+
+$$
+D \circ S_{\ell_o}: \ \text{delete every maximal run of 1s of length} < \ell_o,
+\qquad
+D \bullet S_{\ell_c}: \ \text{fill every maximal run of 0s of length} < \ell_c .
+$$
+
+Opening removes contact "events" too brief to be physically meaningful; closing bridges dropouts inside a genuine sustained contact. At the 8 Hz effective frame rate, the tuned $(\ell_o,\ell_c) = (2,7)$ means: reject events shorter than $0.25$ s, and bridge gaps shorter than $\approx 0.875$ s. Both are grid-searched on the validation split ($\ell_o \in [0,6]$, $\ell_c \in [0,8]$, maximizing F1 with recall as tie-break).
+
+One deliberate deviation from textbook closing: `morph` fills a zero-run only when `s > 0 and e < len(a)`, i.e. **never at the sequence boundaries**. A gap that runs off the start or end of a clip is not an observed dropout *between* two confirmed contacts — it is unterminated, and filling it would invent contact frames at the clip edge on no evidence. Ordinary closing would fill it, because $\ominus$/$\oplus$ implicitly pad the domain; the run-length form makes the boundary case explicit and rejects it.
+
+### 8.6 Why "config-D": the preprocessing split, and why it is not arbitrary
+
+The name comes from a 2×2 ablation (`ablate_preprocessing.py`) over *which representation feeds which stage* — the person detector (§8.2) and the blob segmentation (§8.3) are independent consumers, and there is no a priori reason they want the same input:
+
+| Config | Detector input | Blob input | Test F1 |
+|---|---|---|---|
+| A | residual | residual | 54.5% |
+| B | residual | raw | 8.7% |
+| C | raw | raw | 0.0% |
+| **D** | **raw** | **residual** | **60.8%** |
+
+The two stages want *opposite* preprocessing, and both directions follow from §8.3's threshold $\theta = \mu_R + k\sigma_R$:
+
+- **The blob test requires the residual.** On raw temperature, $\sigma$ is dominated by *static* scene structure — walls, radiators, equipment at varying fixed temperatures — which is large and has nothing to do with people. A body only slightly exceeds that spread, so $[\,R>\mu+k\sigma\,]$ either selects most of the room (components merge indiscriminately, $n_j$ is meaningless) or nothing at all. Background subtraction removes exactly that static term, leaving $\sigma$ reflecting only transient warm-body variation, which is what makes the threshold separate bodies from background. Configs B and C collapsing to 8.7% and 0.0% is this failure, measured.
+- **The detector requires raw.** MobileNet-SSD is trained to recognize the absolute thermal signature of a human — a warm region of a characteristic temperature and shape. The residual deliberately destroys absolute temperature, keeping only deviation-from-background, which removes the very feature the detector's learned filters key on.
+
+So the raw/residual split is not a tuning artifact; it is the configuration in which each stage receives the representation its own decision rule mathematically depends on.
+
+### 8.7 Implementation notes and status
+
+- **Promoted to a first-class detector on 2026-08-09**: `thermal_algorithms/contact_detection/rbtct.py` (`RBTCTDetector`, `is_trainable=False`), exported from the package and covered by `tests/test_rbtct.py`. It consumes person boxes through the standard `ContactDetector.predict(X, detections)` contract rather than owning a detector, so it drops into `ThermalPipeline` unchanged. The original evaluation-time composition (`eval_waveshare_contact_v9.py` + `_v8.py` + `_v3_variants.py` + `ablate_preprocessing.py`) is retained for reproducing the historical figures.
+- **One deliberate divergence from the original, in §8.5's temporal stage.** Offline morphological *closing* is **acausal** — filling a gap requires knowing that a LATER frame is positive, which no streaming detector can know. `RBTCTDetector` therefore implements the causal analogue: an attack/release gate (`attack_frames` = consecutive raw positives required to assert; `release_frames` = frames the assertion is held after the raw signal drops). This preserves the intent of opening/closing, is causal by construction (there is a regression test asserting a future positive never changes a past output), and costs at most `attack_frames` of latency. Numbers from `RBTCTDetector` therefore differ slightly from the historical offline config-D figures; `scripts/eval_config_d.py` still measures the offline variant when that comparison is wanted.
+- Fixed parameters: $k=1.0$, $\tau_2=8.0$ px, $(\tau_{\mathrm{IoU}}, \tau_{\mathrm{cont}})$ from `v3_variants`; tuned per-run: $(\ell_o, \ell_c)$ on validation.
+- It requires contact labels **only** to tune $(\ell_o,\ell_c)$ and to evaluate — never for training, which is why it is unaffected by the contact-label scarcity that limits §6 and §7 (see `reports/historical_investigations.md` §3.2, §4.1).
+- **Performance depends enormously on the split, and the honest number is the cross-validated one.** Historical: F1 60.8% on one within-scene split vs 44.3% pooled over 4-fold CV (per-fold 32/51/65/0%). Re-measured 2026-08-09 under leave-one-scene-out CV over all five contact-positive scenes (`scripts/cv_contact_detectors.py`): **pooled F1 0.431, per-fold [0.00, 0.69, 0.27, 0.48, 0.39]** — reproducing the historical CV including its zero fold, from an independent implementation.
+- **F1 is the wrong metric for this task, and the report says so.** The pooled positive base rate is 27.5%, so an always-alarm detector scores F1 0.432 — indistinguishable from all three real contact detectors (0.431–0.448). Scored on balanced accuracy / MCC, which credit true negatives, RBTCT is the strongest (0.592 / 0.169) against ThermoX3D (0.547 / 0.113) and an OR-ensemble of the two (0.532 / 0.092, i.e. the ensemble is the *worst* — it inherits both detectors' false alarms). See the contact caveat in the generated report.
+
+---
+
+## 9. AdaptiveThresholdDetector — `human_detection/adaptive_threshold.py`
+
+*(Numbered last for historical reasons — this derivation was added after §1–§8 and after the
+report's cross-references to "§8" were already in circulation, so renumbering would have silently
+broken them. By task it belongs with the human detectors, §3–§4; see the reading index at the top.)*
+
+### 9.1 Formulation
+
+`AdaptiveThresholdDetector` is the classical-CV human detector: no learned parameters at all, only
+thresholds. Its premise is that a person is *locally* warmer than their immediate surroundings —
+not that they exceed any absolute temperature. That distinction is what makes it robust to the
+ambient drift a psychiatric ward exhibits over a day, and it is why it thresholds against a
+**local** mean rather than a global one (contrast §1's Otsu, which picks a single frame-wide
+threshold, and consequently fails exactly when the frame contains two thermally distinct
+populations).
+
+Three stages: adaptive threshold → morphological closing → geometric filtering.
+
+### 9.2 Stage 1: adaptive thresholding against a Gaussian local mean
+
+For a thermal frame $I(x,y)$, the local background is a Gaussian-weighted mean over a
+$B \times B$ neighbourhood:
+
+$$
+\mu_{\text{loc}}(x,y) \;=\; (G_\sigma * I)(x,y) \;=\; \sum_{(u,v)} G_\sigma(u,v)\, I(x-u,\,y-v),
+\qquad G_\sigma(u,v) \propto e^{-(u^2+v^2)/2\sigma^2},
+$$
+
+and the foreground mask is
+
+$$
+D(x,y) \;=\; \mathbb{1}\bigl[\, I(x,y) \;>\; \mu_{\text{loc}}(x,y) + C \,\bigr],
+$$
+
+with $C$ = `c_offset`, a **noise margin in input units** (°C on raw frames, residual-°C on Tateno
+residuals). Larger $C$ is strictly more conservative. Implementation note: this is
+`cv2.GaussianBlur` followed by an explicit comparison, deliberately **not** `cv2.adaptiveThreshold`
+— the latter requires `uint8`, which would re-quantize float32 thermal data and discard exactly the
+sub-degree structure the margin $C$ is measured in.
+
+**Why the block size is derived from physics, not pixels.** Adaptive thresholding only works if the
+neighbourhood is *larger than the target*: if $B$ were smaller than a person, the person would
+dominate their own local mean, $\mu_{\text{loc}}$ would rise with $I$, and the difference
+$I - \mu_{\text{loc}}$ would collapse toward the noise floor — the target would erase itself. The
+detector therefore sets $B$ from a physical scale (`physical_block_size_m`, default 0.60 m at an
+assumed 2 m range) converted through `SensorProfile.physical_pixel_size_m`, then forced odd and
+$\ge 3$. This is exactly what `resolution_behavior = "parameterized"` means here: the same code
+adapts to MLX90640 and Waveshare geometry without a per-sensor checkpoint, because there are no
+weights to retrain — only a kernel size to recompute.
+
+**Sign convention.** The engineering report §4.4.2.1 writes the rule as $I > \mu - C$, but its own
+accompanying text describes $C$ as "a constant offset to filter noise". Those disagree: with
+$-C$, increasing $C$ *loosens* the detector. The implementation uses $+C$, matching the stated
+intent (larger $C$ ⇒ stricter), and the module docstring records the discrepancy rather than
+silently diverging from the report.
+
+### 9.3 Stage 2: morphological closing
+
+$$
+D' \;=\; D \bullet S \;=\; (D \oplus S) \ominus S,
+$$
+
+a dilation followed by an erosion with a $k \times k$ rectangular structuring element
+(`morph_kernel_size`, odd, default 3). Closing fills interior holes **without** growing the blob's
+outer extent — which is the required property here, because the holes are physical: clothing
+insulates unevenly, so a torso images as a warm region perforated by cooler patches over thick
+fabric. Without closing, `findContours` would return each fragment as a separate detection and one
+person would produce several boxes. Note the asymmetry with §1.4's *opening*-then-dilation on the
+fire path: there the concern is deleting single-pixel noise, here it is not fragmenting a large
+target, and the two call for opposite orderings.
+
+### 9.4 Stage 3: geometric filtering
+
+Each external contour of $D'$ is accepted only if it passes three independent gates:
+
+$$
+A_{\min} \le A(c) \le A_{\max}, \qquad
+\text{solidity}(c) = \frac{A(c)}{A(\mathrm{conv}(c))} \ge s_{\min}, \qquad
+r_{\min} \le \frac{h}{w} \le r_{\max},
+$$
+
+where $A(\mathrm{conv}(c))$ is the convex-hull area. Each rejects a distinct false-positive
+population: **area** removes sensor speckle below `min_area_pixels` (default 4 px) and
+wall-sized warm regions above the max; **solidity** removes the ragged, concave blobs produced by
+reflections and thermal smears, since a standing person is close to convex; **aspect ratio** removes
+horizontally-extended heat sources — radiators, worktops, sunlit floor — that a person-shaped prior
+would not produce. Optional `pixel_value_bounds` adds absolute intensity gating, whose units follow
+the input (absolute °C on raw frames, above-background °C on residuals) — the detector is
+preprocessor-agnostic by design, and this is the one parameter whose *meaning* changes with that
+choice.
+
+### 9.5 Why its localization is loose — the Criterion-A → Criterion-B gap
+
+The bounding box is the axis-aligned box of a *closed thermal mask*, and that mask is not the
+person: closing dilates before eroding, so warm pixels bleeding into the surrounding air survive
+into the final contour, and the box is systematically larger than the true silhouette. This is the
+mechanism behind the measured drop from frame-level presence (Criterion A, F1 98.5%) to
+IoU>0.5 localization (Criterion B, F1 82.0%) reported in `reports/historical_investigations.md`
+§2.1 — 185 of its false negatives there were "detected but misplaced", i.e. the blob was found and
+the box simply failed the IoU gate. It is a segmentation-derived box, not a regressed one, and no
+threshold tuning fixes that; only a different box-formation step would.
+
+### 9.6 Implementation notes
+
+- `is_trainable = False` and `fit()` is a genuine no-op (it only sets `_is_fitted`), identical in
+  contract to `OtsuFireDetector` (§1) and `RBTCT` (§8). Its parameters are set by calibration —
+  `scripts/calibrate_adaptive_threshold.py` grid-searches `c_offset` and `min_area_pixels` under a
+  precision floor, for the same reason Otsu's calibration needs one (§1.3): an unconstrained
+  F1 search on imbalanced data drifts toward predicting "person" almost everywhere.
+- **CPU only**, by construction: `cv2.GaussianBlur`, `morphologyEx`, `findContours` and
+  `convexHull` are OpenCV C++ routines with no GPU path engaged here. This is also why the detector
+  has no fp16/bf16/int8 variant in §2 — there is no tensor to cast and no ONNX graph to quantize.
+
+---
+
 ## References to reused report content
 
 - §1.3, §2.1–§2.7 draw the six-feature description, the $C$-as-regularizer framing, the dual/kernel-trick narrative, the RBF-kernel interpretation, and the Platt-scaling paragraph from `reports/checkpoint_report.tex` ("FireSVM" section); the KKT stationarity/complementary-slackness/eligibility derivations (§2.4–§2.5) are original to this document, since the source report states the dual but does not derive KKT explicitly.
 - §4.2, §4.5 (loss terms), §4.7 (NMS) draw the depthwise-separable-convolution cost argument, the CE+SmoothL1 loss narrative, and the NMS description from `reports/checkpoint_report.tex` ("MobileNet-SSD" section); the anchor-matching, hard-negative-mining, and encode/decode algebra (§4.3, §4.4, §4.5's offset derivation, §4.6) are derived directly from `mobilenet_ssd_anchors.py`/`mobilenet_ssd_model.py` since the source report does not derive them in closed form.
 - §7.3–§7.6 draw the (2+1)D-factorization rationale, the CBAM-attention cost argument, and the global-average-pool justification from `reports/checkpoint_report.tex` ("Thermo-X3D T5v2" section); §7.5's global-normalization derivation and §7.2's 3-D-convolution generalization argument are original to this document, matching the actual `T=16`/global-mean-std implementation in `thermo_x3d.py` (distinct from the `T=5`/rolling-p25-background "T5v2" variant that report separately documents as a deployment configuration).
 - `reports/fire_detection_report.tex` and `reports/human_detection_report.tex` were consulted for dataset/threshold context (§1.3, §3.6) but contain evaluation results rather than derivations, so their content is cited rather than reproduced.
+- §8 is derived directly from the shipped source (`eval_waveshare_contact_v9.py`, `_v8.py`, `_v3_variants.py`, `ablate_preprocessing.py`) rather than from any prior report: the earlier write-ups state config-D's *results* and describe its stages in prose, but never give the threshold, quorum, or morphology rules in closed form. The empirical figures quoted in §8.3, §8.6 and §8.7 come from `reports/historical_investigations.md` §4.
+- **Note on the `.tex` citations above:** the eight standalone LaTeX reports referenced in this section (`checkpoint_report.tex`, `fire_detection_report.tex`, `human_detection_report.tex`, and five others) were consolidated and deleted on 2026-08-09. Their substantive findings now live in `reports/historical_investigations.md`; the originals remain recoverable from git history if a specific derivation needs to be re-checked against its source.

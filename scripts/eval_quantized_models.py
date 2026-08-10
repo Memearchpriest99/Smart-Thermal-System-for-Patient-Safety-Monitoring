@@ -54,6 +54,7 @@ from thermal_algorithms.training import (  # noqa: E402
     FrameLevelDataset,
     PERSON_CLASS_ID,
     build_task_split,
+    describe_device,
     evaluate_contact_timed,
     evaluate_fire_timed,
     evaluate_human_timed,
@@ -213,7 +214,8 @@ def main() -> int:
                 int8_path = quantize_to_int8(manifest["FireSVMDetector"]["onnx_path"])
                 det._scaler = _Identity()
                 det._svm = OnnxFireSvmShim(int8_path, prefer_gpu=False)
-                return evaluate_fire_timed(det, fire_ds, preprocessor=preprocessor, variant="int8")
+                return evaluate_fire_timed(det, fire_ds, preprocessor=preprocessor, variant="int8",
+                                           device=describe_device(force="ONNX Runtime / CPUExecutionProvider"))
             run_block("FireSVMDetector int8", _run)
 
         if wanted("HOGSVMDetector") and "HOGSVMDetector" in manifest:
@@ -221,7 +223,8 @@ def main() -> int:
                 det = registry.load(HOGSVMDetector, profile_name="Waveshare_26984")
                 int8_path = quantize_to_int8(manifest["HOGSVMDetector"]["onnx_path"])
                 det._svm = OnnxLinearSvcShim(int8_path, prefer_gpu=False)
-                return evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant="int8")
+                return evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant="int8",
+                                            device=describe_device(force="ONNX Runtime / CPUExecutionProvider"))
             run_block("HOGSVMDetector int8", _run)
 
         if _TORCH_OK and wanted("MobileNetSSDDetector") and "MobileNetSSDDetector" in manifest:
@@ -230,7 +233,8 @@ def main() -> int:
                 anchors = det._model.anchors
                 int8_path = quantize_to_int8(manifest["MobileNetSSDDetector"]["onnx_path"])
                 det._model = OnnxTorchShim(int8_path, ["frame"], prefer_gpu=False, anchors=anchors)
-                return evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant="int8")
+                return evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant="int8",
+                                            device=describe_device(force="ONNX Runtime / CPUExecutionProvider"))
             run_block("MobileNetSSDDetector int8", _run)
 
         if _TORCH_OK and wanted("MVSTGCNDetector") and "MVSTGCNDetector" in manifest:
@@ -240,7 +244,8 @@ def main() -> int:
                 int8_path = quantize_to_int8(manifest["MVSTGCNDetector"]["onnx_path"])
                 det._model = OnnxTorchShim(int8_path, ["node_features", "positions", "masks"], prefer_gpu=False)
                 wrapped = _PreprocessedContactDetector(det, preprocessor)
-                return evaluate_contact_timed(wrapped, contact_ds, variant="int8", detector_name="MVSTGCNDetector")
+                return evaluate_contact_timed(wrapped, contact_ds, variant="int8", detector_name="MVSTGCNDetector",
+                                              device=describe_device(force="ONNX Runtime / CPUExecutionProvider"))
             run_block("MVSTGCNDetector int8", _run)
 
         if _TORCH_OK and wanted("ThermoX3DDetector") and "ThermoX3DDetector" in manifest:
@@ -249,7 +254,8 @@ def main() -> int:
                 int8_path = quantize_to_int8(manifest["ThermoX3DDetector"]["onnx_path"])
                 det._model = OnnxTorchShim(int8_path, ["volume"], prefer_gpu=False)
                 wrapped = _PreprocessedContactDetector(det, preprocessor)
-                return evaluate_contact_timed(wrapped, contact_ds, variant="int8", detector_name="ThermoX3DDetector")
+                return evaluate_contact_timed(wrapped, contact_ds, variant="int8", detector_name="ThermoX3DDetector",
+                                              device=describe_device(force="ONNX Runtime / CPUExecutionProvider"))
             run_block("ThermoX3DDetector int8", _run)
 
     # ---- fp16 / bf16 (torch detectors only, GPU) ----
@@ -265,7 +271,8 @@ def main() -> int:
                     det = registry.load(MobileNetSSDDetector, profile_name="Waveshare_26984")
                     orig_model = det._model
                     det._model = CastModelShim(orig_model, dtype, anchors=orig_model.anchors)
-                    return evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant=fmt)
+                    return evaluate_human_timed(det, human_ds, preprocessor=preprocessor, variant=fmt,
+                                                device=describe_device(det))
                 run_block(f"MobileNetSSDDetector {fmt}", _run)
 
             if wanted("MVSTGCNDetector"):
@@ -274,7 +281,8 @@ def main() -> int:
                     attach_mvstgcn_inference_deps(det, registry)
                     det._model = CastModelShim(det._model, dtype)
                     wrapped = _PreprocessedContactDetector(det, preprocessor)
-                    return evaluate_contact_timed(wrapped, contact_ds, variant=fmt, detector_name="MVSTGCNDetector")
+                    return evaluate_contact_timed(wrapped, contact_ds, variant=fmt, detector_name="MVSTGCNDetector",
+                                                  device=describe_device(det))
                 run_block(f"MVSTGCNDetector {fmt}", _run)
 
             if wanted("ThermoX3DDetector"):
@@ -282,7 +290,8 @@ def main() -> int:
                     det = registry.load(ThermoX3DDetector, profile_name="Waveshare_26984")
                     det._model = CastModelShim(det._model, dtype)
                     wrapped = _PreprocessedContactDetector(det, preprocessor)
-                    return evaluate_contact_timed(wrapped, contact_ds, variant=fmt, detector_name="ThermoX3DDetector")
+                    return evaluate_contact_timed(wrapped, contact_ds, variant=fmt, detector_name="ThermoX3DDetector",
+                                                  device=describe_device(det))
                 run_block(f"ThermoX3DDetector {fmt}", _run)
     else:
         print("  SKIP fp16/bf16: torch not available")

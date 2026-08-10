@@ -112,7 +112,8 @@ def _load_checkpoint_payload(path: Path) -> dict | None:
 
 def collect_eval_rows(detector_name: str) -> list[dict]:
     rows = []
-    for pat in ("full_corpus_eval_*.json", "eval_*smoketest*.json"):
+    for pat in ("full_corpus_eval_*.json",):   # smoketest results excluded: placeholder
+                                           # checkpoints, see generate_full_report.py
         for path in sorted(REPORTS_DIR.glob(pat)):
             try:
                 payload = json.loads(path.read_text(encoding="utf-8"))

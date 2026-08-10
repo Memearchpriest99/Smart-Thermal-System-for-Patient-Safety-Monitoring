@@ -261,7 +261,7 @@ human/contact). `scripts/train_full_corpus.py` is the entrypoint that fits all o
 
 1. **Task 3 (full-corpus retrain) — partially complete.** `scripts/train_full_corpus.py` exists
    and is tested (`tests/test_full_corpus.py`); fire/human detectors have real full-corpus
-   checkpoints and results (`reports/full_corpus_eval_ready.json`, in `Report_smoketest.pdf`
+   checkpoints and results (`reports/full_corpus_eval_ready.json`, in `Full_Corpus_Engineering_Report.pdf`
    section 2). Contact detection's natural-ratio path is trained on only a ~9% stride-sampled
    subset (`scripts/train_thermox3d_subset.py`, the `ThermoX3DSubsetTraining` scheduled task) —
    the full, un-subsampled contact-training run has never completed end-to-end. **That subset
@@ -271,10 +271,10 @@ human/contact). `scripts/train_full_corpus.py` is the entrypoint that fits all o
    `thermal_algorithms/training/balance.py` retrain/recalibrate all six in-scope detectors (Otsu,
    FireSVM, AdaptiveThreshold, HOGSVM, MobileNetSSD, ThermoX3D — MV-STGCN excluded, see item 8)
    on a genuinely resampled 50/50 pool; checkpoints in `checkpoints_balanced/`, results in
-   `Report_smoketest.pdf` section 4. ThermoX3D's balanced checkpoint specifically was retrained
+   `Full_Corpus_Engineering_Report.pdf` section 4. ThermoX3D's balanced checkpoint specifically was retrained
    2026-08-09 after fixing the training-loop bug in item 7 — see that item for its real numbers.
 3. **Task 5 (final consolidated report) — DONE, and actively maintained.** `scripts/
-   generate_full_report.py` → `reports/Report_smoketest.pdf` covers both natural-ratio (§2) and
+   generate_full_report.py` → `reports/Full_Corpus_Engineering_Report.pdf` covers both natural-ratio (§2) and
    balanced (§4) results for every in-scope detector, plus algorithm derivations
    (`reports/algorithm_derivations.md`) and a consolidated write-up of earlier investigative work
    (`reports/historical_investigations.md`) that predates this pipeline. Regenerate after any

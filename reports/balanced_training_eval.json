@@ -81,7 +81,9 @@
       "tp": 84,
       "tn": 1246,
       "fp": 88,
-      "fn": 475
+      "fn": 475,
+      "device": "CPU",
+      "device_source": "inferred"
     },
     {
       "detector_name": "MobileNetSSDDetector",
@@ -98,7 +100,9 @@
       "tp": 1332,
       "tn": 362,
       "fp": 22,
-      "fn": 12
+      "fn": 12,
+      "device": "NVIDIA GeForce RTX 5060 Laptop GPU (CUDA)",
+      "device_source": "inferred"
     },
     {
       "detector_name": "HOGSVMDetector",
@@ -115,24 +119,28 @@
       "tp": 1344,
       "tn": 0,
       "fp": 384,
-      "fn": 0
+      "fn": 0,
+      "device": "CPU",
+      "device_source": "inferred"
     },
     {
       "detector_name": "ThermoX3DDetector",
       "variant": "fp32_baseline",
       "task": "contact",
       "n_frames": 470,
-      "accuracy": 0.2851063829787234,
-      "precision": 0.2663755458515284,
-      "recall": 1.0,
-      "f1": 0.4206896551724138,
+      "accuracy": 0.7170212765957447,
+      "precision": 0.4444444444444444,
+      "recall": 0.36065573770491804,
+      "f1": 0.3981900452488688,
       "mean_iou": null,
-      "mean_inference_ms": 8.921947608715804,
-      "p95_inference_ms": 17.555505001655547,
-      "tp": 122,
-      "tn": 12,
-      "fp": 336,
-      "fn": 0
+      "mean_inference_ms": 8.742461087240372,
+      "p95_inference_ms": 16.603790001681773,
+      "tp": 44,
+      "tn": 293,
+      "fp": 55,
+      "fn": 78,
+      "device": "NVIDIA GeForce RTX 5060 Laptop GPU (CUDA)",
+      "device_source": "inferred"
     }
   ]
 }

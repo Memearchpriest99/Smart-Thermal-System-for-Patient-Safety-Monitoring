@@ -86,6 +86,16 @@ class TimedEvalResult:
     mean_iou: Optional[float]  # None when IoU isn't applicable (contact)
     n_frames: int
     latencies_ms: list = field(default_factory=list, repr=False)
+    # What the latencies above were actually measured on. Without this, a
+    # latency number is uninterpretable -- 8 ms on a laptop GPU and 8 ms on
+    # CPU say completely different things about deployability -- and the
+    # report previously carried a hand-written claim about execution
+    # providers that had drifted out of sync with the data.
+    # ``device_source`` distinguishes a value captured at measurement time
+    # ("measured") from one reconstructed afterwards from the deterministic
+    # code path ("inferred"), so the two are never silently conflated.
+    device: Optional[str] = None
+    device_source: Optional[str] = None
 
     @property
     def accuracy(self) -> float:
@@ -124,11 +134,77 @@ class TimedEvalResult:
             "mean_iou": self.mean_iou,
             "mean_inference_ms": self.mean_inference_ms,
             "p95_inference_ms": self.p95_inference_ms,
+            "device": self.device,
+            "device_source": self.device_source,
             "tp": self.confusion.tp,
             "tn": self.confusion.tn,
             "fp": self.confusion.fp,
             "fn": self.confusion.fn,
         }
+
+
+def describe_device(detector=None, *, onnx_providers=None, force: Optional[str] = None) -> str:
+    """Human-readable description of what a measurement ran on.
+
+    Resolution order:
+      * ``force``           -- caller already knows (e.g. a shim it constructed);
+      * ``onnx_providers``  -- ONNX Runtime: name the FIRST registered provider.
+        Note this means "this provider was registered and takes priority", not
+        "every node executed there" -- ORT partitions graphs and silently falls
+        back to CPU per-node, so a stronger claim would need profiling;
+      * a torch detector    -- report the concrete CUDA device name, because
+        "cuda" alone tells a reader nothing about achievable latency;
+      * otherwise           -- CPU (scikit-learn and the rule-based detectors
+        have no GPU code path at all).
+    """
+    if force:
+        return force
+    if onnx_providers:
+        first = onnx_providers[0] if isinstance(onnx_providers, (list, tuple)) else str(onnx_providers)
+        if "CUDA" in first:
+            return f"ONNX Runtime / {first} ({_cuda_name()})"
+        return f"ONNX Runtime / {first}"
+    dev = getattr(detector, "_device", None)
+    if dev is None and hasattr(detector, "_device_str"):
+        # A torch-backed detector whose model hasn't been built yet (or whose
+        # ._model was swapped for a shim before _get_model() ran). Resolve the
+        # SAME way the detector itself would, rather than falling through to
+        # the CPU default below -- reporting "CPU" for a run that actually
+        # used CUDA is precisely the mislabelling this column exists to stop.
+        dev = getattr(detector, "_device_str", None) or (
+            "cuda" if _cuda_available() else "cpu")
+    if dev is not None and "cuda" in str(dev).lower():
+        return f"{_cuda_name()} (CUDA)"
+    if dev is not None:
+        return str(dev).upper()
+    return "CPU"
+
+
+def _cuda_available() -> bool:
+    if _torch_usable is False:
+        return False
+    try:
+        import torch
+        return bool(torch.cuda.is_available())
+    except Exception:
+        return False
+
+
+def _cuda_name() -> str:
+    # Only bail on a KNOWN-bad torch (False). `_torch_usable` is None until
+    # the first _maybe_cuda_sync() call, and `not None` is True -- a plain
+    # falsy check here would return the generic "CUDA" whenever this is
+    # called before any timing has happened, which is exactly when the eval
+    # scripts call it.
+    if _torch_usable is False:
+        return "CUDA"
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return torch.cuda.get_device_name(0)
+    except Exception:
+        pass
+    return "CUDA"
 
 
 def _timed_predict(predict_fn: Callable[[], object], latencies_ms: list, warmup_left: list) -> object:
@@ -154,6 +230,8 @@ def evaluate_fire_timed(
     preprocessor=None,
     variant: str,
     detector_name: Optional[str] = None,
+    device: Optional[str] = None,
+    device_source: str = "measured",
 ) -> TimedEvalResult:
     y_true: list[int] = []
     y_pred: list[int] = []
@@ -200,6 +278,8 @@ def evaluate_fire_timed(
         mean_iou=mean_iou,
         n_frames=len(y_true),
         latencies_ms=latencies_ms,
+        device=device or describe_device(detector),
+        device_source=device_source,
     )
 
 
@@ -210,6 +290,8 @@ def evaluate_human_timed(
     preprocessor=None,
     variant: str,
     detector_name: Optional[str] = None,
+    device: Optional[str] = None,
+    device_source: str = "measured",
 ) -> TimedEvalResult:
     y_true: list[int] = []
     y_pred: list[int] = []
@@ -243,6 +325,8 @@ def evaluate_human_timed(
         mean_iou=mean_iou,
         n_frames=len(y_true),
         latencies_ms=latencies_ms,
+        device=device or describe_device(detector),
+        device_source=device_source,
     )
 
 
@@ -252,6 +336,8 @@ def evaluate_contact_timed(
     *,
     variant: str,
     detector_name: Optional[str] = None,
+    device: Optional[str] = None,
+    device_source: str = "measured",
 ) -> TimedEvalResult:
     y_true: list[int] = []
     y_pred: list[int] = []
@@ -275,4 +361,6 @@ def evaluate_contact_timed(
         mean_iou=None,
         n_frames=len(y_true),
         latencies_ms=latencies_ms,
+        device=device or describe_device(detector),
+        device_source=device_source,
     )

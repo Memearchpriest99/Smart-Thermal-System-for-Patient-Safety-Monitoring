@@ -435,7 +435,8 @@ def markdown_to_flowables(md_text: str, images: _ImageCache, styles, max_width_p
 # Results tables and bar charts
 # ---------------------------------------------------------------------------
 
-METRIC_COLUMNS = ["variant", "accuracy", "precision", "recall", "f1", "mean_iou", "mean_inference_ms", "p95_inference_ms"]
+METRIC_COLUMNS = ["variant", "accuracy", "precision", "recall", "f1", "mean_iou",
+                  "mean_inference_ms", "p95_inference_ms", "device"]
 
 
 _TABLE_FONT = "Times-Roman"
@@ -454,7 +455,11 @@ def results_table(
     flowables = []
     caption_text = f"Table{f' {table_num}' if table_num else ''}. {title}" if title else None
 
-    header = ["Variant", "Acc", "Prec", "Rec", "F1", "IoU", "Mean ms", "p95 ms"]
+    # "Measured on" is not decoration: a latency is uninterpretable without it
+    # (8 ms on a laptop GPU and 8 ms on CPU imply completely different things
+    # about whether this runs on a Pi), and hand-written prose about which
+    # execution provider ran had previously drifted out of sync with the data.
+    header = ["Variant", "Acc", "Prec", "Rec", "F1", "IoU", "Mean ms", "p95 ms", "Measured on"]
     data = [header]
     for r in rows:
         def fmt_pct(v):
@@ -463,6 +468,13 @@ def results_table(
         def fmt_ms(v):
             return f"{v:.3f}" if isinstance(v, (int, float)) else "N/A"
 
+        # A row may be a real measurement or a deliberate "this variant cannot
+        # exist" placeholder (see generate_full_report.py's VARIANT_UNAVAILABLE):
+        # the latter carries `unavailable` and renders as N/A across the board
+        # with its reason in the caption, rather than being silently omitted.
+        dev = r.get("device") or ("--" if r.get("unavailable") else "N/A")
+        if r.get("device_source") == "inferred":
+            dev += "*"
         data.append([
             r.get("variant", ""),
             fmt_pct(r.get("accuracy")),
@@ -472,6 +484,7 @@ def results_table(
             fmt_pct(r.get("mean_iou")) if r.get("mean_iou") is not None else "N/A",
             fmt_ms(r.get("mean_inference_ms")),
             fmt_ms(r.get("p95_inference_ms")),
+            dev,
         ])
 
     n_rows = len(data)
@@ -479,7 +492,7 @@ def results_table(
     table.setStyle(TableStyle([
         ("FONTNAME", (0, 0), (-1, 0), _TABLE_HEADER_FONT),
         ("FONTNAME", (0, 1), (-1, -1), _TABLE_FONT),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("FONTSIZE", (0, 0), (-1, -1), 7),
         ("ALIGN", (1, 0), (-1, -1), "CENTER"),
         ("ALIGN", (0, 0), (0, -1), "LEFT"),
         # Booktabs rule weights: a heavier line above/below the whole table

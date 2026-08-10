@@ -43,7 +43,9 @@
       "tp": 219,
       "tn": 1289,
       "fp": 45,
-      "fn": 340
+      "fn": 340,
+      "device": "CPU",
+      "device_source": "inferred"
     }
   ]
 }

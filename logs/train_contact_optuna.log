@@ -1,0 +1,72 @@
+==============================================================================
+  ThermoX3D contact training -- REAL data only, augmented, Optuna-tuned
+==============================================================================
+  test scenes (never touched here): ['2ppl_fight', '2ppl_hug', '3pplhedroncolider']
+  loading real runs (cached once; every trial reuses them) ...
+    train 3pp_surprise             1 positive run(s), 0 negative run(s)
+    val   2men_clash               8 positive run(s), 46 negative run(s)
+  train: 1 pos runs (66 frames), 44 neg runs (2214 frames)
+  val: 8 pos runs (90 frames), 46 neg runs (309 frames)
+  loaded in 1s | val scenes: ['2men_clash']
+  frozen normalisation (train only): mean=0.8502 std=0.8397
+  validation windows: 183 raw -> 102 balanced (pos=51, neg=51)
+
+  running Optuna: 30 trials, 3.0h budget ...
+    trial 1/30: F1=0.667  (best 0.667, 93s)
+    trial 2/30: F1=0.667  (best 0.667, 204s)
+    trial 3/30: F1=0.667  (best 0.667, 251s)
+    trial 4/30: F1=0.778  (best 0.778, 287s)
+    trial 5/30: F1=0.667  (best 0.778, 326s)
+    trial 6/30: F1=0.768  (best 0.778, 364s)
+    trial 7/30: F1=0.778  (best 0.778, 517s)
+    trial 8/30: pruned  (best 0.778, 549s)
+    trial 9/30: pruned  (best 0.778, 585s)
+    trial 10/30: pruned  (best 0.778, 641s)
+    trial 11/30: pruned  (best 0.778, 662s)
+    trial 12/30: F1=0.785  (best 0.785, 847s)
+    trial 13/30: F1=0.768  (best 0.785, 1011s)
+    trial 14/30: F1=0.766  (best 0.785, 1058s)
+    trial 15/30: F1=0.803  (best 0.803, 1165s)
+    trial 16/30: F1=0.729  (best 0.803, 1266s)
+    trial 17/30: F1=0.758  (best 0.803, 1419s)
+    trial 18/30: F1=0.784  (best 0.803, 1530s)
+    trial 19/30: F1=0.772  (best 0.803, 1572s)
+    trial 20/30: pruned  (best 0.803, 1627s)
+    trial 21/30: F1=0.778  (best 0.803, 1722s)
+    trial 22/30: F1=0.774  (best 0.803, 1830s)
+    trial 23/30: F1=0.708  (best 0.803, 1934s)
+    trial 24/30: F1=0.713  (best 0.803, 2013s)
+    trial 25/30: F1=0.780  (best 0.803, 2111s)
+    trial 26/30: F1=0.770  (best 0.803, 2264s)
+    trial 27/30: pruned  (best 0.803, 2314s)
+    trial 28/30: pruned  (best 0.803, 2373s)
+    trial 29/30: F1=0.784  (best 0.803, 2469s)
+    trial 30/30: pruned  (best 0.803, 2522s)
+
+  best val F1 = 0.8031
+  best params = {
+  "n_epochs": 8,
+  "batch_size": 16,
+  "learning_rate": 9.963884891877199e-05,
+  "weight_decay": 4.644793807666484e-06,
+  "weight_init": "identity",
+  "flip_prob": 0.47704218692239364,
+  "rotate_prob": 0.8307002144146585,
+  "noise_sigma": 1.082212241948965,
+  "n_aug_copies": 6
+}
+
+  refitting best configuration ...
+    train windows: 14700 raw -> 868 balanced (pos=434, neg=434)
+    epoch 1/8: train_loss=0.8058 val_F1=0.718 (best 0.718)
+    epoch 2/8: train_loss=0.7920 val_F1=0.694 (best 0.718)
+    epoch 3/8: train_loss=0.7826 val_F1=0.680 (best 0.718)
+    epoch 4/8: train_loss=0.7721 val_F1=0.680 (best 0.718)
+    epoch 5/8: train_loss=0.7649 val_F1=0.680 (best 0.718)
+    epoch 6/8: train_loss=0.7564 val_F1=0.667 (best 0.718)
+    epoch 7/8: train_loss=0.7520 val_F1=0.719 (best 0.719)
+    epoch 8/8: train_loss=0.7455 val_F1=0.803 (best 0.803)
+  calibrated: conf_threshold=0.5 -> val F1=0.803 prec=0.671 rec=1.000
+  saved -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\checkpoints_balanced\thermo_x3d_detector\Waveshare_26984.thalg
+  study results -> C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\reports\contact_optuna_study.json
+DONE_EXIT_0 

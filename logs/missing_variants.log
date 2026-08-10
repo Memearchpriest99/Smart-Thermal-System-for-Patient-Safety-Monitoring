@@ -1,0 +1,29 @@
+Fire test scenes: ['1person cig', '1ppl_single_forever', 'man_light_cig']
+Human test scenes: ['2ppl_hug', '3pplhedroncolider', 'man_light_cig_1']
+Contact test scenes: ['2ppl_fight', '2ppl_hug', '3pplhedroncolider']
+  [ThermoX3DDetector] ONNX Runtime providers: ['CUDAExecutionProvider', 'CPUExecutionProvider']
+Traceback (most recent call last):
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\eval_onnx_models.py", line 236, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "C:\Users\guych\Desktop\Final Project\Smart-Thermal-System-for-Patient-Safety-Monitoring-dev\scripts\eval_onnx_models.py", line 216, in main
+    device=describe_device(onnx_providers=shim.providers))
+           ^^^^^^^^^^^^^^^
+NameError: name 'describe_device' is not defined
+Fire test scenes: ['1person cig', '1ppl_single_forever', 'man_light_cig']
+Human test scenes: ['2ppl_hug', '3pplhedroncolider', 'man_light_cig_1']
+Contact test scenes: ['2ppl_fight', '2ppl_hug', '3pplhedroncolider']
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+  FAILED ThermoX3DDetector int8: Expected onnx::Conv_662 to be an initializer
+  FAILED ThermoX3DDetector fp16: name 'describe_device' is not defined
+  FAILED ThermoX3DDetector bf16: name 'describe_device' is not defined
+
+Saved -> reports\full_corpus_eval_quantized_x3d.json
+Fire test scenes: ['1person cig', '1ppl_single_forever', 'man_light_cig']
+Human test scenes: ['2ppl_hug', '3pplhedroncolider', 'empty_room', 'man_light_cig_1']
+Contact test scenes: ['2ppl_fight', '2ppl_hug', '3pplhedroncolider']
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+  FAILED HOGSVMDetector int8: Failed to find proper ai.onnx domain
+
+Saved -> reports\full_corpus_eval_quantized_hogsvm.json
+DONE_EXIT_0 

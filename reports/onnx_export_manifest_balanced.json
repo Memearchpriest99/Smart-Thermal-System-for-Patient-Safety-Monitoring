@@ -1,6 +1,6 @@
 {
   "FireSVMDetector": {
-    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\fire_svm_detector.onnx",
+    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\checkpoints_balanced\\fire_svm_detector.onnx",
     "input_shape": [
       1,
       6
@@ -17,7 +17,7 @@
     "scope": "StandardScaler + SVC(probability=True) only -- Otsu segmentation and blob feature extraction are classical CV code, not exported."
   },
   "HOGSVMDetector": {
-    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\hog_svm_detector.onnx",
+    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\checkpoints_balanced\\hog_svm_detector.onnx",
     "input_shape": [
       1,
       4032
@@ -26,7 +26,7 @@
     "scope": "LinearSVC decision function only -- the HOG descriptor and multi-scale sliding-window pyramid are classical CV code, not exported."
   },
   "MobileNetSSDDetector": {
-    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\mobilenet_ssd_detector.onnx",
+    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\checkpoints_balanced\\mobilenet_ssd_detector.onnx",
     "input_shape": [
       1,
       1,
@@ -40,39 +40,12 @@
     ],
     "scope": "Full backbone + SSD heads. Anchor decoding + NMS stay in Python (thermal_algorithms.human_detection.mobilenet_ssd_anchors) -- apply identically to torch and ONNX raw outputs for a fair comparison."
   },
-  "MVSTGCNDetector": {
-    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\mv_stgcn_detector.onnx",
-    "input_shapes": {
-      "node_features": [
-        1,
-        16,
-        5,
-        7
-      ],
-      "positions": [
-        1,
-        16,
-        5,
-        2
-      ],
-      "masks": [
-        1,
-        16,
-        5
-      ]
-    },
-    "input_dtype": "float32",
-    "outputs": [
-      "logits (2-class, softmax for probability)"
-    ],
-    "scope": "Graph-conv body only, at a FIXED representative actor count (max_actors=5, mask-padded exactly as real inference does). Detection + Kalman tracking + homography projection + graph construction (thermal_algorithms.contact_detection.mv_stgcn / multi_view/*) stay in Python -- not neural-net ops."
-  },
   "ThermoX3DDetector": {
-    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\thermo_x3d_detector.onnx",
+    "onnx_path": "C:\\Users\\guych\\Desktop\\Final Project\\Weights\\onnx\\checkpoints_balanced\\thermo_x3d_detector.onnx",
     "input_shape": [
       1,
       3,
-      16,
+      5,
       62,
       80
     ],
@@ -81,5 +54,8 @@
       "logits (2-class, softmax for probability)"
     ],
     "scope": "Full 3D-CNN body. Per-camera frame buffering + global normalization stay in Python."
+  },
+  "_export_failures": {
+    "MVSTGCNDetector": "FileNotFoundError: No checkpoint found at checkpoints_balanced\\mv_stgcn_detector\\_default.thalg. Have you trained and registered MVSTGCNDetector for profile=None?"
   }
 }

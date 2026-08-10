@@ -70,15 +70,18 @@ from thermal_algorithms.training.split import (
 )
 from thermal_algorithms.training.balance import (
     balance_examples,
-    build_balanced_contact_pools,
+    balance_windows,
     build_balanced_fire_pool,
     build_balanced_human_pool,
+    build_synth_contact_pools,
+    build_waveshare_contact_pools,
     interleave_chunks,
     size_and_cap_negative_runs,
     split_contact_pools_train_val,
 )
 from thermal_algorithms.training.trainer import Trainer
 from thermal_algorithms.training.eval_report import (
+    describe_device,
     TimedEvalResult,
     evaluate_contact_timed,
     evaluate_fire_timed,
@@ -157,9 +160,11 @@ __all__ = [
     "session_train_test_split",
     # balance
     "balance_examples",
+    "balance_windows",
     "build_balanced_fire_pool",
     "build_balanced_human_pool",
-    "build_balanced_contact_pools",
+    "build_synth_contact_pools",
+    "build_waveshare_contact_pools",
     "split_contact_pools_train_val",
     "size_and_cap_negative_runs",
     "interleave_chunks",
@@ -167,6 +172,7 @@ __all__ = [
     "Trainer",
     # eval_report
     "TimedEvalResult",
+    "describe_device",
     "evaluate_contact_timed",
     "evaluate_fire_timed",
     "evaluate_human_timed",
